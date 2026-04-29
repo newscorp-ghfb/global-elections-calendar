@@ -1,6 +1,5 @@
 "use strict";
 
-const DATA_URL               = "https://github.dowjones.net/SenescalK/global-elections-calendar-1/raw/main/elections.json";
 const CACHE_KEY              = "elections_cache";
 const SELECTED_COUNTRIES_KEY = "selected_countries";
 const PINNED_COUNTRIES_KEY   = "pinned_countries";
@@ -27,9 +26,11 @@ async function loadAll() {
       if (cached && cached.data) {
         resolve({ countries: extractCountries(cached.data), selected, pinned });
       } else {
-        fetch(DATA_URL, { cache: "no-store" })
-          .then(r => r.json())
-          .then(json => resolve({ countries: extractCountries(json), selected, pinned }))
+        chrome.runtime.sendMessage({ type: "FETCH_DATA" })
+          .then(reply => resolve({
+            countries: reply.ok ? extractCountries(reply.data) : [],
+            selected, pinned
+          }))
           .catch(() => resolve({ countries: [], selected, pinned }));
       }
     });

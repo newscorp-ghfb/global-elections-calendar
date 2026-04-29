@@ -1,9 +1,6 @@
 "use strict";
 
 // ── Configuration ─────────────────────────────────────────────
-const DATA_URL =
-  "https://github.dowjones.net/SenescalK/global-elections-calendar-1/raw/main/elections.json";
-
 const CACHE_KEY            = "elections_cache";
 const CACHE_TTL            = 30 * 60 * 1000; // 30 minutes
 const PINNED_COUNTRIES_KEY = "pinned_countries";
@@ -333,11 +330,11 @@ async function fetchData(forceRefresh = false) {
       const cached = await loadFromCache();
       if (cached) { applyDataToUI(cached); return; }
     }
-    const resp = await fetch(DATA_URL, { cache: "no-store" });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
-    const json = await resp.json();
-    await saveToCache(json);
-    applyDataToUI(json);
+    // Delegate the actual fetch to the background service worker, which is
+    // not subject to CORS restrictions for declared host_permissions URLs.
+    const reply = await chrome.runtime.sendMessage({ type: "FETCH_DATA" });
+    if (!reply.ok) throw new Error(reply.error);
+    applyDataToUI(reply.data);
   } catch (err) {
     console.error("Elections fetch error:", err);
     const stale = await loadFromCache().catch(() => null);
