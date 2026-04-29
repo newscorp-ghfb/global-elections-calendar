@@ -3,7 +3,7 @@
 // ── Configuration ────────────────────────────────────────────
 // Served via GitHub Pages from this repo (must be public + Pages enabled)
 const DATA_URL =
-  "https://mogzauri14.github.io/Exp_KS2025/elections.json";
+  "https://github.dowjones.net/Senescalk/global-elections-calendar-1/raw/main/elections.json";
 
 // Cache key + TTL (30 minutes)
 const CACHE_KEY = "elections_cache";

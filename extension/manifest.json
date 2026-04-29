@@ -25,6 +25,7 @@
   },
   "permissions": ["storage"],
   "host_permissions": [
-    "https://raw.githubusercontent.com/*"
+    "https://raw.githubusercontent.com/*",
+    "https://github.dowjones.net/*"
   ]
 }
