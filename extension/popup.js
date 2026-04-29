@@ -2,7 +2,7 @@
 
 // ── Configuration ─────────────────────────────────────────────
 const DATA_URL =
-  "https://github.dowjones.net/Senescalk/global-elections-calendar-1/raw/main/elections.json";
+  "https://github.dowjones.net/SenescalK/global-elections-calendar-1/raw/main/elections.json";
 
 const CACHE_KEY            = "elections_cache";
 const CACHE_TTL            = 30 * 60 * 1000; // 30 minutes
