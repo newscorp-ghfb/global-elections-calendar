@@ -26,6 +26,7 @@
   "permissions": ["storage", "alarms"],
   "host_permissions": [
     "https://raw.githubusercontent.com/*",
-    "https://github.dowjones.net/*"
+    "https://github.dowjones.net/*",
+    "https://*.github.dowjones.net/*"
   ]
 }
