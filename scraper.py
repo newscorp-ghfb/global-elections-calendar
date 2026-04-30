@@ -414,15 +414,15 @@ def scrape_ipu() -> list[dict]:
 
     for row in table.find_all("tr")[1:]:
         cells = row.find_all("td")
-        if len(cells) < 7:
+        if len(cells) < 8:
             continue
         country  = cells[0].get_text(strip=True)
         parl_a   = cells[1].find("a")
         etype    = parl_a.get_text(strip=True) if parl_a else cells[1].get_text(strip=True)
         href     = parl_a["href"] if parl_a and parl_a.get("href") else URL
         link     = href if href.startswith("http") else BASE + href
-        # col 6 = "Expected date of next elections"
-        date_str = cells[6].get_text(strip=True)
+        # col 7 = "Expected date of next elections" (col 6 is "First session", not election date)
+        date_str = cells[7].get_text(strip=True)
 
         d = _parse_date(date_str)
         if _is_target_month(d):
