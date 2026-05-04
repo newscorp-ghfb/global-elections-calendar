@@ -1,6 +1,6 @@
 "use strict";
 
-const DATA_URL   = "https://github.dowjones.net/SenescalK/global-elections-calendar-1/raw/main/elections.json";
+const DATA_URL   = "https://raw.githubusercontent.com/newscorp-ghfb/global-elections-calendar/main/elections.json";
 const CACHE_KEY  = "elections_cache";
 const ALARM_NAME = "elections-refresh";
 
