@@ -11,12 +11,11 @@ permissions:
 
 jobs:
   scrape-and-commit:
-    runs-on: [X64, dj-ubuntu-2204-latest]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        run: |
-          git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.dowjones.net/SenescalK/global-elections-calendar-1.git" .
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: pip3 install -r requirements.txt
