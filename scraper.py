@@ -592,16 +592,34 @@ def _types_are_similar(a: str, b: str) -> bool:
     """
     Heuristic: two election type strings refer to the same election if they
     share enough words (ignoring stop words and punctuation).
+    Uses 6-char prefix stemming so "Presidency" matches "Presidential".
     """
     stop = {"of", "the", "and", "for", "in", "a", "an", "election", "elections"}
-    def tokens(s: str) -> set:
-        return {w.lower() for w in re.split(r"[\W_]+", s) if w.lower() not in stop and len(w) > 1}
+
+    def tokens(s: str) -> list[str]:
+        return [w.lower() for w in re.split(r"[\W_]+", s)
+                if w.lower() not in stop and len(w) > 1]
+
+    def _stem(w: str) -> str:
+        return w[:6] if len(w) >= 6 else w
+
+    # Different rounds of the same election are distinct events — never merge.
+    _round = re.compile(r"\b(first|second|third|1st|2nd|3rd)\s+round\b", re.IGNORECASE)
+    if _round.search(a) and _round.search(b):
+        ra = _round.search(a).group(0).lower()
+        rb = _round.search(b).group(0).lower()
+        if ra != rb:
+            return False
+
     ta, tb = tokens(a), tokens(b)
     if not ta or not tb:
         return True   # one is empty/generic — treat as compatible
-    overlap = len(ta & tb)
-    smaller = min(len(ta), len(tb))
-    return overlap / smaller >= 0.4   # 40 % token overlap → same election
+
+    # Count stemmed overlap
+    tb_stems = {_stem(w) for w in tb}
+    overlap = sum(1 for w in set(ta) if _stem(w) in tb_stems)
+    smaller = min(len(set(ta)), len(set(tb)))
+    return overlap / smaller >= 0.4   # 40 % stem overlap → same election
 
 
 def build_golden_records(raw_elections: list[dict]) -> list[dict]:
