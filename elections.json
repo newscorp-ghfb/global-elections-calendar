@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-05T10:53:36Z",
+  "generated_at": "2026-05-05T14:01:12Z",
   "current_month": "2026-05",
   "months": {
     "2026-04": [
@@ -689,30 +689,18 @@
         "type": "Colombian Presidency",
         "status": "Upcoming",
         "source_names": [
-          "ElectionGuide"
+          "ElectionGuide",
+          "A-WEB"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5066/"
+          "https://www.electionguide.org/elections/id/5066/",
+          "https://www.as-coa.org/articles/voter-concerns-and-intentions-one-year-colombias-2026-elections"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5066/"
-          }
-        ]
-      },
-      {
-        "date": "2026-05-31",
-        "country": "Colombia",
-        "type": "2026 Presidential Election (first round)",
-        "status": "Upcoming",
-        "source_names": [
-          "A-WEB"
-        ],
-        "links": [
-          "https://www.as-coa.org/articles/voter-concerns-and-intentions-one-year-colombias-2026-elections"
-        ],
-        "sources": [
+          },
           {
             "name": "A-WEB",
             "link": "https://www.as-coa.org/articles/voter-concerns-and-intentions-one-year-colombias-2026-elections"
