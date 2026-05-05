@@ -699,6 +699,16 @@ def build_golden_records(raw_elections: list[dict]) -> list[dict]:
     # 5. Sort by date
     golden.sort(key=lambda x: x["date"])
 
+    # 6. Absorb roll-up entries: if a "Parent" record's type text explicitly
+    #    references a constituent that already has its own entry on the same date
+    #    (e.g. "United Kingdom" Wikipedia roll-up alongside individual
+    #    "Wales (part of the United Kingdom)" / "Scotland ..." ElectionGuide
+    #    entries), merge the parent's sources into the constituents and drop the
+    #    parent.  We only drop the parent when *all* its constituent mentions are
+    #    covered by dedicated entries, so a real UK-wide election on a day with
+    #    no constituent entries is preserved.
+    golden = _absorb_constituent_rollups(golden)
+
     merged_count = sum(
         len(c) - 1
         for clusters in date_country_buckets.values()
@@ -708,6 +718,90 @@ def build_golden_records(raw_elections: list[dict]) -> list[dict]:
     log.info("Golden record engine: %d raw -> %d records (%d merged)",
              len(raw_elections), len(golden), merged_count)
     return golden
+
+
+def _absorb_constituent_rollups(golden: list[dict]) -> list[dict]:
+    """
+    Drop parent roll-up records whose type text explicitly mentions constituents
+    that already have dedicated same-date entries, merging the parent's sources
+    into those constituents.
+
+    Handles the pattern:
+      "Wales (part of the United Kingdom)"  ← keep, absorb parent sources
+      "Scotland (part of the United Kingdom)" ← keep, absorb parent sources
+      "United Kingdom" / type "local elections … Scotland , Parliament Wales …"
+        ← drop, after absorbing its sources into the two entries above
+    """
+    # Build a lookup: date → list of records
+    from collections import defaultdict
+    by_date: dict[str, list[dict]] = defaultdict(list)
+    for rec in golden:
+        by_date[rec["date"]].append(rec)
+
+    to_drop: set[int] = set()
+
+    for date, recs in by_date.items():
+        if len(recs) < 2:
+            continue
+
+        # Find records that are constituents: country contains "(part of X)"
+        # Strip leading "the " so "the United Kingdom" → "united kingdom"
+        def _norm_parent(s: str) -> str:
+            s = s.strip().lower()
+            return s[4:] if s.startswith("the ") else s
+
+        constituent_map: dict[str, list] = {}  # normalised_parent → [records]
+        for rec in recs:
+            m = re.search(r"\(part of (.+?)\)", rec["country"], re.IGNORECASE)
+            if m:
+                parent = _norm_parent(m.group(1))
+                constituent_map.setdefault(parent, [])
+                constituent_map[parent].append(rec)
+
+        if not constituent_map:
+            continue
+
+        for rec in recs:
+            parent_key = _norm_parent(rec["country"])
+            if parent_key not in constituent_map:
+                continue
+            constituents = constituent_map[parent_key]
+
+            # Confirm the parent's type text references at least one constituent
+            type_lower = rec["type"].lower()
+            country_lower = rec["country"].lower()
+            mentioned = [
+                c for c in constituents
+                # Extract the short name before "(part of …)"
+                if re.split(r"\s*\(part of", c["country"], flags=re.IGNORECASE)[0]
+                   .strip().lower()
+                   .split()[0]  # first word (e.g. "wales", "scotland")
+                   in type_lower or country_lower in type_lower
+            ]
+
+            if not mentioned:
+                continue  # parent doesn't reference any constituent → keep it
+
+            # Absorb parent sources into every constituent on this date
+            for constituent in constituents:
+                seen_names = {s["name"] for s in constituent["sources"]}
+                for src in rec["sources"]:
+                    if src["name"] not in seen_names:
+                        constituent["sources"].append(src)
+                        constituent["source_names"].append(src["name"])
+                        seen_names.add(src["name"])
+                constituent["links"] = [s["link"] for s in constituent["sources"]]
+
+            to_drop.add(id(rec))
+            log.info(
+                "Absorbed roll-up '%s' (%s) into %d constituent entries",
+                rec["country"], rec["type"][:60], len(constituents),
+            )
+
+    result = [r for r in golden if id(r) not in to_drop]
+    if to_drop:
+        log.info("Constituent roll-up pass: dropped %d parent records", len(to_drop))
+    return result
 
 
 # ---------------------------------------------------------------------------
