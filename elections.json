@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-06T00:15:41Z",
+  "generated_at": "2026-05-07T00:15:42Z",
   "current_month": "2026-05",
   "months": {
     "2026-04": [
@@ -423,7 +423,7 @@
         "date": "2026-05-07",
         "country": "Wales (part of the United Kingdom)",
         "type": "Welsh National Assembly",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide",
           "Wikipedia"
@@ -447,7 +447,7 @@
         "date": "2026-05-07",
         "country": "Scotland (part of the United Kingdom)",
         "type": "Scottish Parliament",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide",
           "Wikipedia"
@@ -560,7 +560,7 @@
       {
         "date": "2026-05-16",
         "country": "Iceland",
-        "type": "municipal",
+        "type": "municipal Reykjavík , City Council",
         "status": "Upcoming",
         "source_names": [
           "Wikipedia"
