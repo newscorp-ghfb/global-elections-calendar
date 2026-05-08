@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-07T00:15:42Z",
+  "generated_at": "2026-05-08T00:16:15Z",
   "current_month": "2026-05",
   "months": {
     "2026-04": [
@@ -95,24 +95,6 @@
       },
       {
         "date": "2026-04-12",
-        "country": "Peru",
-        "type": "Peruvian Chamber of Deputies",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5058/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5058/"
-          }
-        ]
-      },
-      {
-        "date": "2026-04-12",
         "country": "Benin",
         "type": "Beninese Presidency",
         "status": "Held",
@@ -126,6 +108,24 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5056/"
+          }
+        ]
+      },
+      {
+        "date": "2026-04-12",
+        "country": "Peru",
+        "type": "Peruvian Senate",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5155/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5155/"
           }
         ]
       },
@@ -421,30 +421,6 @@
       },
       {
         "date": "2026-05-07",
-        "country": "Wales (part of the United Kingdom)",
-        "type": "Welsh National Assembly",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide",
-          "Wikipedia"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5065/",
-          "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5065/"
-          },
-          {
-            "name": "Wikipedia",
-            "link": "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
-          }
-        ]
-      },
-      {
-        "date": "2026-05-07",
         "country": "Scotland (part of the United Kingdom)",
         "type": "Scottish Parliament",
         "status": "Held",
@@ -460,6 +436,30 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5064/"
+          },
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
+          }
+        ]
+      },
+      {
+        "date": "2026-05-07",
+        "country": "Wales (part of the United Kingdom)",
+        "type": "Welsh National Assembly",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide",
+          "Wikipedia"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5065/",
+          "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5065/"
           },
           {
             "name": "Wikipedia",
