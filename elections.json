@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-09T00:17:25Z",
+  "generated_at": "2026-05-10T00:15:38Z",
   "current_month": "2026-05",
   "months": {
     "2026-04": [
@@ -453,7 +453,7 @@
         "date": "2026-05-10",
         "country": "Lebanon",
         "type": "Lebanese National Assembly",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
