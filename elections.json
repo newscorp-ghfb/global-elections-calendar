@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-10T00:15:38Z",
+  "generated_at": "2026-05-11T00:16:18Z",
   "current_month": "2026-05",
   "months": {
     "2026-04": [
@@ -471,7 +471,7 @@
         "date": "2026-05-11",
         "country": "Canada",
         "type": "New Brunswick , municipal",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
