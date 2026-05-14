@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-13T00:19:12Z",
+  "generated_at": "2026-05-14T00:21:08Z",
   "current_month": "2026-05",
   "months": {
     "2026-04": [
@@ -77,37 +77,37 @@
       },
       {
         "date": "2026-04-12",
-        "country": "Peru",
-        "type": "Peruvian Senate",
+        "country": "Hungary",
+        "type": "Hungarian National Assembly",
         "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5155/"
+          "https://www.electionguide.org/elections/id/5062/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5155/"
+            "link": "https://www.electionguide.org/elections/id/5062/"
           }
         ]
       },
       {
         "date": "2026-04-12",
-        "country": "Benin",
-        "type": "Beninese Presidency",
+        "country": "Peru",
+        "type": "Peruvian Presidency",
         "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5056/"
+          "https://www.electionguide.org/elections/id/5057/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5056/"
+            "link": "https://www.electionguide.org/elections/id/5057/"
           }
         ]
       },
@@ -385,30 +385,6 @@
       },
       {
         "date": "2026-05-07",
-        "country": "Wales (part of the United Kingdom)",
-        "type": "Welsh National Assembly",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide",
-          "Wikipedia"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5065/",
-          "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5065/"
-          },
-          {
-            "name": "Wikipedia",
-            "link": "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
-          }
-        ]
-      },
-      {
-        "date": "2026-05-07",
         "country": "Scotland (part of the United Kingdom)",
         "type": "Scottish Parliament",
         "status": "Held",
@@ -424,6 +400,30 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5064/"
+          },
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
+          }
+        ]
+      },
+      {
+        "date": "2026-05-07",
+        "country": "Wales (part of the United Kingdom)",
+        "type": "Welsh National Assembly",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide",
+          "Wikipedia"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5065/",
+          "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5065/"
           },
           {
             "name": "Wikipedia",
@@ -506,7 +506,7 @@
       {
         "date": "2026-05-12",
         "country": "United States",
-        "type": "Georgia , 177th House of Representatives district , special election New Jersey , Newark , Mayor",
+        "type": "Georgia , 177th House of Representatives district , special election New Jersey , Newark , Mayor West Virginia , Supreme Court of Appeals",
         "status": "Held",
         "source_names": [
           "Wikipedia"
@@ -649,24 +649,6 @@
       },
       {
         "date": "2026-05-31",
-        "country": "Somaliland",
-        "type": "Somaliland House of Representatives",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5072/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5072/"
-          }
-        ]
-      },
-      {
-        "date": "2026-05-31",
         "country": "Guinea",
         "type": "Guinean National Assembly",
         "status": "Upcoming",
@@ -704,6 +686,24 @@
           {
             "name": "A-WEB",
             "link": "https://www.as-coa.org/articles/voter-concerns-and-intentions-one-year-colombias-2026-elections"
+          }
+        ]
+      },
+      {
+        "date": "2026-05-31",
+        "country": "Somaliland",
+        "type": "Somaliland House of Representatives",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5072/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5072/"
           }
         ]
       }
@@ -789,19 +789,19 @@
       },
       {
         "date": "2026-06-07",
-        "country": "Kosovo",
-        "type": "Kosovar Assembly",
+        "country": "Armenia",
+        "type": "Armenian National Assembly",
         "status": "Upcoming",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5162/"
+          "https://www.electionguide.org/elections/id/5074/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5162/"
+            "link": "https://www.electionguide.org/elections/id/5074/"
           }
         ]
       },
@@ -820,6 +820,24 @@
           {
             "name": "A-WEB",
             "link": "https://www.1lurer.am/en/2025/06/07/Next-Parliamentary-elections-will-be-held-on-June-7-2026-Alen-Simonyan/1326754"
+          }
+        ]
+      },
+      {
+        "date": "2026-06-07",
+        "country": "Kosovo",
+        "type": "Kosovar Assembly",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5162/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5162/"
           }
         ]
       },
