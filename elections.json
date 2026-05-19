@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-18T00:18:34Z",
+  "generated_at": "2026-05-19T00:21:29Z",
   "current_month": "2026-05",
   "months": {
     "2026-04": [
@@ -72,24 +72,6 @@
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_India"
-          }
-        ]
-      },
-      {
-        "date": "2026-04-12",
-        "country": "Hungary",
-        "type": "Hungarian National Assembly",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5062/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5062/"
           }
         ]
       },
@@ -487,19 +469,19 @@
       },
       {
         "date": "2026-05-12",
-        "country": "United States",
-        "type": "Georgia , 177th House of Representatives district , special election New Jersey , Newark , Mayor West Virginia , Supreme Court of Appeals",
+        "country": "New Zealand",
+        "type": "Dunedin , City Council by-election [ 7 ] United States Georgia , 177th House of Representatives district , special election (1st round) New Jersey , Newark , Mayor West Virginia , Supreme Court of Appeals",
         "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
         "links": [
-          "https://en.wikipedia.org/wiki/Elections_in_the_United_States"
+          "https://en.wikipedia.org/wiki/Elections_in_New_Zealand"
         ],
         "sources": [
           {
             "name": "Wikipedia",
-            "link": "https://en.wikipedia.org/wiki/Elections_in_the_United_States"
+            "link": "https://en.wikipedia.org/wiki/Elections_in_New_Zealand"
           }
         ]
       },
@@ -561,7 +543,7 @@
         "date": "2026-05-19",
         "country": "United States",
         "type": "Alabama Amendment 1 Amendment 2 Georgia 7th Senate district , special election Supreme Court Pennsylvania , 196th House of Representatives district , special election",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
@@ -649,24 +631,6 @@
       },
       {
         "date": "2026-05-31",
-        "country": "Guinea",
-        "type": "Guinean National Assembly",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5156/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5156/"
-          }
-        ]
-      },
-      {
-        "date": "2026-05-31",
         "country": "Somaliland",
         "type": "Somaliland House of Representatives",
         "status": "Upcoming",
@@ -680,6 +644,24 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5072/"
+          }
+        ]
+      },
+      {
+        "date": "2026-05-31",
+        "country": "Guinea",
+        "type": "Guinean National Assembly",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5156/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5156/"
           }
         ]
       },
@@ -748,7 +730,7 @@
       {
         "date": "2026-06-02",
         "country": "United States",
-        "type": "California [ 7 ] California , 1st congressional district , special election Los Angeles , Mayor , City Attorney, City Controller, and City Council Los Angeles County , Board of Supervisors and Sheriff",
+        "type": "California [ 8 ] California , 1st congressional district , special election Los Angeles , Mayor , City Attorney, City Controller, and City Council Los Angeles County , Board of Supervisors and Sheriff",
         "status": "Upcoming",
         "source_names": [
           "Wikipedia"
@@ -838,6 +820,24 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5159/"
+          }
+        ]
+      },
+      {
+        "date": "2026-06-07",
+        "country": "Kosovo",
+        "type": "Kosovar Assembly",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5162/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5162/"
           }
         ]
       },
