@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-19T00:21:29Z",
+  "generated_at": "2026-05-20T00:21:57Z",
   "current_month": "2026-05",
   "months": {
     "2026-04": [
@@ -78,18 +78,18 @@
       {
         "date": "2026-04-12",
         "country": "Peru",
-        "type": "Peruvian Presidency",
+        "type": "Peruvian Senate",
         "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5057/"
+          "https://www.electionguide.org/elections/id/5155/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5057/"
+            "link": "https://www.electionguide.org/elections/id/5155/"
           }
         ]
       },
@@ -755,13 +755,13 @@
           "Wikipedia"
         ],
         "links": [
-          "https://focustaiwan.tw/politics/202510310018",
+          "https://www.nec.go.kr/site/eng/ex/bbs/View.do?cbIdx=1270&bcIdx=304199",
           "https://en.wikipedia.org/wiki/Elections_in_South_Korea"
         ],
         "sources": [
           {
             "name": "A-WEB",
-            "link": "https://focustaiwan.tw/politics/202510310018"
+            "link": "https://www.nec.go.kr/site/eng/ex/bbs/View.do?cbIdx=1270&bcIdx=304199"
           },
           {
             "name": "Wikipedia",
@@ -811,15 +811,21 @@
         "type": "Peruvian Presidency",
         "status": "Upcoming",
         "source_names": [
-          "ElectionGuide"
+          "ElectionGuide",
+          "A-WEB"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5159/"
+          "https://www.electionguide.org/elections/id/5159/",
+          "https://www.infobae.com/peru/2026/05/17/jurado-nacional-de-elecciones-de-peru-proclamo-oficialmente-a-roberto-sanchez-y-keiko-fujimori-como-candidatos-que-pasan-al-balotaje/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5159/"
+          },
+          {
+            "name": "A-WEB",
+            "link": "https://www.infobae.com/peru/2026/05/17/jurado-nacional-de-elecciones-de-peru-proclamo-oficialmente-a-roberto-sanchez-y-keiko-fujimori-como-candidatos-que-pasan-al-balotaje/"
           }
         ]
       },
