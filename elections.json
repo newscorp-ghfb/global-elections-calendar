@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-23T00:20:05Z",
+  "generated_at": "2026-05-24T00:18:37Z",
   "current_month": "2026-05",
   "months": {
     "2026-04": [
@@ -579,7 +579,7 @@
         "date": "2026-05-24",
         "country": "Cyprus",
         "type": "Cypriot House of Representatives",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
@@ -730,7 +730,7 @@
       {
         "date": "2026-06-02",
         "country": "United States",
-        "type": "California California , 1st congressional district , special election Los Angeles , Mayor , City Attorney, City Controller, and City Council Los Angeles County , Board of Supervisors and Sheriff",
+        "type": "California California , 1st congressional district , special election Long Beach , Mayor Los Angeles , Mayor , City Attorney , City Controller, and City Council Los Angeles County , Board of Supervisors , Sheriff, and Assessor San Diego , City Council",
         "status": "Upcoming",
         "source_names": [
           "Wikipedia"
