@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-29T00:23:29Z",
+  "generated_at": "2026-05-30T00:21:15Z",
   "current_month": "2026-05",
   "months": {
     "2026-04": [
@@ -220,6 +220,24 @@
         ]
       },
       {
+        "date": "2026-04-26",
+        "country": "India",
+        "type": "Gujarat , local elections",
+        "status": "Held",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_India"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_India"
+          }
+        ]
+      },
+      {
         "date": "2026-04-30",
         "country": "Antigua and Barbuda",
         "type": "Antiguan and Barbudan House of Representatives",
@@ -367,30 +385,6 @@
       },
       {
         "date": "2026-05-07",
-        "country": "Scotland (part of the United Kingdom)",
-        "type": "Scottish Parliament",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide",
-          "Wikipedia"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5064/",
-          "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5064/"
-          },
-          {
-            "name": "Wikipedia",
-            "link": "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
-          }
-        ]
-      },
-      {
-        "date": "2026-05-07",
         "country": "Wales (part of the United Kingdom)",
         "type": "Welsh National Assembly",
         "status": "Held",
@@ -406,6 +400,30 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5065/"
+          },
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
+          }
+        ]
+      },
+      {
+        "date": "2026-05-07",
+        "country": "Scotland (part of the United Kingdom)",
+        "type": "Scottish Parliament",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide",
+          "Wikipedia"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5064/",
+          "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5064/"
           },
           {
             "name": "Wikipedia",
@@ -615,7 +633,7 @@
         "date": "2026-05-30",
         "country": "Malta",
         "type": "Maltese House of Representatives",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
@@ -626,6 +644,42 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5161/"
+          }
+        ]
+      },
+      {
+        "date": "2026-05-31",
+        "country": "Somaliland",
+        "type": "Somaliland House of Representatives",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5072/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5072/"
+          }
+        ]
+      },
+      {
+        "date": "2026-05-31",
+        "country": "Guinea",
+        "type": "Guinean National Assembly",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5156/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5156/"
           }
         ]
       },
@@ -650,42 +704,6 @@
           {
             "name": "A-WEB",
             "link": "https://www.as-coa.org/articles/voter-concerns-and-intentions-one-year-colombias-2026-elections"
-          }
-        ]
-      },
-      {
-        "date": "2026-05-31",
-        "country": "Guinea",
-        "type": "Guinean National Assembly",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5156/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5156/"
-          }
-        ]
-      },
-      {
-        "date": "2026-05-31",
-        "country": "Somaliland",
-        "type": "Somaliland House of Representatives",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5072/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5072/"
           }
         ]
       }
@@ -789,24 +807,6 @@
       },
       {
         "date": "2026-06-07",
-        "country": "Kosovo",
-        "type": "Kosovar Assembly",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5162/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5162/"
-          }
-        ]
-      },
-      {
-        "date": "2026-06-07",
         "country": "Armenia",
         "type": "Armenian National Assembly",
         "status": "Upcoming",
@@ -862,6 +862,24 @@
           {
             "name": "A-WEB",
             "link": "https://www.infobae.com/peru/2026/05/17/jurado-nacional-de-elecciones-de-peru-proclamo-oficialmente-a-roberto-sanchez-y-keiko-fujimori-como-candidatos-que-pasan-al-balotaje/"
+          }
+        ]
+      },
+      {
+        "date": "2026-06-07",
+        "country": "Kosovo",
+        "type": "Kosovar Assembly",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5162/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5162/"
           }
         ]
       },
