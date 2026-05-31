@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-30T00:21:15Z",
+  "generated_at": "2026-05-31T00:20:33Z",
   "current_month": "2026-05",
   "months": {
     "2026-04": [
@@ -450,6 +450,24 @@
         ]
       },
       {
+        "date": "2026-05-10",
+        "country": "India",
+        "type": "Haryana , Municipal Corporation",
+        "status": "Held",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_India"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_India"
+          }
+        ]
+      },
+      {
         "date": "2026-05-11",
         "country": "Canada",
         "type": "New Brunswick , municipal elections",
@@ -651,7 +669,7 @@
         "date": "2026-05-31",
         "country": "Somaliland",
         "type": "Somaliland House of Representatives",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
@@ -669,7 +687,7 @@
         "date": "2026-05-31",
         "country": "Guinea",
         "type": "Guinean National Assembly",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
@@ -687,7 +705,7 @@
         "date": "2026-05-31",
         "country": "Colombia",
         "type": "Colombian Presidency",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide",
           "A-WEB"
