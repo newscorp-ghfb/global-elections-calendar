@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-03T00:31:03Z",
+  "generated_at": "2026-06-04T00:31:46Z",
   "current_month": "2026-06",
   "months": {
     "2026-05": [
@@ -329,19 +329,19 @@
       },
       {
         "date": "2026-05-31",
-        "country": "Somaliland",
-        "type": "Somaliland House of Representatives",
+        "country": "Colombia",
+        "type": "Colombian Presidency",
         "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5072/"
+          "https://www.electionguide.org/elections/id/5066/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5072/"
+            "link": "https://www.electionguide.org/elections/id/5066/"
           }
         ]
       },
@@ -365,19 +365,19 @@
       },
       {
         "date": "2026-05-31",
-        "country": "Colombia",
-        "type": "Colombian Presidency",
+        "country": "Somaliland",
+        "type": "Somaliland House of Representatives",
         "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5066/"
+          "https://www.electionguide.org/elections/id/5072/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5066/"
+            "link": "https://www.electionguide.org/elections/id/5072/"
           }
         ]
       },
@@ -476,7 +476,7 @@
       {
         "date": "2026-06-02",
         "country": "United States",
-        "type": "California California , 1st congressional district , special election Long Beach , Mayor Los Angeles , Mayor , City Attorney , City Controller, and City Council Los Angeles County , Board of Supervisors , Sheriff, and Assessor",
+        "type": "California California , 1st congressional district , special election Long Beach , Mayor Los Angeles , Mayor (1st round), City Attorney (1st round), City Controller, and City Council (1st round) Los Angeles County , Board of Supervisors , Sheriff, and Assessor South Dakota , Sioux Falls , Mayor (1st round)",
         "status": "Held",
         "source_names": [
           "Wikipedia"
@@ -494,21 +494,15 @@
       {
         "date": "2026-06-03",
         "country": "South Korea",
-        "type": "2026 Nationwide Simultaneous Local Elections",
+        "type": "local elections National Assembly , 14 by-elections",
         "status": "Held",
         "source_names": [
-          "A-WEB",
           "Wikipedia"
         ],
         "links": [
-          "https://www.nec.go.kr/site/eng/ex/bbs/View.do?cbIdx=1270&bcIdx=304199",
           "https://en.wikipedia.org/wiki/Elections_in_South_Korea"
         ],
         "sources": [
-          {
-            "name": "A-WEB",
-            "link": "https://www.nec.go.kr/site/eng/ex/bbs/View.do?cbIdx=1270&bcIdx=304199"
-          },
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_South_Korea"
@@ -519,7 +513,7 @@
         "date": "2026-06-04",
         "country": "Mexico",
         "type": "Coahuila , Congress",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
@@ -530,6 +524,42 @@
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_Mexico"
+          }
+        ]
+      },
+      {
+        "date": "2026-06-07",
+        "country": "Armenia",
+        "type": "Armenian National Assembly",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5074/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5074/"
+          }
+        ]
+      },
+      {
+        "date": "2026-06-07",
+        "country": "Armenia",
+        "type": "2026 Parliamentary Election",
+        "status": "Upcoming",
+        "source_names": [
+          "A-WEB"
+        ],
+        "links": [
+          "https://www.1lurer.am/en/2025/06/07/Next-Parliamentary-elections-will-be-held-on-June-7-2026-Alen-Simonyan/1326754"
+        ],
+        "sources": [
+          {
+            "name": "A-WEB",
+            "link": "https://www.1lurer.am/en/2025/06/07/Next-Parliamentary-elections-will-be-held-on-June-7-2026-Alen-Simonyan/1326754"
           }
         ]
       },
@@ -572,42 +602,6 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5162/"
-          }
-        ]
-      },
-      {
-        "date": "2026-06-07",
-        "country": "Armenia",
-        "type": "Armenian National Assembly",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5074/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5074/"
-          }
-        ]
-      },
-      {
-        "date": "2026-06-07",
-        "country": "Armenia",
-        "type": "2026 Parliamentary Election",
-        "status": "Upcoming",
-        "source_names": [
-          "A-WEB"
-        ],
-        "links": [
-          "https://www.1lurer.am/en/2025/06/07/Next-Parliamentary-elections-will-be-held-on-June-7-2026-Alen-Simonyan/1326754"
-        ],
-        "sources": [
-          {
-            "name": "A-WEB",
-            "link": "https://www.1lurer.am/en/2025/06/07/Next-Parliamentary-elections-will-be-held-on-June-7-2026-Alen-Simonyan/1326754"
           }
         ]
       },
@@ -722,7 +716,7 @@
       {
         "date": "2026-06-23",
         "country": "Canada",
-        "type": "Nova Scotia , Chéticamp-Margarees-Pleasant Bay , by-election",
+        "type": "Nova Scotia , Chéticamp-Margarees-Pleasant Bay , by-election United States , South Dakota , Sioux Falls , Mayor (2nd round)",
         "status": "Upcoming",
         "source_names": [
           "Wikipedia"
