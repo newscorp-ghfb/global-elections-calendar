@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-08T00:24:25Z",
+  "generated_at": "2026-06-09T00:19:49Z",
   "current_month": "2026-06",
   "months": {
     "2026-05": [
@@ -95,24 +95,6 @@
       },
       {
         "date": "2026-05-10",
-        "country": "Lebanon",
-        "type": "Lebanese National Assembly",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5069/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5069/"
-          }
-        ]
-      },
-      {
-        "date": "2026-05-10",
         "country": "India",
         "type": "Haryana , Municipal Corporation",
         "status": "Held",
@@ -149,24 +131,6 @@
       },
       {
         "date": "2026-05-12",
-        "country": "Bahamas",
-        "type": "Bahaman House of Assembly",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5081/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5081/"
-          }
-        ]
-      },
-      {
-        "date": "2026-05-12",
         "country": "New Zealand",
         "type": "Dunedin , City Council by-election [ 7 ] United States Georgia , 177th House of Representatives district , special election (1st round) New Jersey , Newark , Mayor West Virginia , Supreme Court of Appeals",
         "status": "Held",
@@ -198,24 +162,6 @@
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_Australia"
-          }
-        ]
-      },
-      {
-        "date": "2026-05-17",
-        "country": "Cape Verde",
-        "type": "Cabo Verdean National Assembly",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5060/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5060/"
           }
         ]
       },
@@ -329,6 +275,24 @@
       },
       {
         "date": "2026-05-31",
+        "country": "Colombia",
+        "type": "Colombian Presidency",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5066/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5066/"
+          }
+        ]
+      },
+      {
+        "date": "2026-05-31",
         "country": "Somaliland",
         "type": "Somaliland House of Representatives",
         "status": "Held",
@@ -360,24 +324,6 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5156/"
-          }
-        ]
-      },
-      {
-        "date": "2026-05-31",
-        "country": "Colombia",
-        "type": "Colombian Presidency",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5066/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5066/"
           }
         ]
       },
@@ -511,24 +457,6 @@
       },
       {
         "date": "2026-06-07",
-        "country": "Armenia",
-        "type": "Armenian National Assembly",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5074/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5074/"
-          }
-        ]
-      },
-      {
-        "date": "2026-06-07",
         "country": "Kosovo",
         "type": "Kosovar Assembly",
         "status": "Held",
@@ -542,6 +470,24 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5162/"
+          }
+        ]
+      },
+      {
+        "date": "2026-06-07",
+        "country": "Armenia",
+        "type": "Armenian National Assembly",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5074/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5074/"
           }
         ]
       },
@@ -585,7 +531,7 @@
         "date": "2026-06-09",
         "country": "India",
         "type": "Uttarakhand , local elections United States Georgia , 177th House of Representatives district , special election (2nd round) Maine , 29th House of Representatives district, special election",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
