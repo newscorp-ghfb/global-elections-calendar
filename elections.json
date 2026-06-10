@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-09T00:19:49Z",
+  "generated_at": "2026-06-10T00:25:42Z",
   "current_month": "2026-06",
   "months": {
     "2026-05": [
@@ -583,19 +583,19 @@
       },
       {
         "date": "2026-06-18",
-        "country": "United Kingdom",
-        "type": "Aberdeen South , House of Commons by-election Arbroath and Broughty Ferry , House of Commons by-election Makerfield , House of Commons by-election",
+        "country": "",
+        "type": "Local election",
         "status": "Upcoming",
         "source_names": [
           "Wikipedia"
         ],
         "links": [
-          "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
+          "https://en.wikipedia.org/wiki/2026_local_electoral_calendar"
         ],
         "sources": [
           {
             "name": "Wikipedia",
-            "link": "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
+            "link": "https://en.wikipedia.org/wiki/2026_local_electoral_calendar"
           }
         ]
       },
@@ -605,15 +605,21 @@
         "type": "Colombian Presidency",
         "status": "Upcoming",
         "source_names": [
-          "ElectionGuide"
+          "ElectionGuide",
+          "A-WEB"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5195/"
+          "https://www.electionguide.org/elections/id/5195/",
+          "https://colombiaone.com/2026/05/28/colombia-presidential-elections-two-round-system/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5195/"
+          },
+          {
+            "name": "A-WEB",
+            "link": "https://colombiaone.com/2026/05/28/colombia-presidential-elections-two-round-system/"
           }
         ]
       },
