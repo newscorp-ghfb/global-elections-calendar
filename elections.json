@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-12T00:27:05Z",
+  "generated_at": "2026-06-13T00:27:36Z",
   "current_month": "2026-06",
   "months": {
     "2026-05": [
@@ -694,6 +694,42 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5076/"
+          }
+        ]
+      },
+      {
+        "date": "2026-07-04",
+        "country": "Slovakia",
+        "type": "Referendum",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5197/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5197/"
+          }
+        ]
+      },
+      {
+        "date": "2026-07-11",
+        "country": "Malaysia",
+        "type": "Johor , State Legislative Assembly",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Malaysia"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Malaysia"
           }
         ]
       },
