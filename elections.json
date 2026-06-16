@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-15T00:24:57Z",
+  "generated_at": "2026-06-16T00:31:36Z",
   "current_month": "2026-06",
   "months": {
     "2026-05": [
@@ -220,24 +220,6 @@
         ]
       },
       {
-        "date": "2026-05-24",
-        "country": "Cyprus",
-        "type": "Cypriot House of Representatives",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5067/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5067/"
-          }
-        ]
-      },
-      {
         "date": "2026-05-26",
         "country": "Punjab, India",
         "type": "local elections",
@@ -366,6 +348,60 @@
         ]
       },
       {
+        "date": "2026-06-01",
+        "country": "Colombia",
+        "type": "EU Election Observation Mission",
+        "status": "Held",
+        "source_names": [
+          "EEAS"
+        ],
+        "links": [
+          "https://www.eeas.europa.eu/eom-colombia-2026_en"
+        ],
+        "sources": [
+          {
+            "name": "EEAS",
+            "link": "https://www.eeas.europa.eu/eom-colombia-2026_en"
+          }
+        ]
+      },
+      {
+        "date": "2026-06-01",
+        "country": "Peru",
+        "type": "EU Election Observation Mission",
+        "status": "Held",
+        "source_names": [
+          "EEAS"
+        ],
+        "links": [
+          "https://www.eeas.europa.eu/eom-peru-2026_en"
+        ],
+        "sources": [
+          {
+            "name": "EEAS",
+            "link": "https://www.eeas.europa.eu/eom-peru-2026_en"
+          }
+        ]
+      },
+      {
+        "date": "2026-06-01",
+        "country": "Bangladesh",
+        "type": "EU Election Observation Mission",
+        "status": "Held",
+        "source_names": [
+          "EEAS"
+        ],
+        "links": [
+          "https://www.eeas.europa.eu/eom-bangladesh-2026"
+        ],
+        "sources": [
+          {
+            "name": "EEAS",
+            "link": "https://www.eeas.europa.eu/eom-bangladesh-2026"
+          }
+        ]
+      },
+      {
         "date": "2026-06-02",
         "country": "United States",
         "type": "California California , 1st congressional district , special election Long Beach , Mayor Los Angeles , Mayor (1st round), City Attorney (1st round), City Controller, and City Council (1st round) Los Angeles County , Board of Supervisors , Sheriff, and Assessor South Dakota , Sioux Falls , Mayor (1st round)",
@@ -421,24 +457,6 @@
       },
       {
         "date": "2026-06-07",
-        "country": "Armenia",
-        "type": "Armenian National Assembly",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5074/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5074/"
-          }
-        ]
-      },
-      {
-        "date": "2026-06-07",
         "country": "Peru",
         "type": "Peruvian Presidency",
         "status": "Held",
@@ -452,6 +470,24 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5159/"
+          }
+        ]
+      },
+      {
+        "date": "2026-06-07",
+        "country": "Armenia",
+        "type": "Armenian National Assembly",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5074/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5074/"
           }
         ]
       },
@@ -513,7 +549,7 @@
         "date": "2026-06-16",
         "country": "United States",
         "type": "California , 14th congressional district , special election District of Columbia , at-large, special election Georgia , 7th Senate district , special election (2nd round) Oklahoma , ballot measure",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
