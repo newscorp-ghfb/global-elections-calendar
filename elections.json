@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-17T00:27:03Z",
+  "generated_at": "2026-06-18T00:27:43Z",
   "current_month": "2026-06",
   "months": {
     "2026-05": [
@@ -548,7 +548,7 @@
       {
         "date": "2026-06-16",
         "country": "United States",
-        "type": "California , 14th congressional district , special election District of Columbia , at-large, special election Georgia , 7th Senate district , special election (2nd round) Oklahoma , ballot measure",
+        "type": "California , 14th congressional district , special election (1st round) District of Columbia , at-large, special election Georgia , 7th Senate district , special election (2nd round) Oklahoma , ballot measure",
         "status": "Held",
         "source_names": [
           "Wikipedia"
@@ -567,7 +567,7 @@
         "date": "2026-06-18",
         "country": "India",
         "type": "Bihar , Legislative Council Karnataka , Legislative Council Maharashtra , Legislative Council United Kingdom Aberdeen South , House of Commons by-election Arbroath and Broughty Ferry , House of Commons by-election Makerfield , House of Commons by-election",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
@@ -712,6 +712,24 @@
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_Malaysia"
+          }
+        ]
+      },
+      {
+        "date": "2026-07-13",
+        "country": "Canada",
+        "type": "Prince Edward Island , Cornwall-Meadowbank , by-election",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Canada"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Canada"
           }
         ]
       },
