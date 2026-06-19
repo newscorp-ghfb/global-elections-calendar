@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-18T00:27:43Z",
+  "generated_at": "2026-06-19T00:30:48Z",
   "current_month": "2026-06",
   "months": {
     "2026-05": [
@@ -565,19 +565,19 @@
       },
       {
         "date": "2026-06-18",
-        "country": "India",
-        "type": "Bihar , Legislative Council Karnataka , Legislative Council Maharashtra , Legislative Council United Kingdom Aberdeen South , House of Commons by-election Arbroath and Broughty Ferry , House of Commons by-election Makerfield , House of Commons by-election",
+        "country": "United Kingdom",
+        "type": "Aberdeen South , House of Commons by-election Arbroath and Broughty Ferry , House of Commons by-election Makerfield , House of Commons by-election",
         "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
         "links": [
-          "https://en.wikipedia.org/wiki/Elections_in_India"
+          "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
         ],
         "sources": [
           {
             "name": "Wikipedia",
-            "link": "https://en.wikipedia.org/wiki/Elections_in_India"
+            "link": "https://en.wikipedia.org/wiki/Elections_in_the_United_Kingdom"
           }
         ]
       },
