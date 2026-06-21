@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-20T00:23:13Z",
+  "generated_at": "2026-06-21T00:24:14Z",
   "current_month": "2026-06",
   "months": {
     "2026-05": [
@@ -585,7 +585,7 @@
         "date": "2026-06-21",
         "country": "Colombia",
         "type": "Colombian Presidency",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide",
           "A-WEB"
