@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-21T00:24:14Z",
+  "generated_at": "2026-06-22T00:24:42Z",
   "current_month": "2026-06",
   "months": {
     "2026-05": [
@@ -348,60 +348,6 @@
         ]
       },
       {
-        "date": "2026-06-01",
-        "country": "Colombia",
-        "type": "EU Election Observation Mission",
-        "status": "Held",
-        "source_names": [
-          "EEAS"
-        ],
-        "links": [
-          "https://www.eeas.europa.eu/eom-colombia-2026_en"
-        ],
-        "sources": [
-          {
-            "name": "EEAS",
-            "link": "https://www.eeas.europa.eu/eom-colombia-2026_en"
-          }
-        ]
-      },
-      {
-        "date": "2026-06-01",
-        "country": "Peru",
-        "type": "EU Election Observation Mission",
-        "status": "Held",
-        "source_names": [
-          "EEAS"
-        ],
-        "links": [
-          "https://www.eeas.europa.eu/eom-peru-2026_en"
-        ],
-        "sources": [
-          {
-            "name": "EEAS",
-            "link": "https://www.eeas.europa.eu/eom-peru-2026_en"
-          }
-        ]
-      },
-      {
-        "date": "2026-06-01",
-        "country": "Bangladesh",
-        "type": "EU Election Observation Mission",
-        "status": "Held",
-        "source_names": [
-          "EEAS"
-        ],
-        "links": [
-          "https://www.eeas.europa.eu/eom-bangladesh-2026"
-        ],
-        "sources": [
-          {
-            "name": "EEAS",
-            "link": "https://www.eeas.europa.eu/eom-bangladesh-2026"
-          }
-        ]
-      },
-      {
         "date": "2026-06-02",
         "country": "United States",
         "type": "California California , 1st congressional district , special election Long Beach , Mayor Los Angeles , Mayor (1st round), City Attorney (1st round), City Controller, and City Council (1st round) Los Angeles County , Board of Supervisors , Sheriff (1st round), and Assessor South Dakota , Sioux Falls , Mayor (1st round)",
@@ -587,21 +533,15 @@
         "type": "Colombian Presidency",
         "status": "Held",
         "source_names": [
-          "ElectionGuide",
-          "A-WEB"
+          "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5195/",
-          "https://colombiaone.com/2026/05/28/colombia-presidential-elections-two-round-system/"
+          "https://www.electionguide.org/elections/id/5195/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5195/"
-          },
-          {
-            "name": "A-WEB",
-            "link": "https://colombiaone.com/2026/05/28/colombia-presidential-elections-two-round-system/"
           }
         ]
       },
