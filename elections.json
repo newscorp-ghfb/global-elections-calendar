@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-22T00:24:42Z",
+  "generated_at": "2026-06-23T00:23:44Z",
   "current_month": "2026-06",
   "months": {
     "2026-05": [
@@ -238,24 +238,6 @@
         ]
       },
       {
-        "date": "2026-05-30",
-        "country": "Malta",
-        "type": "Maltese House of Representatives",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5161/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5161/"
-          }
-        ]
-      },
-      {
         "date": "2026-05-31",
         "country": "Colombia",
         "type": "Colombian Presidency",
@@ -403,24 +385,6 @@
       },
       {
         "date": "2026-06-07",
-        "country": "Peru",
-        "type": "Peruvian Presidency",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5159/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5159/"
-          }
-        ]
-      },
-      {
-        "date": "2026-06-07",
         "country": "Armenia",
         "type": "Armenian National Assembly",
         "status": "Held",
@@ -434,6 +398,24 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5074/"
+          }
+        ]
+      },
+      {
+        "date": "2026-06-07",
+        "country": "Peru",
+        "type": "Peruvian Presidency",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5159/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5159/"
           }
         ]
       },
@@ -549,7 +531,7 @@
         "date": "2026-06-23",
         "country": "Canada",
         "type": "Nova Scotia , Chéticamp-Margarees-Pleasant Bay , by-election United States , South Dakota , Sioux Falls , Mayor (2nd round)",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
