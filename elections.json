@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-18T00:15:52Z",
+  "generated_at": "2026-07-19T00:16:07Z",
   "current_month": "2026-07",
   "months": {
     "2026-06": [
@@ -495,7 +495,7 @@
         "date": "2026-07-19",
         "country": "Sao Tome and Principe",
         "type": "Sao Tomean Presidency",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
