@@ -1,26 +1,8 @@
 {
-  "generated_at": "2026-07-20T00:18:23Z",
+  "generated_at": "2026-07-21T00:17:37Z",
   "current_month": "2026-07",
   "months": {
     "2026-06": [
-      {
-        "date": "2026-06-01",
-        "country": "Ethiopia",
-        "type": "Ethiopian House of People's Representatives",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5073/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5073/"
-          }
-        ]
-      },
       {
         "date": "2026-06-02",
         "country": "United States",
@@ -513,7 +495,7 @@
         "date": "2026-07-21",
         "country": "Canada",
         "type": "Manitoba , The Pas-Kameesak , by-election",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
@@ -622,18 +604,18 @@
       {
         "date": "2026-08-13",
         "country": "Zambia",
-        "type": "Zambian Presidency",
+        "type": "Zambian National Assembly",
         "status": "Upcoming",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5077/"
+          "https://www.electionguide.org/elections/id/5078/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5077/"
+            "link": "https://www.electionguide.org/elections/id/5078/"
           }
         ]
       },
@@ -766,18 +748,18 @@
       {
         "date": "2026-08-30",
         "country": "Haiti",
-        "type": "Haitian Senate",
+        "type": "Haitian Presidency",
         "status": "Upcoming",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/4665/"
+          "https://www.electionguide.org/elections/id/4663/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/4665/"
+            "link": "https://www.electionguide.org/elections/id/4663/"
           }
         ]
       },
