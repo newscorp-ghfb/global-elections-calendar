@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-30T00:17:23Z",
+  "generated_at": "2026-07-31T00:19:01Z",
   "current_month": "2026-07",
   "months": {
     "2026-06": [
@@ -832,24 +832,6 @@
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_the_Philippines"
-          }
-        ]
-      },
-      {
-        "date": "2026-08-30",
-        "country": "Haiti",
-        "type": "Haitian Chamber of Deputies",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/4664/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/4664/"
           }
         ]
       },
