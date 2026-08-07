@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-06T00:16:16Z",
+  "generated_at": "2026-08-07T01:05:22Z",
   "current_month": "2026-08",
   "months": {
     "2026-07": [
@@ -240,6 +240,96 @@
         ]
       },
       {
+        "date": "2026-08-01",
+        "country": "Colombia",
+        "type": "EU Election Observation Mission",
+        "status": "Held",
+        "source_names": [
+          "EEAS"
+        ],
+        "links": [
+          "https://www.eeas.europa.eu/eom-colombia-2026_en"
+        ],
+        "sources": [
+          {
+            "name": "EEAS",
+            "link": "https://www.eeas.europa.eu/eom-colombia-2026_en"
+          }
+        ]
+      },
+      {
+        "date": "2026-08-01",
+        "country": "Peru",
+        "type": "EU Election Observation Mission",
+        "status": "Held",
+        "source_names": [
+          "EEAS"
+        ],
+        "links": [
+          "https://www.eeas.europa.eu/eom-peru-2026_en"
+        ],
+        "sources": [
+          {
+            "name": "EEAS",
+            "link": "https://www.eeas.europa.eu/eom-peru-2026_en"
+          }
+        ]
+      },
+      {
+        "date": "2026-08-01",
+        "country": "Bangladesh",
+        "type": "EU Election Observation Mission",
+        "status": "Held",
+        "source_names": [
+          "EEAS"
+        ],
+        "links": [
+          "https://www.eeas.europa.eu/eom-bangladesh-2026"
+        ],
+        "sources": [
+          {
+            "name": "EEAS",
+            "link": "https://www.eeas.europa.eu/eom-bangladesh-2026"
+          }
+        ]
+      },
+      {
+        "date": "2026-08-01",
+        "country": "Zambia",
+        "type": "EU Election Observation Mission",
+        "status": "Held",
+        "source_names": [
+          "EEAS"
+        ],
+        "links": [
+          "https://www.eeas.europa.eu/eom-zambia-2026_en"
+        ],
+        "sources": [
+          {
+            "name": "EEAS",
+            "link": "https://www.eeas.europa.eu/eom-zambia-2026_en"
+          }
+        ]
+      },
+      {
+        "date": "2026-08-01",
+        "country": "São Tomé e Príncipe",
+        "type": "EU Election Observation Mission",
+        "status": "Held",
+        "source_names": [
+          "EEAS"
+        ],
+        "links": [
+          "https://www.eeas.europa.eu/eom-sao-tome-e-principe-2026_en"
+        ],
+        "sources": [
+          {
+            "name": "EEAS",
+            "link": "https://www.eeas.europa.eu/eom-sao-tome-e-principe-2026_en"
+          }
+        ]
+      },
+      {
         "date": "2026-08-02",
         "country": "Pakistan",
         "type": "Azad Kashmir , Legislative Assembly (second phase)",
@@ -260,7 +350,7 @@
       {
         "date": "2026-08-04",
         "country": "United States",
-        "type": "Kansas , amendment Michigan , Flint , Mayor Missouri , amendments",
+        "type": "Arkansas , 44th House of Representatives district, special election Kansas , amendment Michigan , Flint , Mayor Missouri , amendments",
         "status": "Held",
         "source_names": [
           "Wikipedia"
