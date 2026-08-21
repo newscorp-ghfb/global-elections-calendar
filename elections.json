@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-20T00:03:06Z",
+  "generated_at": "2026-08-21T00:03:47Z",
   "current_month": "2026-08",
   "months": {
     "2026-07": [
@@ -494,7 +494,7 @@
       {
         "date": "2026-08-18",
         "country": "United States",
-        "type": "California , 14th congressional district , special election (2nd round) Florida St. Petersburg , Mayor Tallahassee , Mayor Pennsylvania , 12th House of Representatives district , special election",
+        "type": "California , 14th congressional district , special election (2nd round) Florida St. Petersburg , Mayor (1st round) Tallahassee , Mayor (1st round) Pennsylvania , 12th House of Representatives district , special election",
         "status": "Held",
         "source_names": [
           "Wikipedia"
@@ -513,7 +513,7 @@
         "date": "2026-08-21",
         "country": "New Zealand",
         "type": "Greater Wellington , Wairarapa , by-election",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
