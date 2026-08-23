@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-22T00:03:14Z",
+  "generated_at": "2026-08-23T00:02:28Z",
   "current_month": "2026-08",
   "months": {
     "2026-07": [
@@ -531,7 +531,7 @@
         "date": "2026-08-23",
         "country": "Kazakhstan",
         "type": "Kazakh National Congress",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
@@ -796,6 +796,24 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5084/"
+          }
+        ]
+      },
+      {
+        "date": "2026-09-18",
+        "country": "Samoa",
+        "type": "[ 9 ] Falealili 1, Legislative Assembly by-election Vaimauga 3, Legislative Assembly by-election",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Samoa"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Samoa"
           }
         ]
       },
