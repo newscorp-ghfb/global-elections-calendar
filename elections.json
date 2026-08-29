@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-28T02:29:07Z",
+  "generated_at": "2026-08-29T00:02:20Z",
   "current_month": "2026-08",
   "months": {
     "2026-07": [
@@ -567,7 +567,7 @@
         "date": "2026-08-29",
         "country": "Iceland",
         "type": "Referendum",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
@@ -585,7 +585,7 @@
         "date": "2026-08-29",
         "country": "Philippines",
         "type": "Cavite , 4th congressional district , special election Australia , Western Australia , Secret Harbour by-election",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
