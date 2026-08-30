@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-29T00:02:20Z",
+  "generated_at": "2026-08-30T00:03:02Z",
   "current_month": "2026-08",
   "months": {
     "2026-07": [
@@ -603,7 +603,7 @@
         "date": "2026-08-30",
         "country": "Guinea-Bissau",
         "type": "Referendum",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
@@ -621,7 +621,7 @@
         "date": "2026-08-30",
         "country": "Haiti",
         "type": "2026 General Election(first round)",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "A-WEB"
         ],
@@ -639,7 +639,7 @@
         "date": "2026-08-30",
         "country": "Japan",
         "type": "Kagawa Prefecture , Governor",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
