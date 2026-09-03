@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-02T00:02:54Z",
+  "generated_at": "2026-09-03T00:02:42Z",
   "current_month": "2026-09",
   "months": {
     "2026-08": [
@@ -441,7 +441,7 @@
         "date": "2026-09-03",
         "country": "Canada",
         "type": "Ontario Hamilton East—Stoney Creek , by-election York—Simcoe , by-election Scarborough Southwest , by-election",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
