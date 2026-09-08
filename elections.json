@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-07T00:02:36Z",
+  "generated_at": "2026-09-08T00:02:35Z",
   "current_month": "2026-09",
   "months": {
     "2026-08": [
@@ -790,24 +790,6 @@
           {
             "name": "A-WEB",
             "link": "https://www.ifri.org/en/memos/brazil-one-year-away-october-2026-general-elections"
-          }
-        ]
-      },
-      {
-        "date": "2026-10-04",
-        "country": "Bosnia and Herzegovina",
-        "type": "Bosnia and Herzegovina House of Representatives",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5096/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5096/"
           }
         ]
       },
