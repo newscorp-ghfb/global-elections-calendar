@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-08T00:02:35Z",
+  "generated_at": "2026-09-09T00:02:34Z",
   "current_month": "2026-09",
   "months": {
     "2026-08": [
@@ -548,7 +548,7 @@
       {
         "date": "2026-09-18",
         "country": "Russia",
-        "type": "Russian Federal Duma",
+        "type": "Russian State Duma",
         "status": "Upcoming",
         "source_names": [
           "ElectionGuide"
