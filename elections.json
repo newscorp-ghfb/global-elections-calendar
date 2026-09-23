@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-22T00:02:40Z",
+  "generated_at": "2026-09-23T00:03:15Z",
   "current_month": "2026-09",
   "months": {
     "2026-08": [
@@ -132,18 +132,18 @@
       {
         "date": "2026-08-13",
         "country": "Zambia",
-        "type": "Zambian Presidency",
+        "type": "Zambian National Assembly",
         "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5077/"
+          "https://www.electionguide.org/elections/id/5078/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5077/"
+            "link": "https://www.electionguide.org/elections/id/5078/"
           }
         ]
       },
@@ -603,7 +603,7 @@
         "date": "2026-09-23",
         "country": "Morocco",
         "type": "Moroccan Chamber of Representatives",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
@@ -614,24 +614,6 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5083/"
-          }
-        ]
-      },
-      {
-        "date": "2026-09-26",
-        "country": "Canada",
-        "type": "British Columbia , Abbotsford-Mission , by-election",
-        "status": "Upcoming",
-        "source_names": [
-          "Wikipedia"
-        ],
-        "links": [
-          "https://en.wikipedia.org/wiki/Elections_in_Canada"
-        ],
-        "sources": [
-          {
-            "name": "Wikipedia",
-            "link": "https://en.wikipedia.org/wiki/Elections_in_Canada"
           }
         ]
       },
@@ -885,19 +867,19 @@
       },
       {
         "date": "2026-10-24",
-        "country": "Slovakia",
-        "type": "regional and local elections",
+        "country": "Canada",
+        "type": "British Columbia , Legislative Assembly Slovakia , regional and local elections",
         "status": "Upcoming",
         "source_names": [
           "Wikipedia"
         ],
         "links": [
-          "https://en.wikipedia.org/wiki/Elections_in_Slovakia"
+          "https://en.wikipedia.org/wiki/Elections_in_Canada"
         ],
         "sources": [
           {
             "name": "Wikipedia",
-            "link": "https://en.wikipedia.org/wiki/Elections_in_Slovakia"
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Canada"
           }
         ]
       },
