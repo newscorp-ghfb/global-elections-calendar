@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-24T00:02:14Z",
+  "generated_at": "2026-09-25T00:02:52Z",
   "current_month": "2026-09",
   "months": {
     "2026-08": [
@@ -700,24 +700,42 @@
       {
         "date": "2026-10-04",
         "country": "Brazil",
-        "type": "Brazilian Presidency",
+        "type": "Brazilian Federal Senate",
         "status": "Upcoming",
         "source_names": [
           "ElectionGuide",
           "Wikipedia"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5091/",
+          "https://www.electionguide.org/elections/id/5089/",
           "https://en.wikipedia.org/wiki/Elections_in_Brazil"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5091/"
+            "link": "https://www.electionguide.org/elections/id/5089/"
           },
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_Brazil"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-04",
+        "country": "Brazil",
+        "type": "Brazilian Chamber of Deputies",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5090/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5090/"
           }
         ]
       },
@@ -808,6 +826,24 @@
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_Tonga"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-09",
+        "country": "Czech Republic",
+        "type": "Czech Senate",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5082/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5082/"
           }
         ]
       },
