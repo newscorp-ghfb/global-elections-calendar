@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-28T00:02:56Z",
+  "generated_at": "2026-09-29T00:03:16Z",
   "current_month": "2026-09",
   "months": {
     "2026-08": [
@@ -108,24 +108,6 @@
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Pakistan"
-          }
-        ]
-      },
-      {
-        "date": "2026-08-12",
-        "country": "Cook Islands",
-        "type": "Cook Islands Parliament",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5196/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5196/"
           }
         ]
       },
@@ -760,18 +742,18 @@
       {
         "date": "2026-10-04",
         "country": "Bosnia and Herzegovina",
-        "type": "Bosnia and Herzegovina Presidency",
+        "type": "Bosnia and Herzegovina House of Representatives",
         "status": "Upcoming",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5095/"
+          "https://www.electionguide.org/elections/id/5096/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5095/"
+            "link": "https://www.electionguide.org/elections/id/5096/"
           }
         ]
       },
@@ -844,6 +826,24 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5082/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-11",
+        "country": "Poland",
+        "type": "Kraków , mayoral election (2nd round)",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Poland"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Poland"
           }
         ]
       },
@@ -921,6 +921,42 @@
       },
       {
         "date": "2026-10-25",
+        "country": "Serbia",
+        "type": "Serbian National Assembly",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5252/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5252/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-25",
+        "country": "Bulgaria",
+        "type": "Bulgarian Presidency",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5101/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5101/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-25",
         "country": "Brazil",
         "type": "2026 General Elections (2nd round)",
         "status": "Upcoming",
@@ -934,6 +970,24 @@
           {
             "name": "A-WEB",
             "link": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-25",
+        "country": "Japan",
+        "type": "Fukushima , Governor",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Japan"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Japan"
           }
         ]
       },
