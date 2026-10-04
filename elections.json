@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-03T00:02:36Z",
+  "generated_at": "2026-10-04T00:48:06Z",
   "current_month": "2026-10",
   "months": {
     "2026-09": [
@@ -335,21 +335,15 @@
         "type": "Latvian Parliament",
         "status": "Held",
         "source_names": [
-          "ElectionGuide",
-          "A-WEB"
+          "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5087/",
-          "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052"
+          "https://www.electionguide.org/elections/id/5087/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5087/"
-          },
-          {
-            "name": "A-WEB",
-            "link": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052"
           }
         ]
       },
@@ -357,7 +351,7 @@
         "date": "2026-10-04",
         "country": "Brazil",
         "type": "Brazilian Federal Senate",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide",
           "Wikipedia"
@@ -381,7 +375,7 @@
         "date": "2026-10-04",
         "country": "Brazil",
         "type": "Brazilian Chamber of Deputies",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
@@ -399,7 +393,7 @@
         "date": "2026-10-04",
         "country": "Brazil",
         "type": "2026 General Elections (first round)",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "A-WEB"
         ],
@@ -417,7 +411,7 @@
         "date": "2026-10-04",
         "country": "Bosnia and Herzegovina",
         "type": "Bosnia and Herzegovina House of Representatives",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
@@ -435,7 +429,7 @@
         "date": "2026-10-04",
         "country": "Bosnia and Herzegovina",
         "type": "2026 General Election",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "A-WEB"
         ],
@@ -868,7 +862,7 @@
       {
         "date": "2026-11-28",
         "country": "Australia",
-        "type": "Victoria , Legislative Assembly Taiwan , local elections",
+        "type": "Victoria , Legislative Assembly Philippines , Batanes , at-large congressional district , special election Taiwan , local elections",
         "status": "Upcoming",
         "source_names": [
           "Wikipedia"
