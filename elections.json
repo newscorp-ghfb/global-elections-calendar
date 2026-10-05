@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-04T00:48:06Z",
+  "generated_at": "2026-10-05T00:03:04Z",
   "current_month": "2026-10",
   "months": {
     "2026-09": [
@@ -185,24 +185,6 @@
       },
       {
         "date": "2026-09-27",
-        "country": "Sao Tome and Principe",
-        "type": "Sao Tomean National Assembly",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5086/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5086/"
-          }
-        ]
-      },
-      {
-        "date": "2026-09-27",
         "country": "Switzerland",
         "type": "Referendum",
         "status": "Held",
@@ -216,6 +198,24 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5080/"
+          }
+        ]
+      },
+      {
+        "date": "2026-09-27",
+        "country": "Sao Tome and Principe",
+        "type": "Sao Tomean National Assembly",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5086/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5086/"
           }
         ]
       },
@@ -349,6 +349,24 @@
       },
       {
         "date": "2026-10-04",
+        "country": "Bosnia and Herzegovina",
+        "type": "Bosnia and Herzegovina Presidency",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5095/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5095/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-04",
         "country": "Brazil",
         "type": "Brazilian Federal Senate",
         "status": "Held",
@@ -390,64 +408,10 @@
         ]
       },
       {
-        "date": "2026-10-04",
-        "country": "Brazil",
-        "type": "2026 General Elections (first round)",
-        "status": "Held",
-        "source_names": [
-          "A-WEB"
-        ],
-        "links": [
-          "https://www.ifri.org/en/memos/brazil-one-year-away-october-2026-general-elections"
-        ],
-        "sources": [
-          {
-            "name": "A-WEB",
-            "link": "https://www.ifri.org/en/memos/brazil-one-year-away-october-2026-general-elections"
-          }
-        ]
-      },
-      {
-        "date": "2026-10-04",
-        "country": "Bosnia and Herzegovina",
-        "type": "Bosnia and Herzegovina House of Representatives",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5096/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5096/"
-          }
-        ]
-      },
-      {
-        "date": "2026-10-04",
-        "country": "Bosnia and Herzegovina",
-        "type": "2026 General Election",
-        "status": "Held",
-        "source_names": [
-          "A-WEB"
-        ],
-        "links": [
-          "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052"
-        ],
-        "sources": [
-          {
-            "name": "A-WEB",
-            "link": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052"
-          }
-        ]
-      },
-      {
         "date": "2026-10-05",
         "country": "Canada",
         "type": "Quebec , National Assembly",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
@@ -620,6 +584,24 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5252/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-25",
+        "country": "Bulgaria",
+        "type": "Bulgarian Presidency",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5101/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5101/"
           }
         ]
       },
