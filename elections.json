@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-07T00:02:49Z",
+  "generated_at": "2026-10-08T00:02:34Z",
   "current_month": "2026-10",
   "months": {
     "2026-09": [
@@ -393,7 +393,7 @@
         "date": "2026-10-08",
         "country": "Tonga",
         "type": "[ 12 ] Niua 17 , Legislative Assembly by-election Tongatapu 2 , Legislative Assembly by-election United Kingdom , Holborn and St Pancras , House of Commons by-election",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
@@ -535,24 +535,6 @@
       },
       {
         "date": "2026-10-25",
-        "country": "Bulgaria",
-        "type": "Bulgarian Presidency",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5101/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5101/"
-          }
-        ]
-      },
-      {
-        "date": "2026-10-25",
         "country": "Serbia",
         "type": "Serbian National Assembly",
         "status": "Upcoming",
@@ -566,6 +548,24 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5252/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-25",
+        "country": "Bulgaria",
+        "type": "Bulgarian Presidency",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5101/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5101/"
           }
         ]
       },
@@ -626,7 +626,7 @@
       {
         "date": "2026-10-26",
         "country": "Canada",
-        "type": "Ontario , municipal elections Hamilton , municipal elections Ottawa , municipal elections Toronto , municipal elections",
+        "type": "Ontario , municipal elections Hamilton , municipal elections Ottawa , municipal elections York Region municipal elections Toronto , municipal elections",
         "status": "Upcoming",
         "source_names": [
           "Wikipedia"
@@ -717,6 +717,24 @@
       },
       {
         "date": "2026-11-03",
+        "country": "Northern Mariana Islands",
+        "type": "Northern Mariana Islands Governor",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5105/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5105/"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-03",
         "country": "United States",
         "type": "US Senate",
         "status": "Upcoming",
@@ -748,24 +766,6 @@
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_the_United_States"
-          }
-        ]
-      },
-      {
-        "date": "2026-11-03",
-        "country": "Northern Mariana Islands",
-        "type": "Northern Mariana Islands Governor",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5105/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5105/"
           }
         ]
       },
