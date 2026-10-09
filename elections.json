@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-08T00:02:34Z",
+  "generated_at": "2026-10-09T00:02:50Z",
   "current_month": "2026-10",
   "months": {
     "2026-09": [
@@ -411,7 +411,7 @@
         "date": "2026-10-09",
         "country": "Czech Republic",
         "type": "Czech Senate",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
@@ -553,24 +553,6 @@
       },
       {
         "date": "2026-10-25",
-        "country": "Bulgaria",
-        "type": "Bulgarian Presidency",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5101/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5101/"
-          }
-        ]
-      },
-      {
-        "date": "2026-10-25",
         "country": "Brazil",
         "type": "Brazilian Presidency",
         "status": "Upcoming",
@@ -602,6 +584,24 @@
           {
             "name": "A-WEB",
             "link": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-25",
+        "country": "Bulgaria",
+        "type": "Bulgarian Presidency",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5101/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5101/"
           }
         ]
       },
@@ -717,6 +717,24 @@
       },
       {
         "date": "2026-11-03",
+        "country": "American Samoa",
+        "type": "American Samoan House of Representatives",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5214/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5214/"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-03",
         "country": "Northern Mariana Islands",
         "type": "Northern Mariana Islands Governor",
         "status": "Upcoming",
@@ -766,24 +784,6 @@
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_the_United_States"
-          }
-        ]
-      },
-      {
-        "date": "2026-11-03",
-        "country": "American Samoa",
-        "type": "American Samoan House of Representatives",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5214/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5214/"
           }
         ]
       },
