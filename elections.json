@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-11T00:03:04Z",
+  "generated_at": "2026-10-12T00:03:04Z",
   "current_month": "2026-10",
   "months": {
     "2026-09": [
@@ -126,24 +126,6 @@
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_Germany"
-          }
-        ]
-      },
-      {
-        "date": "2026-09-23",
-        "country": "Morocco",
-        "type": "Moroccan Chamber of Representatives",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5083/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5083/"
           }
         ]
       },
@@ -313,39 +295,21 @@
       },
       {
         "date": "2026-10-04",
-        "country": "Bosnia and Herzegovina",
-        "type": "Bosnia and Herzegovina House of Representatives",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5096/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5096/"
-          }
-        ]
-      },
-      {
-        "date": "2026-10-04",
         "country": "Brazil",
-        "type": "Brazilian Federal Senate",
+        "type": "Brazilian Presidency",
         "status": "Held",
         "source_names": [
           "ElectionGuide",
           "Wikipedia"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5089/",
+          "https://www.electionguide.org/elections/id/5091/",
           "https://en.wikipedia.org/wiki/Elections_in_Brazil"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5089/"
+            "link": "https://www.electionguide.org/elections/id/5091/"
           },
           {
             "name": "Wikipedia",
@@ -355,19 +319,19 @@
       },
       {
         "date": "2026-10-04",
-        "country": "Brazil",
-        "type": "Brazilian Chamber of Deputies",
+        "country": "Bosnia and Herzegovina",
+        "type": "Bosnia and Herzegovina Presidency",
         "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5090/"
+          "https://www.electionguide.org/elections/id/5095/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5090/"
+            "link": "https://www.electionguide.org/elections/id/5095/"
           }
         ]
       },
@@ -535,19 +499,19 @@
       },
       {
         "date": "2026-10-25",
-        "country": "Serbia",
-        "type": "Serbian National Assembly",
+        "country": "Bulgaria",
+        "type": "Bulgarian Presidency",
         "status": "Upcoming",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5252/"
+          "https://www.electionguide.org/elections/id/5101/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5252/"
+            "link": "https://www.electionguide.org/elections/id/5101/"
           }
         ]
       },
@@ -589,19 +553,19 @@
       },
       {
         "date": "2026-10-25",
-        "country": "Bulgaria",
-        "type": "Bulgarian Presidency",
+        "country": "Serbia",
+        "type": "Serbian National Assembly",
         "status": "Upcoming",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5101/"
+          "https://www.electionguide.org/elections/id/5252/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5101/"
+            "link": "https://www.electionguide.org/elections/id/5252/"
           }
         ]
       },
@@ -826,18 +790,18 @@
       {
         "date": "2026-11-08",
         "country": "Lithuania",
-        "type": "Northern Nalšia by-election",
+        "type": "Northern Nalšia, Seimas by-election",
         "status": "Upcoming",
         "source_names": [
           "Wikipedia"
         ],
         "links": [
-          "https://en.wikipedia.org/wiki/Lithuania"
+          "https://en.wikipedia.org/wiki/Elections_in_Lithuania"
         ],
         "sources": [
           {
             "name": "Wikipedia",
-            "link": "https://en.wikipedia.org/wiki/Lithuania"
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Lithuania"
           }
         ]
       },
