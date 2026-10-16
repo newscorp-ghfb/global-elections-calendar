@@ -41,6 +41,10 @@ Each later plan is written when the previous one has landed, against the code as
 **Not in this plan:** no change to `scraper.py`, `elections.json`, `.github/workflows/` or
 `extension/`; nothing is pushed or merged; no network access except `pip install`.
 
+**v1 is unaffected:** Task 1 replaces `requirements.txt`, which v1's workflow installs, but
+that workflow's schedule runs only on `main`, and Plan 5 replaces the workflow before anything
+is merged. So this plan needs no v1 smoke test.
+
 ## Global Constraints
 
 - Python 3.14 locally and in CI (D11): `requires-python = ">=3.14,<3.15"`. O5 (wheels) is
@@ -68,7 +72,8 @@ Each later plan is written when the previous one has landed, against the code as
   lists `elections_calendar`, `scripts`, `tests`), never `mypy .`. "Not a gate: `ruff format`."
 - Mutation checks (D9, §13.4): one per new test; the task's files are `git add`ed first, each
   mutation is restored with `git checkout -- <file>` plus `git diff --exit-code -- <file>`,
-  with `PYTHONDONTWRITEBYTECODE=1`.
+  with `PYTHONDONTWRITEBYTECODE=1`. Every listed test passes before mutating, and only a real
+  test failure counts as a kill (C16).
 - Git: commit only on `feat/never-miss-v2`, after checking `git rev-parse --abbrev-ref HEAD`
   in its own shell call; never push, merge or touch `main` (D10, D12); every commit message
   ends with `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
@@ -80,40 +85,62 @@ Each later plan is written when the previous one has landed, against the code as
 The five inputs most likely to hurt a user that the spec implies but does not spell out. Each
 is pinned by the tests named here, in the task that owns the code:
 
-1. **Unicode look-alikes in real page text** (non-breaking spaces, en/em/figure dashes, the
-   minus sign, non-breaking hyphens, accented names): parsed exactly like their ASCII forms,
-   never as leftover. Pinned by `test_nbsp_and_em_dash_are_normalised` and `test_day_ranges`
-   (Task 4), `test_norm_name` (Task 2), `test_real_source_spellings_resolve` and
-   `test_empty_country_text_resolves_to_nothing` (Task 5).
-2. **Impossible dates and reversed ranges** (`31 Sep 2026`, `29 Feb 2027`, `2026-02-30`,
-   `20 Sep – 18 Sep 2026`): never a date; the text stays as leftover so the unit becomes
-   partial, not dropped. Pinned by `test_unparseable_text_is_leftover_never_dropped` (Task 4)
-   and `test_invalid_spans_are_rejected` (Task 2).
-3. **Ranges that cross a year with no start year** (`30 December – 2 January` on the 2026
-   page, `24 December – 6 February 2027`): the start falls in the earlier year. Pinned by
-   `test_day_ranges` (Task 4).
-4. **A naive or non-UTC "now"**: a naive time is refused; an aware time is converted to the
-   UTC civil date, so 23:30 on 31 Oct in New York is a November window. Pinned by
+1. **Names in any script, and look-alike characters** (non-breaking spaces, en/em/figure
+   dashes, the minus sign, curly apostrophes and the okina, accented letters, Japanese,
+   Cyrillic or Devanagari names): look-alikes parse like their plain forms; different names
+   stay different and never shrink to an empty key. Pinned by
+   `test_nbsp_and_em_dash_are_normalised` and `test_day_ranges` (Task 4), `test_norm_name`
+   (Task 2), `test_real_source_spellings_resolve`, `test_unregistered_names_keep_their_distinctions`
+   and `test_empty_country_text_resolves_to_nothing` (Task 5).
+2. **Impossible, reversed, year-crossing and out-of-range dates** (`31 Sep 2026`,
+   `29 Feb 2027`, `20 Sep – 18 Sep 2026`, `30 December – 2 January` on the 2026 page, the
+   years 1899 and 2200): never a wrong date. Impossible text stays as leftover, so the unit
+   becomes partial instead of being dropped; a range with no start year starts in the earlier
+   year; a year outside 1900–2199 is refused. Pinned by
+   `test_unparseable_text_is_leftover_never_dropped` and `test_day_ranges` (Task 4),
+   `test_invalid_spans_are_rejected` and `test_years_and_rounds_are_bounded` (Task 2).
+3. **Office labels that mention a chamber they do not elect** ("State Senate by-election",
+   "Referendum on reform of the Senate", "House of Assembly by-election" for an Australian
+   seat, a suspended chamber): the scope and kind in the text decide, never the chamber word
+   alone. Pinned by `test_scope_comes_before_chamber_identity`,
+   `test_a_qualifier_in_the_chambers_own_name_is_not_scope`,
+   `test_suspended_chambers_keep_their_identity_but_are_not_active` and
+   `test_classify_named_jurisdiction` (Task 6).
+4. **Times and saved records from outside the model** (a naive or non-UTC "now", a naive
+   `fetched_at`, saved JSON with an unknown word, a string year or `1` for `True`): a naive
+   time is refused; an aware time becomes the UTC civil date, so 23:30 on 31 Oct in New York
+   is a November window; a malformed record raises `RecordError`. Pinned by
    `test_naive_now_is_rejected` and `test_now_is_converted_to_the_utc_civil_date` (Task 3),
-   `test_claim_rejects_naive_fetched_at` and `test_claim_serialises_non_utc_provenance_as_utc`
-   (Task 2).
-5. **Misbehaving servers** (bytes dripped slowly, an endless body, a redirect to `http`, a
+   `test_claim_rejects_naive_fetched_at`, `test_claim_serialises_non_utc_provenance_as_utc`
+   and `test_saved_records_outside_the_vocabulary_are_rejected` (Task 2).
+5. **Misbehaving servers and secret-bearing URLs** (bytes dripped slowly, an endless body, a
+   slow redirect body, a limit that passes between redirects, a redirect to `http`, a
    challenge page with HTTP 200, an HTML error page from the MediaWiki API, an unknown
-   charset): each ends in bounded time with a named outcome and a redacted error, never an
-   exception or a hang. Pinned by `test_a_dripping_body_cannot_outlast_the_attempt_limit`,
-   `test_an_oversized_body_is_refused`, `test_a_redirect_to_http_is_refused`,
-   `test_challenge_pages_are_detected`, `test_mediawiki_non_json_is_an_api_error` and
-   `test_text_falls_back_to_utf8_for_an_unknown_charset` (Task 7).
+   charset, a token in any query parameter): each ends in bounded time with a named outcome,
+   and no query secret reaches a result or its diagnostics. Pinned by
+   `test_a_dripping_body_cannot_outlast_the_attempt_limit`, `test_an_oversized_body_is_refused`,
+   `test_a_redirect_body_is_never_read`, `test_no_request_is_sent_once_the_attempt_limit_has_passed`,
+   `test_a_redirect_to_http_is_refused`, `test_challenge_pages_are_detected`,
+   `test_mediawiki_non_json_is_an_api_error`, `test_text_falls_back_to_utf8_for_an_unknown_charset`
+   and `test_no_query_secret_reaches_the_result` (Task 7).
+
+Known limits, by design (see "Requirements for later plans"): a generic chamber by-election
+in a named area of a federation ("Senate special election" for Virginia) resolves to the
+national chamber until Plan 2 recognises subdivision names; a slow DNS lookup or a server that
+drips its headers is bounded only by Plan 2's per-source child process.
 
 ## Spec corrections
 
-Found while this plan was written and checked against the 2026-10-16 captures. **C1 changes
-behaviour and needs the user's confirmation before Task 8 starts**; the others refine names,
-files or details.
+Found while this plan was written and checked against the 2026-10-16 captures, then revised
+after the red-team review of the first version (`C:/Users/senescalk/Downloads/never-miss-v2-plan-1-foundations-red-team-review.md`, items F1–F6;
+its acceptance tests are cited as FP01–FP13). **Semantic decisions** change behaviour,
+identity or a promise of the spec: C1, C9, C12, C15 and C18–C21. The user approved all of them
+on 2026-10-16, and each row names the tests that pin it. The others refine names, files or
+details.
 
 | ID | Spec says | This plan does | Why |
 |---|---|---|---|
-| C1 | §8, §4, §13.1, O6, R5: OSCE hosts only trust certifi plus a pinned emSign root (`data/certs/emsign-root-ca-g1.pem`) | One trust store for every host: certifi plus the CA bundle named by `REQUESTS_CA_BUNDLE`, `SSL_CERT_FILE` or `CURL_CA_BUNDLE`, when set. No `data/certs/`, no pin, no emSign download; O6 and R5 close | Probing all 9 hosts on 2026-10-16: certifi alone verifies OSCE. Zscaler intercepts 5 of the hosts on this machine, and only the machine bundle trusts it. certifi plus that bundle verifies all 9; CI sets no variable and uses certifi alone (Task 8) |
+| C1 (semantic) | §8, §4, §13.1, O6, R5: OSCE hosts only trust certifi plus a pinned emSign root (`data/certs/emsign-root-ca-g1.pem`) | One trust store for every host: certifi plus the machine bundle, the PEM file named by the first of `REQUESTS_CA_BUNDLE`, `SSL_CERT_FILE` and `CURL_CA_BUNDLE` that is set and not empty. A named file that is missing, unreadable or holds no certificate raises `TrustBundleError`. No `data/certs/`, no pin, no emSign download. O6 closes; R5 becomes "trusting the machine bundle" and stays open until the branch CI run (§15 step 1, with the user's go-ahead) shows certifi alone verifies all 9 hosts from GitHub's runners | Probing all 9 hosts on 2026-10-16: certifi alone verifies OSCE. Zscaler intercepts 5 of the hosts on this machine, and only the machine bundle trusts it. certifi plus that bundle verifies all 9. Pinned by `test_the_first_configured_bundle_is_the_machine_bundle`, `test_a_configured_bundle_that_cannot_be_used_is_an_error` and `test_a_combined_bundle_trusts_only_what_it_lists` (Task 8) |
 | C2 | §6.2: `x:western-sahara` | `iso:EH` | ISO 3166-1 has an alpha-2 code for Western Sahara (Task 5) |
 | C3 | §4: layer 7 is `model` | Layer 7 is `model \| text`; `text` holds the stdlib-only normalisation (`collapse_ws`, `fold`, `norm_name`, `slug`) shared by `dates`, `places` and `offices` | Layer-6 modules may not import each other (Task 2) |
 | C4 | §5.6 download outcomes omit `fetch_failed` | `FetchOutcome` includes `fetch_failed` (already a §9.4 error code) for failures that are not timeout, DNS, TLS, HTTP, challenge or API errors: connection resets, the size cap, the redirect limit, a redirect to `http` | Every fetch result gets an outcome (Tasks 2 and 7) |
@@ -121,18 +148,24 @@ files or details.
 | C6 | §4 `data/` and `scripts/` | Also `scripts/count_feed_countries.py` + `data/feed_country_history.tsv` (the "91 strings" evidence), `data/places_manual.yaml`, `scripts/build_institutions.py` + `data/institutions_manual.yaml`; the IPU capture moves to `tests/fixtures/ipu/2026-10-16/` now, with a provenance note whose HTTP status is "not recorded" | `places.yaml` and `institutions.yaml` are generated from committed inputs and tests check they are current; the IPU capture's status was not saved (Tasks 5, 6) |
 | C7 | §6.3: a generic legislature label is identity "when exactly one chamber contest exists for that place and date" | For unicameral places it classifies as the one chamber here. The bicameral case, which needs the other claims, moves to Plan 3 | The rule needs the merge's view of all claims (Task 6) |
 | C8 | §5.2 claim fields | `Claim.aggregate: bool` added | Marks a generic aggregate label (§6.3) so the merge never uses it as identity (Task 2) |
-| C9 | §6.2 unknown places | An unknown name resolves to an unregistered place `x:<slug of the normalised name>` with `registered=False`; only empty text resolves to nothing | Matching "only on an identical normalised name" falls out of the ID; adapters log `place_unregistered` (Task 5) |
+| C9 (semantic) | §6.2 unknown places (`x:<slug>`) | An unknown name resolves to the unregistered place `unknown:<key>`, where `<key>` is its `norm_name` key with spaces as hyphens (apostrophes and every script kept). "<Name> (part of <Parent>)" gives `unknown:<key>@<parent ID>`. A registered ID may not start with `unknown:`. Only text with no letter or digit resolves to nothing | `x:<slug>` merged "O'Neill" with "ONeill", gave every non-Latin name the same empty slug, gave a "Riverside" under two parents one ID, and shared its prefix with registered places. Pinned by `test_unregistered_names_keep_their_distinctions`, `test_unregistered_names_never_pose_as_registered_places` (Task 5) and `test_norm_name` (Task 2) |
 | C10 | §6.1 relevance | Implemented literally, with a page year for dates that have none | Recorded so Plan 2 does not re-derive it (Task 4) |
 | C11 | §16 `.gitignore` and `.gitattributes` lines | `.gitattributes` also has `* text=auto eol=lf` (first rule) and `tests/fixtures/** -text`; `.gitignore` also has tool caches, `out/`, `.env`, `MERGE_APPROVED` | `core.autocrlf=true` here made every tracked file CRLF in the working tree, so multi-line edits and `git checkout` restores rewrote line endings (Task 1) |
-| C12 | §6.3 institutions | Chambers the IPU table marks suspended or dissolved are skipped | Kazakhstan's "Senate (Suspended)" would otherwise be an electable chamber (Task 6) |
+| C12 (semantic) | §6.3 institutions | Chambers the IPU marks "(Suspended)" or "(Dissolved)" are kept under their plain name with `status: suspended` or `dissolved`, as of the capture date. Their names still resolve; generic chamber words and the unicameral rule use active chambers only; a bicameral place left with one active chamber fails the build | Dropping them (this plan's first version) lost the identity that older or renewal evidence needs (Kazakhstan's Senate, Kuwait's National Assembly); treating them as active would make them electable. Pinned by `test_suspended_chambers_keep_their_identity_but_are_not_active` and `test_build_rejects_a_bicameral_place_left_with_one_active_chamber` (Task 6) |
 | C13 | §14 ruff over the repository | `scraper.py` is excluded from ruff | v1's scraper has 14 ruff errors; Plan 4 replaces it with a thin entry point |
 | C14 | §4 `scripts/build_places.py` | Scripts run as modules: `python -m scripts.build_places` | They import the package; `python scripts/build_places.py` cannot (Tasks 5, 6) |
-| C15 | §8 "Timeout 60 s per attempt" | The limit is checked between socket reads, and a single read waits at most the time left when the attempt started, so one attempt ends in under 2 × 60 s | A blocking read cannot be interrupted portably (Task 7) |
-| C16 | §13.4 mutation procedure | An untracked helper `.scratch/mutate.py` runs each task's mutation table with exactly that procedure | One command per task, with the restore checked (Task 1) |
+| C15 (semantic) | §8 "Timeout 60 s per attempt" | The limit is checked before every request (redirect hops included) and between socket reads. A single read waits at most the time left when its request was sent, so one attempt ends in under 2 × 60 s. A body whose last byte arrived in the read that crossed the limit is kept. DNS resolution and a server that drips its headers are not bounded inside `fetch`: Plan 2's per-source child process, killed at the source deadline, is the hard bound | A blocking read cannot be interrupted portably, and `getaddrinfo` takes no timeout. Pinned by `test_a_dripping_body_cannot_outlast_the_attempt_limit`, `test_no_request_is_sent_once_the_attempt_limit_has_passed`, `test_a_body_completed_by_the_read_that_crossed_the_limit_is_kept` and `test_a_redirect_body_is_never_read` (Task 7) |
+| C16 | §13.4 mutation procedure | An untracked helper `.scratch/mutate.py` runs each task's mutation table with exactly that procedure. Every listed test must pass first (the baseline). A mutation is killed only when pytest exits 1 with failed tests and no errors; a collection error, a wrong node id, a crash or no tests run is `INVALID`, a run over 300 s `TIMEOUT` | The first version counted any non-zero exit as a kill, so an import error or a mistyped node id passed as evidence (Task 1) |
 | C17 | §5.6 `parser_version` | `elections_calendar.PARSER_VERSION = "2.0.0"` | One place for later plans to read it (Task 1) |
+| C18 (semantic) | §6.3 classification order | Referendum words first. A subnational word outside the chamber's own name, or a `subdivision` jurisdiction, makes generic chamber words subnational. A by-election lends national identity only to a chamber the text names, in a named constituency | "State Senate by-election" resolved to the US Senate, and "Referendum on reform of the Senate" to a Senate election. Pinned by `test_scope_comes_before_chamber_identity` and `test_a_qualifier_in_the_chambers_own_name_is_not_scope` (Task 6) |
+| C19 (semantic) | §5.2 `jurisdiction_kind` | Adds `subdivision`: the jurisdiction is an ISO 3166-2 subdivision of the place (a state, province or region) | C18 must tell a state's seat from a national constituency; Plan 2's adapters set it (Task 2) |
+| C20 (semantic) | §5.2 records | Every record checks its fields when built: `Literal` words, real `bool`/`int`/`str`/`date` values, years 1900–2199, `round` ≥ 1. `from_dict` does not coerce. A violation raises `RecordError` (a `ValueError`) | Annotations are not enforced at runtime, so saved JSON with "banana", a string year or `1` for `True` loaded silently. Pinned by `test_saved_records_outside_the_vocabulary_are_rejected` and `test_years_and_rounds_are_bounded` (Task 2) |
+| C21 (semantic) | §8 "URLs and error strings are redacted (query-string tokens/keys)" | An allowlist: only the values of the sources' own query keys (`SAFE_QUERY_KEYS`, compared percent-decoded and case-folded) are kept. Every other parameter is replaced whole, key included, in URLs and in bare `?query` or `#fragment` text inside error messages | A list of secret-looking names missed `__cf_chl_tk`, percent-encoded keys and tokens in the key position. Pinned by `test_redact_url`, `test_redact_text_handles_full_urls_bare_queries_and_fragments` and `test_no_query_secret_reaches_the_result` (Task 7) |
 
 Also settled: "91 strings" (§6.2) is 90 country names plus the empty string; BARMM is
-`subnational` through Wikipedia local's default level (§6.4), which Plan 2 checks end to end.
+`subnational` through Wikipedia local's default level (§6.4), which Plan 2 checks end to end;
+requests 2.34's `Session.send` reads a redirect's body even with `allow_redirects=False`, so
+`fetch` sends through the session's adapter (Task 7).
 
 ## How to execute this plan
 
@@ -146,19 +179,21 @@ Also settled: "91 strings" (§6.2) is 90 country names plus the empty string; BA
   PostToolUse hook runs `ruff check --fix` on each edited `.py` file; the code here is already
   clean, so if the hook changes a file, compare it with the plan: the copy is wrong.
 - **Tested plan:** every step was replayed in a fresh clone of `feat/never-miss-v2` when this
-  plan was written (the commands as shown, every gate, all 97 mutations, every
-  commit). The one substitution: instead of creating `.venv` and running `pip install`, the
-  replay linked a venv already installed from the same `requirements-dev.txt`. The expected
-  outputs are measured, not guessed. If a command's output differs,
-  stop and find out why (superpowers:systematic-debugging) before you go on.
+  plan was written, with no substitutions: the commands as shown, including a new `.venv`
+  from `py -3.14 -m venv` and `pip install --require-hashes -r requirements-dev.txt`
+  (53 packages, on Windows), every gate, all 110 mutations under the
+  strict helper, every commit. The expected outputs are measured, not guessed. A fresh Linux
+  install is checked by the branch CI run (§15 step 1), which needs the user's go-ahead. If a
+  command's output differs, stop and find out why (superpowers:systematic-debugging) before
+  you go on.
 - **Per task:** follow the Implement-Review loop in the user's CLAUDE.md (at most 3 rounds).
   The reviewer looks for naive/aware datetime mixing, duplicate side effects, error-path gaps
   and docstrings that contradict the code. Every completed task is a safe stopping point:
   record the commit hash and the next task in
   `C:/Users/senescalk/Desktop/handovers/elections-v2-sdd-ledger.md` and
   `C:/Users/senescalk/Desktop/handovers/elections-v2-RESUME.md`.
-- **Stop and ask** if a pinned hash differs, if a task needs a change in behaviour or scope,
-  or before Task 8 if C1 is not yet confirmed.
+- **Stop and ask** if a pinned hash differs, or if a task needs a change in behaviour or
+  scope.
 
 ## File structure
 
@@ -324,14 +359,7 @@ sha256sum requirements-dev.txt
 
 Expected: `aa121cd39d124587e2d1d19e7a276bf1501f8d167ef02210d2ba8790e0a2b6c8  requirements-dev.txt`. A different hash means the source file changed since this plan was written: stop and ask.
 
-Only if that directory is gone: recreate the locks with the bootstrap below. The pins can then differ from these, so also run the README's Linux `pip download` check and record the new pins in the ledger.
-
-```bash
-py -3.14 -m venv .scratch/lockvenv
-.scratch/lockvenv/Scripts/python.exe -m pip install pip-tools==7.6.2
-.scratch/lockvenv/Scripts/python.exe -m piptools compile --generate-hashes --allow-unsafe --strip-extras -o requirements.txt requirements.in
-.scratch/lockvenv/Scripts/python.exe -m piptools compile --generate-hashes --allow-unsafe --strip-extras -o requirements-dev.txt requirements-dev.in
-```
+If that directory is gone or a hash differs: stop and ask the user. New locks would need `pip-tools` installed without hashes, and their pins would differ from the ones this plan was tested with.
 
 - [ ] **Step 4: Ignore rules and line endings**
 
@@ -419,7 +447,7 @@ Run:
 .venv/Scripts/python.exe -m pip install --require-hashes -r requirements-dev.txt
 ```
 
-Expected: exit code 0, ending with `Successfully installed ...` (about 1-3 minutes; every file is checked against its hash).
+Expected: exit code 0, ending with `Successfully installed ...` (53 packages; about 1-3 minutes, every file checked against its hash).
 
 Run:
 
@@ -599,17 +627,59 @@ text>", "new": "<replacement>"}; "old" must occur exactly once in the file.
 Stage the task's files first (git add): each mutation is undone with
 `git checkout -- <file>`, which restores the staged copy, and then checked
 with `git diff --exit-code -- <file>`.
+
+Every test in the table must pass before anything is mutated (the baseline).
+A mutation is KILLED only when pytest exits 1 with failed tests and no
+errors. A collection error, a missing node, a crash or no tests run is
+INVALID, a run longer than TIMEOUT_S is TIMEOUT; neither counts as a kill.
 """
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
 
+TIMEOUT_S = 300
+EXIT_CODES = {
+    2: "interrupted or collection error",
+    3: "pytest internal error",
+    4: "usage error or no such test",
+    5: "no tests ran",
+}
+_COUNT = re.compile(r"(\d+) (failed|passed|errors?)\b")
+
 
 def git(*args: str) -> int:
     return subprocess.run(["git", *args], capture_output=True).returncode
+
+
+def run_test(node: str, env: dict[str, str]) -> tuple[int | None, str]:
+    """pytest's exit code (None after TIMEOUT_S) and its summary line."""
+    try:
+        run = subprocess.run(
+            [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", node],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired:
+        return None, f"no result after {TIMEOUT_S} s"
+    lines = run.stdout.strip().splitlines()
+    return run.returncode, lines[-1] if lines else run.stderr.strip()[-200:]
+
+
+def verdict(code: int | None, summary: str) -> str:
+    if code is None:
+        return "TIMEOUT "
+    counts = {kind.rstrip("s"): int(n) for n, kind in _COUNT.findall(summary)}
+    if code == 1 and counts.get("failed", 0) > 0 and counts.get("error", 0) == 0:
+        return "KILLED  "
+    if code == 0:
+        return "SURVIVED"
+    return "INVALID "
 
 
 def check(entry: dict[str, str], env: dict[str, str]) -> str:
@@ -628,25 +698,27 @@ def check(entry: dict[str, str], env: dict[str, str]) -> str:
                 compile(path.read_bytes(), str(path), "exec")
             except SyntaxError:
                 return f"BAD TABLE  {entry['test']}: the mutation is not valid Python"
-        run = subprocess.run(
-            [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", entry["test"]],
-            env=env,
-            capture_output=True,
-            text=True,
-        )
+        code, summary = run_test(entry["test"], env)
     finally:
         if git("checkout", "--", str(path)) != 0 or git("diff", "--exit-code", "--", str(path)):
             print(f"RESTORE FAILED for {path}: stop and restore it by hand from the index")
             sys.exit(3)
-    lines = run.stdout.strip().splitlines()
-    summary = lines[-1] if lines else run.stderr.strip()[-200:]
-    verdict = "KILLED  " if run.returncode != 0 else "SURVIVED"
-    return f"{verdict} {entry['test']}  ({summary})"
+    label = verdict(code, summary)
+    detail = f"; exit {code}: {EXIT_CODES[code]}" if code in EXIT_CODES else ""
+    return f"{label} {entry['test']}  ({summary}{detail})"
 
 
 def main(table: Path) -> int:
     env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
     entries = json.loads(table.read_text(encoding="utf-8"))
+    head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True)
+    print(f"baseline: commit {head.stdout.strip()} plus the staged task files")
+    for node in dict.fromkeys(entry["test"] for entry in entries):
+        code, summary = run_test(node, env)
+        if code != 0:
+            print(f"BASELINE FAILED {node}  ({summary}): it must pass before mutating")
+            return 2
+    print(f"baseline: all {len(set(e['test'] for e in entries))} tests pass")
     results = [check(entry, env) for entry in entries]
     for line in results:
         print(line)
@@ -788,7 +860,7 @@ Run:
 PYTHONDONTWRITEBYTECODE=1 .venv/Scripts/python.exe .scratch/mutate.py .scratch/mutations/task-1.json
 ```
 
-Expected: every line starts with `KILLED`, then `1/1 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. Then confirm the tree is unchanged:
+Expected: `baseline: all ... tests pass`, then every line starts with `KILLED` and shows `failed` with no `error`, then `1/1 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. `BASELINE FAILED` means a listed test fails before any mutation: fix that first. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. An `INVALID` or `TIMEOUT` line is not a kill: the mutation broke collection, imports or termination instead of the behaviour, so rewrite it until the test fails on an assertion. Then confirm the tree is unchanged:
 
 ```bash
 git diff --exit-code
@@ -826,6 +898,15 @@ Record the new commit hash and the next task in the ledger (`C:/Users/senescalk/
 
 ### Task 2: Shared data model and text normalisation
 
+Type annotations are not enforced at runtime, and Plan 2 loads records back from saved JSON.
+So every record checks its own fields when it is built (spec correction C20): each field must
+hold its annotated type (`True` is not an `int`, a `datetime` is not a `date`) and a `Literal`
+field one of its words; `from_dict` never coerces.
+
+`text` keeps the letters of every script. Only Latin, IPA, Greek and Cyrillic letters lose
+their accents; in other scripts a mark makes a different letter (kana voicing, Devanagari
+vowel signs), so a name in any script has a non-empty key (spec correction C9).
+
 **Files:**
 
 - Create: `elections_calendar/text.py` (stdlib-only normalisation, bottom layer)
@@ -840,18 +921,23 @@ Record the new commit hash and the next task in the ledger (`C:/Users/senescalk/
   `norm_name(text: str) -> str`, `slug(text: str) -> str`.
 - Produces (`elections_calendar.model`):
   - Literal aliases `Precision`, `DateMeaning`, `DateStatus`, `StatusClaim`, `Level`,
-    `JurisdictionKind`, `Kind`, `OfficeClass`, `EvidenceKind`, `Outcome`, `IgnoredReason`,
-    `Relevance`, `FetchOutcome`; `IGNORED_REASONS: frozenset[str]`.
+    `JurisdictionKind` (`nationwide | named | subdivision | unknown`), `Kind`, `OfficeClass`,
+    `EvidenceKind`, `Outcome`, `IgnoredReason`, `Relevance`, `FetchOutcome`;
+    `IGNORED_REASONS: frozenset[str]`; `FIRST_YEAR = 1900`, `LAST_YEAR = 2199`.
+  - `RecordError(ValueError)`, raised by every constructor and `from_dict` below when a record
+    breaks a rule: a word outside its `Literal`, a non-`bool` flag, a `str` year, a year outside
+    `FIRST_YEAR`-`LAST_YEAR`, a round below 1, an unknown or a missing key.
   - `month_end(year: int, month: int) -> date`.
   - `DateSpan(start: date | None, end: date | None, precision: Precision, year: int)`, frozen;
     constructors `day(d)`, `days(start, end)`, `month(year, month)`,
     `months(year1, month1, year2, month2)`, `of_year(year)`; `to_dict()` (keys `date`,
-    `end_date`, `date_precision`, `year`) and `from_dict(data)`.
+    `end_date`, `date_precision`, `year`) and `from_dict(data)` (no coercion).
   - `InputUnit(unit_id, source, text, outcome, reason, relevance, leftover="")` with
     `to_dict()`/`from_dict()`.
   - `Claim(...)`, the spec §5.2 fields plus `aggregate: bool` and the provenance defaults
     `fetched_at=None, fallback=False, snapshot_id=None, provisional=False`; property
     `merge_id`; `to_dict()` flattens `span` into the four date keys; `from_dict()`.
+- Plan 2's loaders (ledger, snapshots) treat a `RecordError` as a corrupt saved record.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -861,11 +947,12 @@ Create `tests/unit/test_model.py`:
 """Shared vocabulary (spec §5.2, §7, §9.1)."""
 
 import dataclasses
+from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta, timezone
 
 import pytest
 
-from elections_calendar.model import Claim, DateSpan, InputUnit, month_end
+from elections_calendar.model import Claim, DateSpan, InputUnit, RecordError, month_end
 from elections_calendar.text import collapse_ws, fold, norm_name, slug
 
 
@@ -1000,6 +1087,49 @@ def test_merge_id_distinguishes_served_and_provisional() -> None:
     assert provisional.merge_id == "provisional/electionguide:upcoming/r17#0"
 
 
+def saved_claim(**changes: object) -> dict[str, object]:
+    return {**claim().to_dict(), **changes}
+
+
+@pytest.mark.parametrize(
+    "load",
+    [
+        lambda: DateSpan.from_dict({**DateSpan.month(2026, 10).to_dict(), "date_precision": "hour"}),
+        lambda: DateSpan.from_dict({**DateSpan.of_year(2026).to_dict(), "year": "2026"}),  # not coerced
+        lambda: InputUnit.from_dict({**unit().to_dict(), "outcome": "banana"}),
+        lambda: InputUnit.from_dict({**unit().to_dict(), "relevance": "maybe"}),
+        lambda: InputUnit.from_dict({**unit().to_dict(), "colour": "red"}),  # unknown field
+        lambda: Claim.from_dict(saved_claim(fallback="yes")),
+        lambda: Claim.from_dict(saved_claim(aggregate=1)),
+        lambda: Claim.from_dict(saved_claim(jurisdiction_kind="planet")),
+        lambda: Claim.from_dict(saved_claim(round=True)),
+        lambda: Claim.from_dict(saved_claim(date=20261025)),
+        lambda: Claim.from_dict(saved_claim(fetched_at="yesterday")),
+        lambda: Claim.from_dict({k: v for k, v in claim().to_dict().items() if k != "kind"}),
+    ],
+)
+def test_saved_records_outside_the_vocabulary_are_rejected(load: Callable[[], object]) -> None:
+    with pytest.raises(RecordError):
+        load()
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda: DateSpan.of_year(1899),
+        lambda: DateSpan.of_year(2200),
+        lambda: DateSpan.day(date(1, 1, 1)),
+        lambda: DateSpan.days(date(2026, 12, 30), date(2200, 1, 1)),
+        lambda: claim(round=0),
+    ],
+)
+def test_years_and_rounds_are_bounded(build: Callable[[], object]) -> None:
+    with pytest.raises(RecordError):
+        build()
+    assert DateSpan.of_year(1989).year == 1989  # Carter Center missions go back to 1989
+    assert claim(round=2).round == 2
+
+
 @pytest.mark.parametrize(
     ("raw", "key"),
     [
@@ -1012,6 +1142,12 @@ def test_merge_id_distinguishes_served_and_provisional() -> None:
         ("Bolivia, Plurinational State of", "bolivia plurinational state of"),
         ("Virgin Islands, U.S.", "virgin islands u s"),
         ("Trinidad & Tobago", "trinidad and tobago"),
+        ("Hawai\u02bbi", "hawai'i"),  # okina
+        ("\u6771\u4eac", "\u6771\u4eac"),  # Tokyo: other scripts keep their letters
+        ("\u0423\u043a\u0440\u0430\u0457\u043d\u0430", "\u0443\u043a\u0440\u0430\u0456\u043d\u0430"),
+        ("\u304c\u304d", "\u304c\u304d"),  # kana keep their voicing marks
+        ("\u0928\u0947\u092a\u093e\u0932", "\u0928\u0947\u092a\u093e\u0932"),  # Nepal: vowel signs
+        ("snake_case", "snake case"),
     ],
 )
 def test_norm_name(raw: str, key: str) -> None:
@@ -1046,8 +1182,10 @@ import re
 import unicodedata
 
 _WS = re.compile(r"\s+")
-_APOSTROPHES = str.maketrans({"’": "'", "‘": "'", "`": "'", "´": "'", "ʼ": "'"})
-_NON_WORD = re.compile(r"[^a-z0-9']+")
+_APOSTROPHES = str.maketrans({"’": "'", "‘": "'", "`": "'", "´": "'", "ʼ": "'", "ʻ": "'"})
+# Accents are dropped only from letters below U+0530 (Latin, IPA, Greek,
+# Cyrillic); elsewhere a mark changes the letter (kana voicing).
+_ACCENTED_SCRIPTS_END = 0x0530
 
 
 def collapse_ws(text: str) -> str:
@@ -1056,18 +1194,34 @@ def collapse_ws(text: str) -> str:
 
 
 def fold(text: str) -> str:
-    """Case-fold, unify apostrophes and drop diacritics: "São Tomé" -> "sao tome"."""
-    decomposed = unicodedata.normalize("NFKD", text.translate(_APOSTROPHES))
-    return "".join(c for c in decomposed if not unicodedata.combining(c)).casefold()
+    """Case-fold, unify apostrophes and drop accents: "São Tomé" -> "sao tome".
+
+    Only Latin, IPA, Greek and Cyrillic letters lose their marks; other scripts
+    keep theirs, because there a mark makes a different letter.
+    """
+    kept: list[str] = []
+    base = ""
+    for c in unicodedata.normalize("NFKD", text.translate(_APOSTROPHES)):
+        if not unicodedata.combining(c):
+            base = c
+        elif base and ord(base) < _ACCENTED_SCRIPTS_END:
+            continue
+        kept.append(c)
+    return unicodedata.normalize("NFC", "".join(kept)).casefold()
+
+
+def _word_char(c: str) -> bool:
+    return c == "'" or unicodedata.category(c)[0] in "LMN"  # letters, marks, numbers
 
 
 def norm_name(text: str) -> str:
     """Matching key for names: folded, punctuation to spaces, no leading/trailing "the".
 
-    "Gambia (The)", "Gambia, The" and "The Gambia" all give "gambia".
+    "Gambia (The)", "Gambia, The" and "The Gambia" all give "gambia". Letters
+    and digits of every script are kept, so a name in any script has a key.
     """
-    key = _NON_WORD.sub(" ", fold(text).replace("&", " and ")).strip(" '")
-    key = collapse_ws(key)
+    folded = fold(text).replace("&", " and ")
+    key = collapse_ws("".join(c if _word_char(c) else " " for c in folded).strip(" '"))
     if key.startswith("the "):
         key = key[4:]
     if key.endswith(" the"):
@@ -1088,19 +1242,29 @@ Create `elections_calendar/model.py`:
 This module is the bottom layer: it imports only the standard library.
 Civil dates are ``datetime.date`` values (year/month/day components); a
 civil date is never derived through a timestamp.
+
+Annotations are not enforced at runtime and records also come back from
+saved JSON, so every record checks its own fields when it is built: each
+field must hold its annotated type, and a Literal field one of its words.
+A record that breaks a rule raises ``RecordError``.
 """
 
 import calendar
-from dataclasses import dataclass
+import functools
+import types
+import typing
+from dataclasses import dataclass, fields
 from datetime import UTC, date, datetime
-from typing import Any, Literal, get_args
+from typing import Any, Literal, get_args, get_origin
 
 Precision = Literal["day", "month", "year"]
 DateMeaning = Literal["voting_period", "expected_window", "unknown"]
 DateStatus = Literal["confirmed", "tentative", "unknown"]
 StatusClaim = Literal["postponed", "cancelled", "disputed", "held"]
 Level = Literal["national", "subnational", "unknown"]
-JurisdictionKind = Literal["nationwide", "named", "unknown"]
+# named: a constituency, city or other named area; subdivision: a registered
+# ISO 3166-2 subdivision (a state, province or region) of the place.
+JurisdictionKind = Literal["nationwide", "named", "subdivision", "unknown"]
 Kind = Literal[
     "candidate_election", "by_election", "referendum_day", "referendum_question", "aggregate"
 ]
@@ -1134,6 +1298,12 @@ FetchOutcome = Literal[
 ]
 
 IGNORED_REASONS: frozenset[str] = frozenset(get_args(IgnoredReason))
+FIRST_YEAR = 1900  # Carter Center missions go back to 1989
+LAST_YEAR = 2199
+
+
+class RecordError(ValueError):
+    """A record breaks the model's rules, whether built in code or loaded from JSON."""
 
 
 def month_end(year: int, month: int) -> date:
@@ -1156,20 +1326,25 @@ class DateSpan:
     year: int
 
     def __post_init__(self) -> None:
+        _check_fields(self)
+        if not FIRST_YEAR <= self.year <= LAST_YEAR:
+            raise RecordError(f"year {self.year} is outside {FIRST_YEAR}-{LAST_YEAR}")
         if self.precision == "year":
             if self.start is not None or self.end is not None:
-                raise ValueError("year precision has no start or end")
+                raise RecordError("year precision has no start or end")
             return
         if self.start is None or self.end is None:
-            raise ValueError(f"{self.precision} precision needs start and end")
+            raise RecordError(f"{self.precision} precision needs start and end")
         if self.end < self.start:
-            raise ValueError(f"end {self.end} is before start {self.start}")
+            raise RecordError(f"end {self.end} is before start {self.start}")
         if self.year != self.start.year:
-            raise ValueError(f"year {self.year} differs from start {self.start}")
+            raise RecordError(f"year {self.year} differs from start {self.start}")
+        if self.end.year > LAST_YEAR:
+            raise RecordError(f"end {self.end} is after {LAST_YEAR}")
         if self.precision == "month" and (
             self.start.day != 1 or self.end != month_end(self.end.year, self.end.month)
         ):
-            raise ValueError("month precision must cover whole months")
+            raise RecordError("month precision must cover whole months")
 
     @classmethod
     def day(cls, d: date) -> DateSpan:
@@ -1201,9 +1376,11 @@ class DateSpan:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> DateSpan:
-        start = date.fromisoformat(data["date"]) if data["date"] else None
-        end = date.fromisoformat(data["end_date"]) if data["end_date"] else None
-        return cls(start, end, data["date_precision"], int(data["year"]))
+        try:
+            start, end = _iso_date(data["date"]), _iso_date(data["end_date"])
+            return cls(start, end, data["date_precision"], data["year"])
+        except KeyError as exc:
+            raise RecordError(f"DateSpan: missing {exc}") from exc
 
 
 @dataclass(frozen=True, slots=True)
@@ -1223,14 +1400,15 @@ class InputUnit:
     leftover: str = ""
 
     def __post_init__(self) -> None:
+        _check_fields(self)
         if not self.unit_id.startswith(f"{self.source}:") or "/" not in self.unit_id:
-            raise ValueError(f"unit_id {self.unit_id!r} is not <source>:<page key>/<position>")
+            raise RecordError(f"unit_id {self.unit_id!r} is not <source>:<page key>/<position>")
         if self.outcome == "ignored" and self.reason not in IGNORED_REASONS:
-            raise ValueError(f"ignored unit needs an allowlisted reason, got {self.reason!r}")
+            raise RecordError(f"ignored unit needs an allowlisted reason, got {self.reason!r}")
         if self.outcome == "parsed" and self.reason is not None:
-            raise ValueError("a parsed unit has no reason")
+            raise RecordError("a parsed unit has no reason")
         if self.outcome in ("partial", "unparsed") and not self.reason:
-            raise ValueError(f"a {self.outcome} unit needs a reason")
+            raise RecordError(f"a {self.outcome} unit needs a reason")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -1245,7 +1423,7 @@ class InputUnit:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> InputUnit:
-        return cls(**data)
+        return _construct(cls, data)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1287,10 +1465,13 @@ class Claim:
     provisional: bool = False
 
     def __post_init__(self) -> None:
+        _check_fields(self)
         if not self.claim_id.startswith(f"{self.unit_id}#"):
-            raise ValueError(f"claim_id {self.claim_id!r} is not <unit_id>#<n>")
+            raise RecordError(f"claim_id {self.claim_id!r} is not <unit_id>#<n>")
+        if self.round is not None and self.round < 1:
+            raise RecordError(f"round {self.round} is not 1 or more")
         if self.fetched_at is not None and self.fetched_at.utcoffset() is None:
-            raise ValueError("fetched_at must be timezone-aware")
+            raise RecordError("fetched_at must be timezone-aware")
 
     @property
     def merge_id(self) -> str:
@@ -1333,21 +1514,75 @@ class Claim:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Claim:
         values = dict(data)
-        span = DateSpan.from_dict(
-            {k: values.pop(k) for k in ("date", "end_date", "date_precision", "year")}
-        )
-        fetched = values.pop("fetched_at")
-        return cls(
-            **values,
-            span=span,
-            fetched_at=datetime.fromisoformat(fetched) if fetched else None,
-        )
+        try:
+            span = DateSpan.from_dict(
+                {k: values.pop(k) for k in ("date", "end_date", "date_precision", "year")}
+            )
+            fetched = _iso_moment(values.pop("fetched_at"))
+        except KeyError as exc:
+            raise RecordError(f"Claim: missing {exc}") from exc
+        return _construct(cls, {**values, "span": span, "fetched_at": fetched})
 
 
 def _utc_iso(moment: datetime | None) -> str | None:
     if moment is None:
         return None
     return moment.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _iso_date(value: object) -> date | None:
+    if value is None:
+        return None
+    try:
+        return date.fromisoformat(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError) as exc:
+        raise RecordError(f"{value!r} is not an ISO date") from exc
+
+
+def _iso_moment(value: object) -> datetime | None:
+    if value is None:
+        return None
+    try:
+        return datetime.fromisoformat(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError) as exc:
+        raise RecordError(f"{value!r} is not an ISO timestamp") from exc
+
+
+def _construct[R](cls: type[R], values: dict[str, Any]) -> R:
+    """``cls(**values)``, reporting an unknown or a missing field as a RecordError."""
+    try:
+        return cls(**values)
+    except TypeError as exc:
+        raise RecordError(f"{cls.__name__}: {exc}") from exc
+
+
+@functools.cache
+def _hints(cls: type) -> dict[str, Any]:
+    return typing.get_type_hints(cls)
+
+
+def _check_fields(record: Any) -> None:
+    cls: type = type(record)
+    hints = _hints(cls)
+    for f in fields(record):
+        value = getattr(record, f.name)
+        if not _conforms(value, hints[f.name]):
+            raise RecordError(f"{cls.__name__}.{f.name}: {value!r} is not {hints[f.name]}")
+
+
+def _conforms(value: object, hint: Any) -> bool:
+    origin = get_origin(hint)
+    if origin is Literal:
+        return isinstance(value, str) and value in get_args(hint)
+    if origin is types.UnionType:  # typing.Union is the same class since 3.14
+        return any(_conforms(value, arm) for arm in get_args(hint))
+    if hint is type(None):
+        return value is None
+    if hint in (bool, int, str, date):
+        return type(value) is hint  # True is not an int, a datetime is not a date
+    if isinstance(hint, type):
+        return isinstance(value, hint)
+    raise TypeError(f"no runtime check for {hint!r}")
 ```
 
 - [ ] **Step 4: Run it to make sure it passes**
@@ -1358,7 +1593,7 @@ Run:
 .venv/Scripts/python.exe -m pytest -q tests/unit/test_model.py
 ```
 
-Expected: `30 passed`.
+Expected: `53 passed`.
 
 - [ ] **Step 5: Make the modules mandatory in the layering contract**
 
@@ -1382,7 +1617,7 @@ Run each gate as its own shell call (the README's Windows gates, with forward sl
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Expected: `31 passed`.
+Expected: `54 passed`.
 
 ```bash
 .venv/Scripts/mypy.exe
@@ -1489,8 +1724,20 @@ Create `.scratch/mutations/task-2.json` (one mutation per new test; `old` occurs
   {
     "test": "tests/unit/test_model.py::test_slug_and_fold",
     "file": "elections_calendar/text.py",
-    "old": "return \"\".join(c for c in decomposed if not unicodedata.combining(c)).casefold()",
-    "new": "return decomposed.casefold()"
+    "old": "elif base and ord(base) < _ACCENTED_SCRIPTS_END:",
+    "new": "elif False:"
+  },
+  {
+    "test": "tests/unit/test_model.py::test_saved_records_outside_the_vocabulary_are_rejected",
+    "file": "elections_calendar/model.py",
+    "old": "return isinstance(value, str) and value in get_args(hint)",
+    "new": "return isinstance(value, str)"
+  },
+  {
+    "test": "tests/unit/test_model.py::test_years_and_rounds_are_bounded",
+    "file": "elections_calendar/model.py",
+    "old": "if not FIRST_YEAR <= self.year <= LAST_YEAR:",
+    "new": "if False:"
   }
 ]
 ```
@@ -1501,7 +1748,7 @@ Run:
 PYTHONDONTWRITEBYTECODE=1 .venv/Scripts/python.exe .scratch/mutate.py .scratch/mutations/task-2.json
 ```
 
-Expected: every line starts with `KILLED`, then `13/13 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. Then confirm the tree is unchanged:
+Expected: `baseline: all ... tests pass`, then every line starts with `KILLED` and shows `failed` with no `error`, then `15/15 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. `BASELINE FAILED` means a listed test fails before any mutation: fix that first. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. An `INVALID` or `TIMEOUT` line is not a kill: the mutation broke collection, imports or termination instead of the behaviour, so rewrite it until the test fails on an assertion. Then confirm the tree is unchanged:
 
 ```bash
 git diff --exit-code
@@ -1762,7 +2009,7 @@ Run each gate as its own shell call (the README's Windows gates, with forward sl
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Expected: `45 passed`.
+Expected: `68 passed`.
 
 ```bash
 .venv/Scripts/mypy.exe
@@ -1839,7 +2086,7 @@ Run:
 PYTHONDONTWRITEBYTECODE=1 .venv/Scripts/python.exe .scratch/mutate.py .scratch/mutations/task-3.json
 ```
 
-Expected: every line starts with `KILLED`, then `6/6 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. Then confirm the tree is unchanged:
+Expected: `baseline: all ... tests pass`, then every line starts with `KILLED` and shows `failed` with no `error`, then `6/6 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. `BASELINE FAILED` means a listed test fails before any mutation: fix that first. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. An `INVALID` or `TIMEOUT` line is not a kill: the mutation broke collection, imports or termination instead of the behaviour, so rewrite it until the test fails on an assertion. Then confirm the tree is unchanged:
 
 ```bash
 git diff --exit-code
@@ -2542,7 +2789,7 @@ Run each gate as its own shell call (the README's Windows gates, with forward sl
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Expected: `110 passed`.
+Expected: `133 passed`.
 
 ```bash
 .venv/Scripts/mypy.exe
@@ -2709,7 +2956,7 @@ Run:
 PYTHONDONTWRITEBYTECODE=1 .venv/Scripts/python.exe .scratch/mutate.py .scratch/mutations/task-4.json
 ```
 
-Expected: every line starts with `KILLED`, then `21/21 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. Then confirm the tree is unchanged:
+Expected: `baseline: all ... tests pass`, then every line starts with `KILLED` and shows `failed` with no `error`, then `21/21 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. `BASELINE FAILED` means a listed test fails before any mutation: fix that first. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. An `INVALID` or `TIMEOUT` line is not a kill: the mutation broke collection, imports or termination instead of the behaviour, so rewrite it until the test fails on an assertion. Then confirm the tree is unchanged:
 
 ```bash
 git diff --exit-code
@@ -2752,6 +2999,11 @@ country string, which the TSV leaves out, so the TSV has 90 names. `count_feed_c
 has no unit test of its own: it reads git history, which CI's shallow checkout lacks. Its
 output is pinned below by SHA-256 and checked by `test_display_names_are_frozen_from_feed_history`.
 
+Unregistered names keep every distinction `norm_name` keeps (spec correction C9): "O'Neill"
+and "ONeill" stay apart, a name in Japanese still has an ID, and "Riverside" under two parents
+gives two IDs. Whether snapshots store these IDs, and how an ID migrates when the name is
+registered later, is Plan 2's decision (see "Requirements for later plans").
+
 **Files:**
 
 - Create: `scripts/count_feed_countries.py` and its output `data/feed_country_history.tsv`
@@ -2763,12 +3015,15 @@ output is pinned below by SHA-256 and checked by `test_display_names_are_frozen_
 
 **Interfaces:**
 
-- Consumes: `collapse_ws`, `norm_name`, `slug` (Task 2).
+- Consumes: `collapse_ws`, `norm_name` (Task 2).
 - Produces (`elections_calendar.places`): `DEFAULT_PLACES` (path of `data/places.yaml`);
-  `Place(place_id, display, country_code, parent, registered=True)`;
-  `PlaceRegistry.load(path=DEFAULT_PLACES)`, `.get(place_id) -> Place`, `place_id in registry`,
-  `.resolve(raw: str) -> Place | None` (None only for empty text; unknown names give an
-  unregistered `x:<slug>` place), `.resolve_subdivision(parent_id: str, name: str) -> Place | None`.
+  `UNKNOWN = "unknown:"`; `Place(place_id, display, country_code, parent, registered=True)`;
+  `PlaceRegistry.load(path=DEFAULT_PLACES)` (`ValueError` for a registered ID that starts with
+  `unknown:` or an alias of two places), `.get(place_id) -> Place`, `place_id in registry`,
+  `.resolve(raw: str) -> Place | None` (None only for text with no letter or digit; an unknown
+  name gives the unregistered place `unknown:<key>`, and "<Name> (part of <Parent>)" gives
+  `unknown:<key>@<parent ID>`, where `<key>` is the `norm_name` key with spaces as hyphens),
+  `.resolve_subdivision(parent_id: str, name: str) -> Place | None`.
 - Produces (`scripts.build_places`): `HISTORY`, `MANUAL`, `OUT`, `BuildError`,
   `load_history(path) -> dict[str, int]`, `build(manual, history) -> dict[str, dict]`,
   `alias_index(places) -> dict[str, str]`, `render(places) -> str`, `main() -> int`.
@@ -2856,6 +3111,8 @@ Create `tests/unit/test_places.py`:
 
 ```python
 """Places (spec §6.2) against the committed data/places.yaml."""
+
+from pathlib import Path
 
 import pytest
 import yaml
@@ -2966,7 +3223,7 @@ def test_uk_plus_scotland_resolves_to_the_subdivision() -> None:
 def test_unregistered_part_of_names_get_a_subdivision_of_their_parent() -> None:
     place = REGISTRY.resolve("Northern Ireland (part of the United Kingdom)")
     assert place is not None and not place.registered
-    assert place.place_id == "x:northern-ireland"
+    assert place.place_id == "unknown:northern-ireland@iso:GB"
     assert place.parent == "iso:GB"
     assert place.display == "Northern Ireland (part of the United Kingdom)"
 
@@ -2977,8 +3234,38 @@ def test_unregistered_names_match_only_on_identical_normalised_names() -> None:
     c = REGISTRY.resolve("Artsakh")
     assert a is not None and b is not None and c is not None
     assert not a.registered
-    assert a.place_id == b.place_id == "x:republic-of-artsakh"
+    assert a.place_id == b.place_id == "unknown:republic-of-artsakh"
     assert c.place_id != a.place_id
+
+
+def test_unregistered_names_keep_their_distinctions() -> None:
+    ids = {raw: REGISTRY.resolve(raw) for raw in (
+        "O'Neill", "ONeill", "\u6771\u4eac",
+        "Riverside (part of United States)", "Riverside (part of Canada)",
+        "Riverside (part of Atlantis)",
+    )}  # fmt: skip
+    assert {raw: p.place_id for raw, p in ids.items() if p is not None} == {
+        "O'Neill": "unknown:o'neill",
+        "ONeill": "unknown:oneill",
+        "\u6771\u4eac": "unknown:\u6771\u4eac",  # not empty, so not "missing"
+        "Riverside (part of United States)": "unknown:riverside@iso:US",
+        "Riverside (part of Canada)": "unknown:riverside@iso:CA",
+        "Riverside (part of Atlantis)": "unknown:riverside@unknown:atlantis",
+    }
+    atlantis = ids["Riverside (part of Atlantis)"]
+    assert atlantis is not None and atlantis.parent == "unknown:atlantis"
+
+
+def test_unregistered_names_never_pose_as_registered_places(tmp_path: Path) -> None:
+    posing = REGISTRY.resolve("x:somaliland")
+    assert posing is not None and posing.place_id == "unknown:x-somaliland"
+    registry = tmp_path / "places.yaml"
+    registry.write_text(
+        "unknown:atlantis: {display: Atlantis, country_code: null, parent: null, aliases: [Atlantis]}\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="reserved"):
+        PlaceRegistry.load(registry)
 
 
 @pytest.mark.parametrize("raw", ["", "   ", "\u00a0", "()", "-"])
@@ -3082,10 +3369,14 @@ Create `elections_calendar/places.py`:
 
 ``data/places.yaml`` is generated by ``scripts/build_places.py``. Names match
 on ``text.norm_name`` (case, accents, punctuation, a leading/trailing "the").
-A name that is not registered still gets a deterministic ``x:<slug>`` place
-with ``registered=False``: two unregistered names match only when their
-normalised names are identical, and the adapter marks the unit partial with
-reason ``place_unregistered`` (spec §9.2).
+
+A name that is not registered still gets a deterministic place with
+``registered=False``, and the adapter marks the unit partial with reason
+``place_unregistered`` (spec §9.2). Its ID is ``unknown:<key>``, where
+``key`` is the normalised name with spaces as hyphens, so two unregistered
+names match only when their normalised names are identical. "<Name> (part
+of <Parent>)" gets ``unknown:<key>@<parent ID>``, whether or not the parent
+is registered. Registered IDs never start with ``unknown:``.
 """
 
 import re
@@ -3095,9 +3386,10 @@ from typing import Any
 
 import yaml
 
-from elections_calendar.text import collapse_ws, norm_name, slug
+from elections_calendar.text import collapse_ws, norm_name
 
 DEFAULT_PLACES = Path(__file__).resolve().parent.parent / "data" / "places.yaml"
+UNKNOWN = "unknown:"
 _PART_OF = re.compile(r"^(?P<name>.+?)\s*\(part of (?P<parent>.+)\)$", re.IGNORECASE)
 
 
@@ -3121,6 +3413,8 @@ class PlaceRegistry:
         places: dict[str, Place] = {}
         aliases: dict[str, str] = {}
         for place_id, entry in raw.items():
+            if place_id.startswith(UNKNOWN):
+                raise ValueError(f"{place_id}: {UNKNOWN} is reserved for unregistered names")
             places[place_id] = Place(
                 place_id, entry["display"], entry["country_code"], entry["parent"]
             )
@@ -3139,17 +3433,20 @@ class PlaceRegistry:
     def resolve(self, raw: str) -> Place | None:
         """The place for a source's country text; None when the text is empty."""
         text = collapse_ws(raw)
-        if not norm_name(text):
+        key = norm_name(text)
+        if not key:
             return None
-        place_id = self._aliases.get(norm_name(text))
+        place_id = self._aliases.get(key)
         if place_id is not None:
             return self._places[place_id]
         part_of = _PART_OF.match(text)
         if part_of:
             parent = self.resolve(part_of["parent"])
-            if parent is not None and parent.registered:
-                return Place(f"x:{slug(part_of['name'])}", text, None, parent.place_id, False)
-        return Place(f"x:{slug(text)}", text, None, None, False)
+            name = norm_name(part_of["name"])
+            if parent is not None and name:
+                place_id = f"{UNKNOWN}{_id_key(name)}@{parent.place_id}"
+                return Place(place_id, text, None, parent.place_id, False)
+        return Place(f"{UNKNOWN}{_id_key(key)}", text, None, None, False)
 
     def resolve_subdivision(self, parent_id: str, name: str) -> Place | None:
         """A registered subdivision of ``parent_id`` called ``name`` (UK + Scotland -> GB-SCT)."""
@@ -3157,6 +3454,11 @@ class PlaceRegistry:
         if place_id is None or self._places[place_id].parent != parent_id:
             return None
         return self._places[place_id]
+
+
+def _id_key(key: str) -> str:
+    """A normalised name as an ID fragment; one-to-one, apostrophes kept."""
+    return key.replace(" ", "-")
 ```
 
 Create `scripts/build_places.py`:
@@ -3375,7 +3677,7 @@ Run:
 .venv/Scripts/python.exe -m pytest -q tests/unit/test_places.py
 ```
 
-Expected: `59 passed`.
+Expected: `61 passed`.
 
 - [ ] **Step 7: Make the module mandatory in the layering contract**
 
@@ -3399,7 +3701,7 @@ Run each gate as its own shell call (the README's Windows gates, with forward sl
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Expected: `169 passed`.
+Expected: `194 passed`.
 
 ```bash
 .venv/Scripts/mypy.exe
@@ -3434,7 +3736,7 @@ Create `.scratch/mutations/task-5.json` (one mutation per new test; `old` occurs
   {
     "test": "tests/unit/test_places.py::test_real_source_spellings_resolve",
     "file": "elections_calendar/places.py",
-    "old": "place_id = self._aliases.get(norm_name(text))",
+    "old": "place_id = self._aliases.get(key)",
     "new": "place_id = self._aliases.get(text.casefold())"
   },
   {
@@ -3464,19 +3766,31 @@ Create `.scratch/mutations/task-5.json` (one mutation per new test; `old` occurs
   {
     "test": "tests/unit/test_places.py::test_unregistered_part_of_names_get_a_subdivision_of_their_parent",
     "file": "elections_calendar/places.py",
-    "old": "return Place(f\"x:{slug(part_of['name'])}\", text, None, parent.place_id, False)",
-    "new": "return Place(f\"x:{slug(part_of['name'])}\", text, None, None, False)"
+    "old": "return Place(place_id, text, None, parent.place_id, False)",
+    "new": "return Place(place_id, text, None, None, False)"
   },
   {
     "test": "tests/unit/test_places.py::test_unregistered_names_match_only_on_identical_normalised_names",
     "file": "elections_calendar/places.py",
-    "old": "return Place(f\"x:{slug(text)}\", text, None, None, False)",
-    "new": "return Place(f\"x:{slug(text)}\", text, None, None, True)"
+    "old": "return Place(f\"{UNKNOWN}{_id_key(key)}\", text, None, None, False)",
+    "new": "return Place(f\"{UNKNOWN}{_id_key(key)}\", text, None, None, True)"
+  },
+  {
+    "test": "tests/unit/test_places.py::test_unregistered_names_keep_their_distinctions",
+    "file": "elections_calendar/places.py",
+    "old": "return key.replace(\" \", \"-\")",
+    "new": "return key.replace(\" \", \"-\").replace(\"'\", \"\")"
+  },
+  {
+    "test": "tests/unit/test_places.py::test_unregistered_names_never_pose_as_registered_places",
+    "file": "elections_calendar/places.py",
+    "old": "if place_id.startswith(UNKNOWN):",
+    "new": "if False:"
   },
   {
     "test": "tests/unit/test_places.py::test_empty_country_text_resolves_to_nothing",
     "file": "elections_calendar/places.py",
-    "old": "if not norm_name(text):",
+    "old": "if not key:",
     "new": "if not text:"
   },
   {
@@ -3506,7 +3820,7 @@ Run:
 PYTHONDONTWRITEBYTECODE=1 .venv/Scripts/python.exe .scratch/mutate.py .scratch/mutations/task-5.json
 ```
 
-Expected: every line starts with `KILLED`, then `11/11 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. Then confirm the tree is unchanged:
+Expected: `baseline: all ... tests pass`, then every line starts with `KILLED` and shows `failed` with no `error`, then `13/13 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. `BASELINE FAILED` means a listed test fails before any mutation: fix that first. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. An `INVALID` or `TIMEOUT` line is not a kill: the mutation broke collection, imports or termination instead of the behaviour, so rewrite it until the test fails on an assertion. Then confirm the tree is unchanged:
 
 ```bash
 git diff --exit-code
@@ -3544,6 +3858,20 @@ Record the new commit hash and the next task in the ledger (`C:/Users/senescalk/
 
 ### Task 6: Institutions from the IPU table, and office classification
 
+Scope comes before identity (spec correction C18): a chamber's name in an office label does
+not by itself say which body is elected. Referendum words come first ("Referendum on reform
+of the Senate" is a referendum). A subnational word outside the chamber's own name ("State
+Senate", "provincial") or a `subdivision` jurisdiction makes generic chamber words
+subnational. A by-election lends national identity only to a chamber the text names, in a
+named constituency ("House of Commons by-election" for Holborn). It never turns generic words
+into the national chamber: "House of Assembly by-election" for an Australian seat stays
+unresolved.
+
+Chambers the IPU marks "(Suspended)" or "(Dissolved)" keep their identity with a `status`
+(spec correction C12). Their names still resolve, for older evidence or a proposed renewal.
+Generic chamber words and the unicameral rule use active chambers only, and a bicameral place
+left with one active chamber fails the build instead of passing as unicameral.
+
 BARMM ("Bangsamoro Parliament", Philippines) gets no level hint here, because the Philippines
 is bicameral. It is `subnational` because Wikipedia's local-elections page lists it, and that
 page's default level is `subnational` (spec §6.4); Plan 2's end-to-end check covers it.
@@ -3563,10 +3891,11 @@ page's default level is `subnational` (spec §6.4); Plan 2's end-to-end check co
 - Consumes: `JurisdictionKind`, `Kind`, `Level`, `OfficeClass` (Task 2); `collapse_ws`,
   `norm_name`, `slug` (Task 2); `PlaceRegistry` (Task 5, build script and tests only).
 - Produces (`elections_calendar.offices`): `DEFAULT_INSTITUTIONS`;
-  `Chamber(name, office_class, designation, aliases)` with `names`;
+  `ChamberStatus = Literal["active", "suspended", "dissolved"]`;
+  `Chamber(name, office_class, designation, aliases, status)` with `names` and `active`;
   `Office(label, office_class, institution, aggregate, kind, round, level_hint, recognised)`;
   `InstitutionRegistry.load(path=DEFAULT_INSTITUTIONS)`, `.chambers(place_id) -> tuple[Chamber, ...]`,
-  `.unicameral(place_id) -> Chamber | None`;
+  `.unicameral(place_id) -> Chamber | None` (the place's one active chamber, if unicameral);
   `institution_id(place_id: str, chamber: Chamber) -> str` (`"iso:RS/national-assembly"`);
   `extract_round(text: str) -> tuple[int | None, str]`;
   `keyword_class(text: str) -> OfficeClass | None`;
@@ -3577,7 +3906,9 @@ page's default level is `subnational` (spec §6.4); Plan 2's end-to-end check co
   `labels_similar(a: str, b: str) -> bool`.
 - Produces (`scripts.build_institutions`): `IPU_TABLE`, `MANUAL`, `OUT`, `BuildError`,
   `ipu_chambers(html, places)`, `build(html, manual, places)`, `render(institutions)`, `main()`.
-- `data/institutions.yaml`: `place_id -> [{name, office_class, designation, aliases[]}]`.
+- `data/institutions.yaml`: `place_id -> [{name, office_class, designation, status, aliases[]}]`;
+  `status` is as of the IPU capture (2026-10-16), which the file's header names.
+- Whoever emits `expected_renewal` claims (Plan 2) skips chambers that are not `active`.
 
 - [ ] **Step 1: Move the IPU capture into the fixtures**
 
@@ -3619,6 +3950,7 @@ import yaml
 
 from elections_calendar.model import JurisdictionKind, Level
 from elections_calendar.offices import (
+    Chamber,
     InstitutionRegistry,
     extract_round,
     labels_similar,
@@ -3786,12 +4118,59 @@ def test_build_rejects_an_alias_for_a_missing_chamber() -> None:
         build(IPU_TABLE.read_text(encoding="utf-8"), manual, PlaceRegistry.load())
 
 
-def test_suspended_chambers_are_skipped() -> None:
+def test_suspended_chambers_keep_their_identity_but_are_not_active() -> None:
     manual = yaml.safe_load(MANUAL.read_text(encoding="utf-8"))
     built = build(IPU_TABLE.read_text(encoding="utf-8"), manual, PlaceRegistry.load())
-    assert [c["name"] for c in built["iso:KZ"]] == ["Kurultai"]  # "Senate (Suspended)"
-    assert "iso:AF" not in built  # its only chamber is dissolved
-    assert REGISTRY.unicameral("iso:KZ") is not None
+    kz = {c["name"]: c["status"] for c in built["iso:KZ"]}
+    assert kz == {"Kurultai": "active", "Senate": "suspended"}  # IPU: "Senate (Suspended)"
+    assert {c["status"] for c in built["iso:AF"]} == {"suspended"}  # both chambers
+    only = REGISTRY.unicameral("iso:KZ")
+    assert only is not None and only.name == "Kurultai"
+    assert REGISTRY.unicameral("iso:KW") is None  # its only chamber is suspended
+    # the name still identifies the chamber (older or renewal evidence)...
+    assert classify("National Assembly", "iso:KW") == ("legislature", "iso:KW/national-assembly", False, "candidate_election", None, "national")
+    # ...but generic words never resolve to a chamber that is not active
+    assert classify("Parliament", "iso:KW") == ("legislature", None, True, "aggregate", None, None)
+
+
+def test_build_rejects_a_bicameral_place_left_with_one_active_chamber() -> None:
+    manual = yaml.safe_load(MANUAL.read_text(encoding="utf-8"))
+    html = IPU_TABLE.read_text(encoding="utf-8")
+    assert html.count(">Federal Senate</a>") == 1
+    html = html.replace(">Federal Senate</a>", ">Federal Senate (Suspended)</a>")
+    with pytest.raises(BuildError, match="iso:BR"):
+        build(html, manual, PlaceRegistry.load())
+
+
+@pytest.mark.parametrize(
+    ("label", "place_id", "kind", "expected"),
+    [
+        # a subnational qualifier or a subdivision outranks the chamber's name...
+        ("State Senate by-election", "iso:US", "named", ("upper_house", None, False, "by_election", None, "subnational")),
+        ("Senate by-election", "iso:US", "subdivision", ("upper_house", None, False, "by_election", None, "subnational")),
+        ("Legislative Assembly by-election", "iso:MY", "subdivision", ("legislature", None, False, "by_election", None, "subnational")),
+        ("State Houses of Assembly", "iso:NG", "nationwide", ("legislature", None, False, "candidate_election", None, "subnational")),
+        # ...and a by-election alone does not make a generic chamber word national
+        ("House of Assembly by-election", "iso:AU", "named", ("lower_house", None, False, "by_election", None, None)),
+        # a by-election to the chamber the text names, in a named constituency, is national
+        ("House of Representatives by-election", "iso:MY", "named", ("lower_house", "iso:MY/house-of-representatives", False, "by_election", None, "national")),
+        # a referendum that names a chamber is a referendum
+        ("Referendum on reform of the Senate", "iso:US", "nationwide", ("referendum", None, False, "referendum_day", None, "national")),
+        ("Senate referendum", "iso:IT", "subdivision", ("referendum", None, False, "referendum_day", None, "subnational")),
+    ],
+)
+def test_scope_comes_before_chamber_identity(
+    label: str, place_id: str, kind: JurisdictionKind, expected: tuple[object, ...]
+) -> None:
+    assert classify(label, place_id, kind) == expected  # constructed labels
+
+
+def test_a_qualifier_in_the_chambers_own_name_is_not_scope() -> None:
+    registry = InstitutionRegistry(
+        {"iso:WF": (Chamber("Territorial Assembly", "legislature", "direct", (), "active"),)}
+    )
+    office = classify_office("Territorial Assembly", "iso:WF", "nationwide", registry)
+    assert (office.institution, office.level_hint) == ("iso:WF/territorial-assembly", "national")
 ```
 
 - [ ] **Step 3: Run it to make sure it fails**
@@ -3885,28 +4264,40 @@ Create `elections_calendar/offices.py`:
 """Office classification (spec §6.3) and level evidence (spec §6.4).
 
 ``classify`` turns one office text (already split with ``split_offices``)
-into an ``Office``. The order of the rules matters:
+into an ``Office``. Scope comes before identity: a chamber's name in the
+text does not by itself say which body is elected. The text is *qualified*
+when it has a subnational word ("State Senate", "provincial") outside the
+chamber's own name, or when the jurisdiction is a subdivision. The order of
+the rules matters:
 
-1. a chamber of the place named by its IPU name or an alias ("State Duma",
-   "Knesset"). Names built only from generic words ("Senate", "House of
-   Commons") count only nationwide or for a by-election, so "Virginia,
-   Senate" is not the US Senate;
-2. referendum, head of state, governor, mayor;
-3. generic chamber words: "senate" -> the place's one upper chamber,
-   "house of representatives" -> its one lower chamber (or its only
-   chamber), nationwide or for a by-election;
-4. local bodies ("municipal", "local", "city council", ...);
-5. generic legislature words ("Parliament", "Legislative", "Congress"):
-   identity only for a unicameral place, nationwide or for a by-election;
-   otherwise an aggregate (spec §6.3);
-6. "General" and anything unrecognised: class ``general``, aggregate.
+1. referendum words, even when the text names a chamber ("Referendum on
+   reform of the Senate");
+2. a chamber of the place named by its IPU name or an alias ("State Duma",
+   "Knesset"), suspended chambers included. A name built only from generic
+   words ("Senate", "House of Commons") counts only when the text is not
+   qualified, and then only nationwide or for a by-election in a named
+   constituency, so "Virginia, Senate" is not the US Senate;
+3. head of state, governor, mayor;
+4. generic chamber words: "senate" -> the place's one active upper chamber,
+   "house of representatives" -> its one active lower chamber (or its only
+   chamber), nationwide only; when qualified, a subnational chamber;
+5. local bodies ("municipal", "local", "city council", ...);
+6. generic legislature words ("Parliament", "Legislative", "Congress"):
+   subnational when qualified or regional; identity only for a place with one
+   active, unicameral chamber, nationwide; otherwise an aggregate (spec §6.3);
+7. "General" and anything unrecognised: class ``general``, aggregate.
+
+A by-election says how a seat is filled, not which level owns it: it lends
+identity only to a chamber the text names (rule 2), never to generic words.
+A suspended or dissolved chamber keeps its identity, so older evidence still
+resolves; whether it can hold an election now is the caller's decision.
 """
 
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 
@@ -3954,6 +4345,10 @@ _LOCAL = _rx(
     r"|county|borough|ward|metropolitan)\b"
 )
 _REGIONAL = _rx(r"\b(?:regional|region|provincial|prefectural|departmental|cantonal)\b")
+_SUBNATIONAL = _rx(
+    r"\b(?:state|provincial|province|regional|region|prefectural|departmental|cantonal|county"
+    r"|municipal|city|territorial)\b"
+)
 _COUNCIL = _rx(r"\bcouncil(?:s|lors?|lers?)?\b")
 _GENERAL = _rx(r"\bgeneral\b")
 _PLURAL_BODY = _rx(r"\b(?:councils|assemblies|elections|governors|mayors)\b|\band\b")
@@ -3966,16 +4361,24 @@ _HOUSES: tuple[tuple[re.Pattern[str], OfficeClass], ...] = (
 )
 
 
+ChamberStatus = Literal["active", "suspended", "dissolved"]
+
+
 @dataclass(frozen=True, slots=True)
 class Chamber:
     name: str
     office_class: OfficeClass  # lower_house | upper_house | legislature (unicameral)
     designation: str  # direct | indirect | appointed | other
     aliases: tuple[str, ...]
+    status: ChamberStatus  # as of the IPU capture named in data/institutions.yaml
 
     @property
     def names(self) -> tuple[str, ...]:
         return (self.name, *self.aliases)
+
+    @property
+    def active(self) -> bool:
+        return self.status == "active"
 
 
 @dataclass(frozen=True, slots=True)
@@ -4000,7 +4403,13 @@ class InstitutionRegistry:
         return cls(
             {
                 place_id: tuple(
-                    Chamber(c["name"], c["office_class"], c["designation"], tuple(c["aliases"]))
+                    Chamber(
+                        c["name"],
+                        c["office_class"],
+                        c["designation"],
+                        tuple(c["aliases"]),
+                        c["status"],
+                    )
                     for c in items
                 )
                 for place_id, items in raw.items()
@@ -4011,9 +4420,10 @@ class InstitutionRegistry:
         return self._chambers.get(place_id, ())
 
     def unicameral(self, place_id: str) -> Chamber | None:
-        chambers = self.chambers(place_id)
-        if len(chambers) == 1 and chambers[0].office_class == "legislature":
-            return chambers[0]
+        """The place's chamber when it has exactly one active chamber, a unicameral one."""
+        active = [c for c in self.chambers(place_id) if c.active]
+        if len(active) == 1 and active[0].office_class == "legislature":
+            return active[0]
         return None
 
 
@@ -4038,9 +4448,21 @@ def extract_round(text: str) -> tuple[int | None, str]:
     return number, rest
 
 
-def _contains(haystack: str, needle: str) -> bool:
+def _name_pattern(needle: str) -> re.Pattern[str] | None:
     key = norm_name(needle)
-    return bool(key) and re.search(rf"(?:^| ){re.escape(key)}(?: |$)", haystack) is not None
+    return re.compile(rf"(?:^| ){re.escape(key)}(?: |$)") if key else None
+
+
+def _contains(haystack: str, needle: str) -> bool:
+    pattern = _name_pattern(needle)
+    return pattern is not None and pattern.search(haystack) is not None
+
+
+def _without(text: str, name: str) -> str:
+    """``text``'s normalised words with the chamber name ``name`` taken out."""
+    key = norm_name(text)
+    pattern = _name_pattern(name)
+    return key if pattern is None else pattern.sub(" ", key)
 
 
 def _generic(name: str) -> bool:
@@ -4059,7 +4481,7 @@ def _named_chamber(text: str, chambers: Iterable[Chamber]) -> tuple[Chamber, str
 
 
 def _chamber_of_class(chambers: tuple[Chamber, ...], office_class: str) -> Chamber | None:
-    matches = [c for c in chambers if c.office_class == office_class]
+    matches = [c for c in chambers if c.active and c.office_class == office_class]
     return matches[0] if len(matches) == 1 else None
 
 
@@ -4119,17 +4541,22 @@ def classify(
                 kind = "candidate_election"
         return Office(text, office_class, institution, aggregate, kind, round_, level, recognised)
 
-    named = _named_chamber(rest, chambers)
-    if named is not None and (not _generic(named[1]) or nationwide or by_election):
-        found = named[0]
-        return office(
-            found.office_class, institution=institution_id(place_id, found), level="national"
-        )
+    in_subdivision = jurisdiction_kind == "subdivision"
     if _REFERENDUM.search(rest):
         level: Level | None = "national" if nationwide else (
-            "subnational" if jurisdiction_kind == "named" else None
+            "subnational" if jurisdiction_kind in ("named", "subdivision") else None
         )
         return office("referendum", level=level, kind="referendum_day")
+    named = _named_chamber(rest, chambers)
+    if named is not None:
+        found, name = named
+        qualified = in_subdivision or _SUBNATIONAL.search(_without(rest, name)) is not None
+        constituency = by_election and jurisdiction_kind == "named"
+        if not _generic(name) or (not qualified and (nationwide or constituency)):
+            return office(
+                found.office_class, institution=institution_id(place_id, found), level="national"
+            )
+    qualified = in_subdivision or _SUBNATIONAL.search(rest) is not None
     if _HEAD_OF_STATE.search(rest):
         institution = f"{place_id}/president" if nationwide else None
         return office(
@@ -4141,10 +4568,12 @@ def classify(
         return office("mayor", aggregate=bool(_MAYORS.search(rest)), level="subnational")
     for pattern, house in _HOUSES:
         if pattern.search(rest):
+            if qualified:
+                return office(house, level="subnational")
             chamber = _chamber_of_class(chambers, house)
             if house == "lower_house" and chamber is None:
                 chamber = registry.unicameral(place_id)
-            if chamber is not None and (nationwide or by_election):
+            if chamber is not None and nationwide:
                 return office(
                     chamber.office_class,
                     institution=institution_id(place_id, chamber),
@@ -4157,10 +4586,10 @@ def classify(
         single_body = jurisdiction_kind == "named" and not _PLURAL_BODY.search(rest)
         return office("local_council", aggregate=not single_body, level="subnational")
     if _LEGISLATURE.search(rest):
-        if _REGIONAL.search(rest):
+        if qualified or _REGIONAL.search(rest):
             return office("legislature", level="subnational")
         only = registry.unicameral(place_id)
-        if only is not None and (nationwide or by_election):
+        if only is not None and nationwide:
             return office(
                 "legislature", institution=institution_id(place_id, only), level="national"
             )
@@ -4275,6 +4704,10 @@ tests/fixtures/ipu/2026-10-16/elections.html (Country, Chamber, Structure of
 parliament, Chamber type, Principal mode of designation of members) and
 data/institutions_manual.yaml. The output is committed and its diff reviewed.
 
+A chamber the IPU marks "(Suspended)" or "(Dissolved)" is kept under its
+plain name with that status, so its identity survives; only active chambers
+must form a uni- or bicameral structure.
+
     .venv\\Scripts\\python.exe -m scripts.build_institutions
 """
 
@@ -4300,7 +4733,7 @@ DESIGNATIONS = {
     "indirectly elected": "indirect",
     "appointed": "appointed",
 }
-_SUSPENDED = re.compile(r"\((?:suspended|dissolved)\)\s*$", re.IGNORECASE)
+_STATUS = re.compile(r"\s*\((?P<status>suspended|dissolved)\)\s*$", re.IGNORECASE)
 
 
 class BuildError(Exception):
@@ -4322,8 +4755,10 @@ def ipu_chambers(html: str, places: PlaceRegistry) -> dict[str, list[dict[str, A
         cells = [collapse_ws(c.get_text(" ")) for c in row.find_all("td")]
         if len(cells) < len(header):
             raise BuildError(f"short IPU row: {cells}")
-        if _SUSPENDED.search(cells[col["chamber"]]):
-            continue  # a suspended chamber holds no elections
+        name, status = cells[col["chamber"]], "active"
+        marked = _STATUS.search(name)
+        if marked:
+            name, status = name[: marked.start()], marked["status"].casefold()
         place = places.resolve(cells[col["country"]])
         if place is None or not place.registered:
             raise BuildError(f"IPU country {cells[col['country']]!r} is not a registered place")
@@ -4335,9 +4770,10 @@ def ipu_chambers(html: str, places: PlaceRegistry) -> dict[str, list[dict[str, A
         designation = cells[col["principal mode of designation of members"]].casefold()
         out.setdefault(place.place_id, []).append(
             {
-                "name": cells[col["chamber"]],
+                "name": name,
                 "office_class": office_class,
                 "designation": DESIGNATIONS.get(designation, "other"),
+                "status": status,
                 "aliases": [],
             }
         )
@@ -4362,22 +4798,24 @@ def build(html: str, manual: dict[str, Any], places: PlaceRegistry) -> dict[str,
                 "name": c["name"],
                 "office_class": c["office_class"],
                 "designation": c["designation"],
+                "status": "active",
                 "aliases": sorted(c.get("aliases", [])),
             }
             for c in extra
         ]
     for place_id, items in chambers.items():
-        classes = [c["office_class"] for c in items]
-        unicameral = classes == ["legislature"]
-        bicameral = sorted(classes) == ["lower_house", "upper_house"]
-        if not (unicameral or bicameral):
-            raise BuildError(f"{place_id}: chambers {classes} are neither uni- nor bicameral")
+        classes = sorted(c["office_class"] for c in items if c["status"] == "active")
+        if classes not in ([], ["legislature"], ["lower_house", "upper_house"]):
+            raise BuildError(
+                f"{place_id}: active chambers {classes} are neither uni- nor bicameral"
+            )
     return {place_id: chambers[place_id] for place_id in sorted(chambers)}
 
 
 def render(institutions: dict[str, Any]) -> str:
     header = "# Generated by scripts/build_institutions.py from the IPU chamber table and\n"
     header += "# data/institutions_manual.yaml. Do not edit; edit the inputs and rebuild.\n"
+    header += f"# Chamber status is as of the IPU capture of {IPU_TABLE.parent.name}.\n"
     return header + yaml.safe_dump(institutions, allow_unicode=True, sort_keys=False, width=100)
 
 
@@ -4402,7 +4840,7 @@ Run:
 .venv/Scripts/python.exe -m scripts.build_institutions
 ```
 
-Expected: `211 places with chambers -> data\institutions.yaml`.
+Expected: `215 places with chambers -> data\institutions.yaml`.
 
 Run:
 
@@ -4410,7 +4848,7 @@ Run:
 sha256sum data/institutions.yaml
 ```
 
-Expected: `0873f271829304755a92287cb26b4474ed9687fdbdb7f87b5239560e18c324c2  data/institutions.yaml`. Review the file before you commit it.
+Expected: `83cd226687376583f8a184c44dc55ff486cac433bbb4eda245abb69876810cd7  data/institutions.yaml`. Review the file before you commit it.
 
 - [ ] **Step 6: Run it to make sure it passes**
 
@@ -4420,7 +4858,7 @@ Run:
 .venv/Scripts/python.exe -m pytest -q tests/unit/test_offices.py
 ```
 
-Expected: `73 passed`.
+Expected: `83 passed`.
 
 - [ ] **Step 7: Layering and README**
 
@@ -4467,7 +4905,7 @@ Run each gate as its own shell call (the README's Windows gates, with forward sl
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Expected: `242 passed`.
+Expected: `277 passed`.
 
 ```bash
 .venv/Scripts/mypy.exe
@@ -4508,8 +4946,8 @@ Create `.scratch/mutations/task-6.json` (one mutation per new test; `old` occurs
   {
     "test": "tests/unit/test_offices.py::test_classify_named_jurisdiction",
     "file": "elections_calendar/offices.py",
-    "old": "if named is not None and (not _generic(named[1]) or nationwide or by_election):",
-    "new": "if named is not None:"
+    "old": "if not _generic(name) or (not qualified and (nationwide or constituency)):",
+    "new": "if True:"
   },
   {
     "test": "tests/unit/test_offices.py::test_unrecognised_labels_are_flagged",
@@ -4554,10 +4992,28 @@ Create `.scratch/mutations/task-6.json` (one mutation per new test; `old` occurs
     "new": "if len(match) > 1:"
   },
   {
-    "test": "tests/unit/test_offices.py::test_suspended_chambers_are_skipped",
+    "test": "tests/unit/test_offices.py::test_suspended_chambers_keep_their_identity_but_are_not_active",
+    "file": "elections_calendar/offices.py",
+    "old": "active = [c for c in self.chambers(place_id) if c.active]",
+    "new": "active = list(self.chambers(place_id))"
+  },
+  {
+    "test": "tests/unit/test_offices.py::test_build_rejects_a_bicameral_place_left_with_one_active_chamber",
     "file": "scripts/build_institutions.py",
-    "old": "if _SUSPENDED.search(cells[col[\"chamber\"]]):",
-    "new": "if False:"
+    "old": "if classes not in ([], [\"legislature\"], [\"lower_house\", \"upper_house\"]):",
+    "new": "if classes not in ([], [\"legislature\"], [\"lower_house\", \"upper_house\"], [\"lower_house\"]):"
+  },
+  {
+    "test": "tests/unit/test_offices.py::test_scope_comes_before_chamber_identity",
+    "file": "elections_calendar/offices.py",
+    "old": "qualified = in_subdivision or _SUBNATIONAL.search(rest) is not None",
+    "new": "qualified = False"
+  },
+  {
+    "test": "tests/unit/test_offices.py::test_a_qualifier_in_the_chambers_own_name_is_not_scope",
+    "file": "elections_calendar/offices.py",
+    "old": "_SUBNATIONAL.search(_without(rest, name)) is not None",
+    "new": "_SUBNATIONAL.search(rest) is not None"
   }
 ]
 ```
@@ -4568,7 +5024,7 @@ Run:
 PYTHONDONTWRITEBYTECODE=1 .venv/Scripts/python.exe .scratch/mutate.py .scratch/mutations/task-6.json
 ```
 
-Expected: every line starts with `KILLED`, then `10/10 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. Then confirm the tree is unchanged:
+Expected: `baseline: all ... tests pass`, then every line starts with `KILLED` and shows `failed` with no `error`, then `13/13 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. `BASELINE FAILED` means a listed test fails before any mutation: fix that first. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. An `INVALID` or `TIMEOUT` line is not a kill: the mutation broke collection, imports or termination instead of the behaviour, so rewrite it until the test fails on an assertion. Then confirm the tree is unchanged:
 
 ```bash
 git diff --exit-code
@@ -4614,6 +5070,20 @@ patched `socket.getaddrinfo` for DNS failures. urllib3 2.8 verifies with
 Body reads use `raw.read1()`: `iter_content` blocks until a whole 64 KiB chunk arrives, which
 would let a server that drips bytes hold an attempt far past its limit.
 
+Requests go through the session's adapter, not `Session.send`: requests 2.34 reads a
+redirect's whole body even with `allow_redirects=False` (it prepares `Response.next`), with no
+size or time limit. Here a redirect's body is never read; its connection is closed. The
+attempt limit is checked before every request, redirect hops included, so nothing is sent
+after it. A body whose last byte (by Content-Length) arrived in the read that crossed the limit
+is complete and is kept. Name resolution and a server that drips its headers are not bounded
+inside `fetch`; Plan 2's per-source child process is the hard bound (spec correction C15).
+
+Redaction is an allowlist (spec correction C21). Diagnostics keep only the values of the
+sources' own query keys (`SAFE_QUERY_KEYS`: the Wikipedia API's, NDI's `page`, A-WEB's
+`menuNo` and `option`, EISA's `table_id` and `target_action`), compared percent-decoded and
+case-folded. Every other parameter is replaced whole, key included, because a token can stand
+where a key would.
+
 **Files:**
 
 - Create: `elections_calendar/fetch.py` (without the trust store, which is Task 8)
@@ -4637,13 +5107,15 @@ would let a server that drips bytes hold an attempt far past its limit.
   (never raises for network problems) and `.close()`;
   `outcome_for(exc: Exception) -> tuple[FetchOutcome, bool]`; `user_agent(host: str) -> str`;
   `parse_retry_after(value: str | None, wall_clock) -> float | None`;
-  `redact_url(url: str) -> str`; `redact_text(text: str, limit: int = 500) -> str`.
+  `SAFE_QUERY_KEYS: frozenset[str]`, `REDACTED = "REDACTED"`; `redact_query(query: str) -> str`,
+  `redact_url(url: str) -> str`, `redact_text(text: str, limit: int = 500) -> str`.
 - Produces (tests): `tests.support.tls.authority(common_name) -> Authority`,
   `server_cert(ca, directory, name, *, hosts=("127.0.0.1",), expired=False) -> ServerCert`;
   `tests.support.http_server.Reply`, `Request`, `TestServer` (`url(path)`,
   `route(path, *replies) -> str`, `requests`), `serve(cert)` (context manager).
 - Plan 2's per-source runner builds one `Fetcher` per source and a `Deadline` per source
-  (`SOURCE_DEADLINE_S`) capped by the scrape's (`SCRAPE_DEADLINE_S`) via `earliest`.
+  (`SOURCE_DEADLINE_S`) capped by the scrape's (`SCRAPE_DEADLINE_S`) via `earliest`, and runs
+  each source in a child process that it kills at that deadline (the hard bound, C15).
 
 - [ ] **Step 1: Write the failing test and its support code**
 
@@ -5161,6 +5633,24 @@ def test_an_oversized_body_is_refused(pki: Pki, fake: FakeTime, server: TestServ
     assert result.body == b""
 
 
+def test_a_body_completed_by_the_read_that_crossed_the_limit_is_kept(
+    pki: Pki, fake: FakeTime, server: TestServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_read1 = urllib3.HTTPResponse.read1
+
+    def late_read1(
+        self: urllib3.HTTPResponse, amt: int | None = None, decode_content: bool | None = None
+    ) -> bytes:
+        data = real_read1(self, amt, decode_content)
+        if data and self.length_remaining == 0:
+            fake.now += 100  # the read that brought the last byte ended after the limit
+        return data
+
+    monkeypatch.setattr(urllib3.HTTPResponse, "read1", late_read1)
+    result = get(pki, fake, server.route("/page", Reply(body=b"x" * 30)))
+    assert (result.outcome, result.body, result.attempts) == ("ok", b"x" * 30, 1)
+
+
 # -- deadlines --------------------------------------------------------------
 
 
@@ -5173,6 +5663,22 @@ def test_the_deadline_stops_a_wait_it_cannot_afford(
     assert (result.outcome, result.attempts, result.http_status) == ("deadline", 2, 503)
     assert fake.sleeps == [30.0]
     assert result.error is not None and "http_error" in result.error
+
+
+def test_no_request_is_sent_once_the_attempt_limit_has_passed(
+    pki: Pki, fake: FakeTime, server: TestServer
+) -> None:
+    url = server.route("/a", Reply(status=302, headers={"Location": "/b"}))
+    server.route("/b", Reply(body=b"ok"))
+
+    def clock() -> float:  # 100 s pass while /a is answered
+        return fake.now + (100.0 if server.requests else 0.0)
+
+    with Fetcher(verify=str(pki.bundle), clock=clock, sleep=fake.sleep) as f:
+        result = f.get(url, deadline=Deadline.after(90, clock))
+    assert (result.outcome, result.attempts) == ("deadline", 1)
+    assert result.error == "deadline reached; last attempt: timeout at redirect"
+    assert [r.path for r in server.requests] == ["/a"]
 
 
 def test_a_spent_deadline_makes_no_request(pki: Pki, fake: FakeTime, server: TestServer) -> None:
@@ -5208,6 +5714,24 @@ def test_more_than_five_redirects_fail(pki: Pki, fake: FakeTime, server: TestSer
     assert (result.outcome, result.stage, result.attempts) == ("fetch_failed", "redirect", 1)
     assert len(server.requests) == 6  # the request and five redirects
     assert result.error == "more than 5 redirects"
+
+
+def test_a_redirect_body_is_never_read(pki: Pki, fake: FakeTime, server: TestServer) -> None:
+    slow = Reply(status=302, headers={"Location": "/b"}, body=b"x" * 100, drip=0.5)  # 5 s
+    url = server.route("/a", slow)
+    server.route("/b", Reply(body=b"here"))
+    started = time.monotonic()
+    result = get(pki, fake, url)
+    assert result.ok and result.body == b"here"
+    assert time.monotonic() - started < 2.0
+
+
+def test_cookies_set_by_a_redirect_are_sent_on(pki: Pki, fake: FakeTime, server: TestServer) -> None:
+    headers = {"Location": "/b", "Set-Cookie": "consent=yes; Path=/"}
+    url = server.route("/a", Reply(status=302, headers=headers))
+    server.route("/b", Reply(body=b"here"))
+    assert get(pki, fake, url).ok
+    assert server.requests[1].headers.get("Cookie") == "consent=yes"
 
 
 def test_a_redirect_to_http_is_refused(pki: Pki, fake: FakeTime, server: TestServer) -> None:
@@ -5354,18 +5878,33 @@ def test_outcome_for(exc: Exception, expected: tuple[str, bool]) -> None:
 # -- redaction ----------------------------------------------------------------
 
 
+WIKIPEDIA_API = (
+    "https://en.wikipedia.org/w/api.php?action=parse&page=2026_national_electoral_calendar"
+    "&prop=text|revid&format=json&formatversion=2&maxlag=5"
+)
+EISA_TABLE = (
+    "https://www.eisa.org/wp-admin/admin-ajax.php?action=wp_ajax_ninja_tables_public_action"
+    "&table_id=12&target_action=get-all-data"
+)
+
+
 @pytest.mark.parametrize(
     ("url", "expected"),
     [
-        (
-            "https://user:pw@Example.org:8443/p?q=1&api_key=abc&token=x#frag",
-            "https://example.org:8443/p?q=1&api_key=REDACTED&token=REDACTED",
-        ),
-        (
-            "https://en.wikipedia.org/w/api.php?action=parse&page=2026_in_politics",
-            "https://en.wikipedia.org/w/api.php?action=parse&page=2026_in_politics",
-        ),
-        ("https://[::1]:8080/x?Session=1", "https://[::1]:8080/x?Session=REDACTED"),
+        # the sources' own parameters are kept
+        (WIKIPEDIA_API, WIKIPEDIA_API),
+        (EISA_TABLE, EISA_TABLE),
+        ("https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052&option=all", "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052&option=all"),
+        ("https://www.ndi.org/elections-calendar?page=2", "https://www.ndi.org/elections-calendar?page=2"),
+        # any other parameter is replaced whole; user info and the fragment are dropped
+        ("https://user:pw@Example.org:8443/p?q=1&api_key=abc&token=x#frag", "https://example.org:8443/p?REDACTED&REDACTED&REDACTED"),
+        ("https://x.org/p?__cf_chl_tk=abc.123-xyz&page=2", "https://x.org/p?REDACTED&page=2"),  # Cloudflare
+        ("https://x.org/p?page=1&page=2&sid=a&sid=b", "https://x.org/p?page=1&page=2&REDACTED&REDACTED"),
+        ("https://x.org/p?%2561ction=parse&Page=2&%74oken=abc", "https://x.org/p?%2561ction=parse&Page=2&REDACTED"),
+        ("https://x.org/p?dG9rZW4=", "https://x.org/p?REDACTED"),  # a token where a key would be
+        ("https://x.org/p?next=https://y.org/%3Ftoken%3Dabc", "https://x.org/p?REDACTED"),
+        ("https://x.org/p?action%3Dparse%26token%3Dabc", "https://x.org/p?REDACTED"),
+        ("https://[::1]:8080/x?Session=1", "https://[::1]:8080/x?REDACTED"),
         ("https://[::1/x", "<unparseable URL>"),
     ],
 )
@@ -5373,15 +5912,29 @@ def test_redact_url(url: str, expected: str) -> None:
     assert redact_url(url) == expected
 
 
-def test_redact_text_handles_full_urls_and_bare_paths() -> None:
+def test_redact_text_handles_full_urls_bare_queries_and_fragments() -> None:
+    marker = "s3cr3tMARKER"
     text = (
         "HTTPSConnectionPool(host='x.org', port=443): Max retries exceeded with url: "
-        "/w/api.php?action=parse&token=abc123 (Caused by ...) see https://u:p@x.org/?sig=zz"
+        f"/w/api.php?action=parse&token={marker} (Caused by ...) see "
+        f"https://u:{marker}@x.org/?sig={marker} and /cb#access_token={marker} and ?{marker}"
     )
     redacted = redact_text(text)
-    assert "abc123" not in redacted and "zz" not in redacted and "u:p" not in redacted
-    assert "/w/api.php?action=parse&token=REDACTED" in redacted
+    assert marker not in redacted
+    assert "url: /w/api.php?action=parse&REDACTED (Caused by" in redacted
+    assert redacted.endswith("see https://x.org/?REDACTED and /cb#REDACTED and ?REDACTED")
     assert len(redact_text("x" * 2000)) == 500
+
+
+def test_no_query_secret_reaches_the_result(pki: Pki, fake: FakeTime, server: TestServer) -> None:
+    marker = "s3cr3tMARKER"
+    target = f"/b?__cf_chl_tk={marker}&page=2"
+    url = server.route(f"/a?token={marker}", Reply(status=302, headers={"Location": target}))
+    server.route(target, Reply(status=403, body=b"denied"))
+    result = get(pki, fake, url)
+    assert (result.outcome, result.http_status) == ("http_error", 403)
+    assert result.final_url == server.url("/b?REDACTED&page=2")
+    assert marker not in repr(result) and marker not in repr(result.diagnostics())
 ```
 
 - [ ] **Step 2: Run it to make sure it fails**
@@ -5409,14 +5962,22 @@ the adapter and nothing returns ``None`` silently.
   ``Retry-After`` (seconds or HTTP-date, capped at 60 s). Only transient
   failures are retried: timeouts, connection and DNS errors, 429/5xx and
   MediaWiki ``maxlag``.
-- Each attempt has a time limit (60 s). It is checked between reads of the
-  body, so a server that drips bytes cannot hold an attempt open; a single
-  read waits at most the time that was left when the request started.
-- Bodies over ``max_bytes`` are refused.
+- Each attempt has a time limit (60 s). It is checked before every request,
+  redirect hops included, and between reads of the body, so a server that
+  drips bytes cannot hold an attempt open; a single socket read waits at most
+  the time that was left when its request was sent. If the limit passes
+  during the read that brings the last byte of a body with a Content-Length,
+  the body is complete and is kept.
+- Bodies over ``max_bytes`` are refused. A redirect's body is never read.
 - At most 5 redirects, https only; TLS is verified on every hop.
 - The caller's ``Deadline`` (4 min per source, 12 min per scrape) bounds
   attempts and back-off waits.
-- URLs and error texts are redacted before they are stored.
+- Not bounded here: name resolution (``getaddrinfo`` takes no timeout) and a
+  server that sends its headers a few bytes at a time. The hard bound is the
+  runner, which fetches each source in a child process and kills it at the
+  source's deadline.
+- URLs and error texts are redacted before they are stored: only values of
+  the sources' own query keys (``SAFE_QUERY_KEYS``) are kept.
 """
 
 import email.utils
@@ -5429,10 +5990,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from types import TracebackType
 from typing import Self
-from urllib.parse import urljoin, urlsplit, urlunsplit
+from urllib.parse import unquote_plus, urljoin, urlsplit, urlunsplit
 
 import requests
 import urllib3
+from requests.utils import resolve_proxies
 
 from elections_calendar.model import FetchOutcome
 
@@ -5460,13 +6022,18 @@ _CHALLENGE = re.compile(
     rb"|sucuri website firewall|sucuri_cloudproxy",
     re.IGNORECASE,
 )
-_SECRET_PAIR = re.compile(
-    r"(?P<key>[?&;][^=&#\s]*"
-    r"(?:token|key|secret|passw|pwd|sig|auth|session|sid|nonce|credential)"
-    r"[^=&#\s]*=)[^&#\s'\")]*",
-    re.IGNORECASE,
-)
+# The sources' own query keys (spec §7); diagnostics keep their values. Any
+# other parameter is replaced whole, key included: a token can stand where a
+# key would ("?dG9rZW4=").
+SAFE_QUERY_KEYS = frozenset({
+    "action", "page", "prop", "format", "formatversion", "maxlag",  # Wikipedia API; NDI page
+    "menuno", "option",  # A-WEB
+    "table_id", "target_action",  # EISA
+})  # fmt: skip
+REDACTED = "REDACTED"
 _URL_IN_TEXT = re.compile(r"https?://[^\s'\"<>]+")
+_QUERY_IN_TEXT = re.compile(r"(?P<lead>[?#])(?P<query>[^\s'\"<>]+)")
+_PAIR_SEPARATOR = re.compile(r"([&;])")
 
 
 @dataclass(frozen=True, slots=True)
@@ -5619,7 +6186,14 @@ class Fetcher:
     def _attempt(self, url: str, timeout: float, mediawiki: bool) -> _Attempt:
         current = url
         attempt_ends = self._clock() + timeout
-        for _hop in range(MAX_REDIRECTS + 1):
+        for hop in range(MAX_REDIRECTS + 1):
+            left = attempt_ends - self._clock()
+            if left <= 0:
+                return _Attempt(
+                    "timeout", "redirect" if hop else "request", redact_url(current),
+                    error="attempt time limit reached before the request was sent",
+                    retryable=True,
+                )  # fmt: skip
             try:
                 parts = urlsplit(current)
                 if parts.scheme != "https":
@@ -5627,17 +6201,10 @@ class Fetcher:
                         "fetch_failed", "redirect", redact_url(current),
                         error=f"refusing a non-https URL: {redact_url(current)}",
                     )  # fmt: skip
-                response = self._session.get(
-                    current,
-                    headers={"User-Agent": user_agent(parts.hostname or "")},
-                    timeout=max(attempt_ends - self._clock(), 0.001),
-                    allow_redirects=False,
-                    stream=True,
-                    verify=self._verify,
-                )
+                response = self._send(current, parts.hostname or "", left)
             except (requests.exceptions.RequestException, ValueError) as exc:
                 return _failure(exc, "request", current)
-            with response:
+            with response:  # closing an unread response drops its connection
                 if response.is_redirect:
                     try:
                         current = urljoin(current, response.headers["Location"])
@@ -5650,6 +6217,25 @@ class Fetcher:
             error=f"more than {MAX_REDIRECTS} redirects",
         )  # fmt: skip
 
+    def _send(self, url: str, host: str, timeout: float) -> requests.Response:
+        """One GET through the session's adapter, with no redirect handling.
+
+        ``Session.send`` reads a redirect's whole body even with
+        ``allow_redirects=False`` (requests 2.34 prepares ``Response.next``),
+        with no size or time limit, so the adapter sends the request. The
+        session's cookies and proxy settings apply as they would there.
+        """
+        session = self._session
+        request = session.prepare_request(
+            requests.Request("GET", url, headers={"User-Agent": user_agent(host)})
+        )
+        proxies = resolve_proxies(request, dict(session.proxies), session.trust_env)
+        response = session.get_adapter(url).send(
+            request, stream=True, timeout=timeout, verify=self._verify, proxies=proxies
+        )
+        session.cookies.update(response.cookies)
+        return response
+
     def _read(
         self, response: requests.Response, url: str, attempt_ends: float, mediawiki: bool
     ) -> _Attempt:
@@ -5660,7 +6246,7 @@ class Fetcher:
         size = 0
         try:
             while True:
-                if self._clock() >= attempt_ends:
+                if self._clock() >= attempt_ends and not _received_all(response):
                     return _Attempt(
                         "timeout", "read", final_url, status, content_type,
                         error="attempt time limit reached while reading the body",
@@ -5701,6 +6287,11 @@ class Fetcher:
         if mediawiki:
             return _mediawiki(final_url, status, content_type, body, response, self._wall_clock)
         return _Attempt("ok", "done", final_url, status, content_type, body)
+
+
+def _received_all(response: requests.Response) -> bool:
+    """Whether every byte of a body with a Content-Length has arrived."""
+    return response.raw.length_remaining == 0
 
 
 def _deadline(url: str, last: _Attempt | None) -> _Attempt:
@@ -5820,7 +6411,7 @@ def parse_retry_after(value: str | None, wall_clock: Callable[[], datetime]) -> 
 
 
 def redact_url(url: str) -> str:
-    """Drop user info and the fragment; replace secret-looking query values."""
+    """Drop user info and the fragment; redact the query (``redact_query``)."""
     try:
         parts = urlsplit(url)
         host = parts.hostname or ""
@@ -5829,14 +6420,42 @@ def redact_url(url: str) -> str:
         return "<unparseable URL>"
     if ":" in host:
         host = f"[{host}]"  # IPv6
-    query = _SECRET_PAIR.sub(r"\g<key>REDACTED", f"?{parts.query}")[1:] if parts.query else ""
+    query = redact_query(parts.query) if parts.query else ""
     return urlunsplit((parts.scheme, host + port, parts.path, query, ""))
 
 
+def redact_query(query: str) -> str:
+    """Keep the parameters whose key is in SAFE_QUERY_KEYS; replace each other one whole.
+
+    Keys are compared percent-decoded (repeatedly) and case-folded, so
+    ``%61ction`` and ``Action`` are ``action``.
+    """
+    parts = _PAIR_SEPARATOR.split(query)  # pairs at even positions, separators between
+    return "".join(
+        part if i % 2 or not part or _query_key(part) in SAFE_QUERY_KEYS else REDACTED
+        for i, part in enumerate(parts)
+    )
+
+
+def _query_key(pair: str) -> str:
+    key = pair.partition("=")[0]
+    while (decoded := unquote_plus(key)) != key:
+        key = decoded
+    return key.casefold()
+
+
 def redact_text(text: str, limit: int = 500) -> str:
-    """Redact every URL in ``text`` (also bare ``/path?key=value``) and cap its length."""
+    """Redact every URL in ``text`` and every bare ``?query`` or ``#fragment``; cap its length.
+
+    Error texts quote URLs without a scheme ("url: /w/api.php?token=...").
+    """
     text = _URL_IN_TEXT.sub(lambda m: redact_url(m.group()), text)
-    return _SECRET_PAIR.sub(r"\g<key>REDACTED", text)[:limit]
+    text = _QUERY_IN_TEXT.sub(lambda m: m["lead"] + redact_query(m["query"]), text)
+    return text[:limit]
+
+
+class TrustBundleError(Exception):
+    """The file a CA-bundle variable names cannot be read or holds no PEM certificate."""
 ```
 
 - [ ] **Step 4: Run it to make sure it passes**
@@ -5847,7 +6466,7 @@ Run:
 .venv/Scripts/python.exe -m pytest -q tests/unit/test_fetch.py
 ```
 
-Expected: `65 passed` in a few seconds. A hang means a server reply waits on a real clock: check that `fake.sleep` is passed to the `Fetcher`.
+Expected: `79 passed` in a few seconds. A hang means a server reply waits on a real clock: check that `fake.sleep` is passed to the `Fetcher`.
 
 - [ ] **Step 5: Make the module mandatory in the layering contract**
 
@@ -5871,7 +6490,7 @@ Run each gate as its own shell call (the README's Windows gates, with forward sl
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Expected: `307 passed`.
+Expected: `356 passed`.
 
 ```bash
 .venv/Scripts/mypy.exe
@@ -5976,10 +6595,22 @@ Create `.scratch/mutations/task-7.json` (one mutation per new test; `old` occurs
     "new": "if size > self._max_bytes * 10:"
   },
   {
+    "test": "tests/unit/test_fetch.py::test_a_body_completed_by_the_read_that_crossed_the_limit_is_kept",
+    "file": "elections_calendar/fetch.py",
+    "old": "if self._clock() >= attempt_ends and not _received_all(response):",
+    "new": "if self._clock() >= attempt_ends:"
+  },
+  {
     "test": "tests/unit/test_fetch.py::test_the_deadline_stops_a_wait_it_cannot_afford",
     "file": "elections_calendar/fetch.py",
     "old": "if wait >= deadline.remaining():",
     "new": "if False:"
+  },
+  {
+    "test": "tests/unit/test_fetch.py::test_no_request_is_sent_once_the_attempt_limit_has_passed",
+    "file": "elections_calendar/fetch.py",
+    "old": "            if left <= 0:",
+    "new": "            if False:"
   },
   {
     "test": "tests/unit/test_fetch.py::test_a_spent_deadline_makes_no_request",
@@ -6002,8 +6633,20 @@ Create `.scratch/mutations/task-7.json` (one mutation per new test; `old` occurs
   {
     "test": "tests/unit/test_fetch.py::test_more_than_five_redirects_fail",
     "file": "elections_calendar/fetch.py",
-    "old": "for _hop in range(MAX_REDIRECTS + 1):",
-    "new": "for _hop in range(MAX_REDIRECTS + 2):"
+    "old": "for hop in range(MAX_REDIRECTS + 1):",
+    "new": "for hop in range(MAX_REDIRECTS + 2):"
+  },
+  {
+    "test": "tests/unit/test_fetch.py::test_a_redirect_body_is_never_read",
+    "file": "elections_calendar/fetch.py",
+    "old": "response = session.get_adapter(url).send(\n            request, stream=True,",
+    "new": "response = session.send(\n            request, allow_redirects=False, stream=True,"
+  },
+  {
+    "test": "tests/unit/test_fetch.py::test_cookies_set_by_a_redirect_are_sent_on",
+    "file": "elections_calendar/fetch.py",
+    "old": "session.cookies.update(response.cookies)",
+    "new": "pass"
   },
   {
     "test": "tests/unit/test_fetch.py::test_a_redirect_to_http_is_refused",
@@ -6086,14 +6729,20 @@ Create `.scratch/mutations/task-7.json` (one mutation per new test; `old` occurs
   {
     "test": "tests/unit/test_fetch.py::test_redact_url",
     "file": "elections_calendar/fetch.py",
-    "old": "if \":\" in host:",
-    "new": "if False:"
+    "old": "    return key.casefold()",
+    "new": "    return key"
   },
   {
-    "test": "tests/unit/test_fetch.py::test_redact_text_handles_full_urls_and_bare_paths",
+    "test": "tests/unit/test_fetch.py::test_redact_text_handles_full_urls_bare_queries_and_fragments",
     "file": "elections_calendar/fetch.py",
-    "old": "return _SECRET_PAIR.sub(r\"\\g<key>REDACTED\", text)[:limit]",
-    "new": "return text[:limit]"
+    "old": "text = _QUERY_IN_TEXT.sub(lambda m: m[\"lead\"] + redact_query(m[\"query\"]), text)",
+    "new": "text = text"
+  },
+  {
+    "test": "tests/unit/test_fetch.py::test_no_query_secret_reaches_the_result",
+    "file": "elections_calendar/fetch.py",
+    "old": "final_url = redact_url(url)",
+    "new": "final_url = url"
   }
 ]
 ```
@@ -6104,7 +6753,7 @@ Run:
 PYTHONDONTWRITEBYTECODE=1 .venv/Scripts/python.exe .scratch/mutate.py .scratch/mutations/task-7.json
 ```
 
-Expected: every line starts with `KILLED`, then `32/32 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. Then confirm the tree is unchanged:
+Expected: `baseline: all ... tests pass`, then every line starts with `KILLED` and shows `failed` with no `error`, then `37/37 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. `BASELINE FAILED` means a listed test fails before any mutation: fix that first. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. An `INVALID` or `TIMEOUT` line is not a kill: the mutation broke collection, imports or termination instead of the behaviour, so rewrite it until the test fails on an assertion. Then confirm the tree is unchanged:
 
 ```bash
 git diff --exit-code
@@ -6142,10 +6791,12 @@ Record the new commit hash and the next task in the ledger (`C:/Users/senescalk/
 
 ### Task 8: TLS trust store: certifi plus the machine's CA bundle
 
-**This task implements spec correction C1 (below the Review Focus), which changes behaviour.
-Do not start it until the user has confirmed C1.** If the user keeps the spec's design
-instead (emSign root pinned for OSCE hosts only), skip this task and write a replacement
-for it.
+This task implements spec correction C1, which the user confirmed on 2026-10-16. The trust
+store is certifi plus the machine bundle: the PEM file named by the first of
+`REQUESTS_CA_BUNDLE`, `SSL_CERT_FILE` and `CURL_CA_BUNDLE` that is set and not empty. The
+others are ignored. A named file that is missing, unreadable or holds no certificate raises
+`TrustBundleError`, so a broken setting stops the run instead of being skipped silently.
+`bundle.sources` records what was used. Verification is never switched off.
 
 The evidence, from probing all 9 source hosts on 2026-10-16:
 - certifi alone verifies OSCE, so its chain does not need an extra root;
@@ -6158,7 +6809,8 @@ The evidence, from probing all 9 source hosts on 2026-10-16:
 
 **Files:**
 
-- Modify: `elections_calendar/fetch.py` (add `ENV_CA_BUNDLES`, `TrustBundle`, `trust_bundle`)
+- Modify: `elections_calendar/fetch.py` (add `ENV_CA_BUNDLES`, `TrustBundleError`, `TrustBundle`,
+  `trust_bundle`)
 - Modify: `README.md` (TLS section)
 - Test: `tests/unit/test_fetch.py` (trust-bundle tests)
 
@@ -6166,10 +6818,12 @@ The evidence, from probing all 9 source hosts on 2026-10-16:
 
 - Consumes: `Fetcher(verify=...)` (Task 7).
 - Produces: `ENV_CA_BUNDLES = ("REQUESTS_CA_BUNDLE", "SSL_CERT_FILE", "CURL_CA_BUNDLE")`;
-  `TrustBundle(path: Path, sources: tuple[str, ...])`;
-  `trust_bundle(dest: Path, environ: Mapping[str, str] = os.environ) -> TrustBundle`.
+  `TrustBundleError(Exception)`; `TrustBundle(path: Path, sources: tuple[str, ...])`;
+  `trust_bundle(dest: Path, environ: Mapping[str, str] = os.environ) -> TrustBundle`
+  (raises `TrustBundleError` for a configured file it cannot use).
   Plan 2's runner calls it once per scrape with a `dest` in a temporary directory, passes
-  `str(bundle.path)` to every `Fetcher`, and records `bundle.sources` in the run diagnostics.
+  `str(bundle.path)` to every `Fetcher`, records `bundle.sources` in the run diagnostics, and
+  stops the scrape with the error's message when it raises.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -6188,6 +6842,21 @@ from pathlib import Path
 
 import certifi
 import pytest
+```
+
+In `tests/unit/test_fetch.py`, replace:
+
+```python
+    FetchResult,
+    outcome_for,
+```
+
+with:
+
+```python
+    FetchResult,
+    TrustBundleError,
+    outcome_for,
 ```
 
 In `tests/unit/test_fetch.py`, replace:
@@ -6219,26 +6888,42 @@ def test_trust_bundle_is_certifi_alone_without_machine_settings(tmp_path: Path) 
     assert bundle.path.read_bytes() == Path(certifi.where()).read_bytes()
 
 
-def test_trust_bundle_adds_each_configured_bundle_once(pki: Pki, tmp_path: Path) -> None:
+def test_the_first_configured_bundle_is_the_machine_bundle(pki: Pki, tmp_path: Path) -> None:
     environ = {
-        "REQUESTS_CA_BUNDLE": str(pki.bundle),
-        "SSL_CERT_FILE": str(pki.bundle),  # the same file again
-        "CURL_CA_BUNDLE": str(tmp_path / "missing.pem"),
+        "REQUESTS_CA_BUNDLE": "",  # set but empty: not configured
+        "SSL_CERT_FILE": str(pki.bundle),
+        "CURL_CA_BUNDLE": str(pki.other_bundle),  # ignored: SSL_CERT_FILE comes first
     }
     bundle = trust_bundle(tmp_path / "ca.pem", environ=environ)
-    assert bundle.sources == ("certifi", "REQUESTS_CA_BUNDLE")
+    assert bundle.sources == ("certifi", "SSL_CERT_FILE")
     content = bundle.path.read_bytes()
     assert content.startswith(Path(certifi.where()).read_bytes())
     assert content.count(pki.bundle.read_bytes()) == 1
+    assert pki.other_bundle.read_bytes() not in content
 
 
-def test_a_combined_bundle_trusts_the_configured_ca(
-    pki: Pki, fake: FakeTime, server: TestServer, tmp_path: Path
+@pytest.mark.parametrize("problem", ["missing", "directory", "not a certificate"])
+def test_a_configured_bundle_that_cannot_be_used_is_an_error(
+    pki: Pki, tmp_path: Path, problem: str
 ) -> None:
-    bundle = trust_bundle(tmp_path / "ca.pem", environ={"SSL_CERT_FILE": str(pki.bundle)})
+    notes = tmp_path / "notes.pem"
+    notes.write_text("not a certificate\n", encoding="utf-8")
+    configured = {"missing": tmp_path / "missing.pem", "directory": tmp_path}.get(problem, notes)
+    environ = {"REQUESTS_CA_BUNDLE": str(configured), "SSL_CERT_FILE": str(pki.bundle)}
+    with pytest.raises(TrustBundleError, match="REQUESTS_CA_BUNDLE"):
+        trust_bundle(tmp_path / "out" / "ca.pem", environ=environ)
+    assert not (tmp_path / "out" / "ca.pem").exists()
+
+
+@pytest.mark.parametrize(("configured", "outcome"), [("bundle", "ok"), ("other_bundle", "tls_error")])
+def test_a_combined_bundle_trusts_only_what_it_lists(
+    pki: Pki, fake: FakeTime, server: TestServer, tmp_path: Path, configured: str, outcome: str
+) -> None:
+    machine = str(getattr(pki, configured))
+    bundle = trust_bundle(tmp_path / "ca.pem", environ={"SSL_CERT_FILE": machine})
     url = server.route("/page", Reply(body=b"ok"))
     with Fetcher(verify=str(bundle.path), clock=fake.clock, sleep=fake.sleep) as f:
-        assert f.get(url, deadline=Deadline.after(60, fake.clock)).ok
+        assert f.get(url, deadline=Deadline.after(60, fake.clock)).outcome == outcome
 ```
 
 - [ ] **Step 2: Run them to make sure they fail**
@@ -6266,10 +6951,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from types import TracebackType
 from typing import Self
-from urllib.parse import urljoin, urlsplit, urlunsplit
+from urllib.parse import unquote_plus, urljoin, urlsplit, urlunsplit
 
 import requests
 import urllib3
+from requests.utils import resolve_proxies
 ```
 
 with:
@@ -6280,6 +6966,7 @@ import json
 import os
 import re
 import socket
+import ssl
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -6287,11 +6974,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from types import TracebackType
 from typing import Self
-from urllib.parse import urljoin, urlsplit, urlunsplit
+from urllib.parse import unquote_plus, urljoin, urlsplit, urlunsplit
 
 import certifi
 import requests
 import urllib3
+from requests.utils import resolve_proxies
 ```
 
 Add `ENV_CA_BUNDLES` after `BROWSER_UA`. Replace:
@@ -6317,7 +7005,7 @@ Append to the end of `elections_calendar/fetch.py` (the block starts with blank 
 @dataclass(frozen=True, slots=True)
 class TrustBundle:
     path: Path
-    sources: tuple[str, ...]
+    sources: tuple[str, ...]  # "certifi", then the variable that named the machine bundle
 
 
 def trust_bundle(dest: Path, environ: Mapping[str, str] = os.environ) -> TrustBundle:
@@ -6325,23 +7013,27 @@ def trust_bundle(dest: Path, environ: Mapping[str, str] = os.environ) -> TrustBu
 
     certifi alone verifies every source on a plain network (OSCE's emSign
     chain included); that is CI. On a machine whose TLS is intercepted by a
-    corporate proxy, the proxy's root is only in the bundle named by
-    REQUESTS_CA_BUNDLE / SSL_CERT_FILE / CURL_CA_BUNDLE, and that bundle
-    alone lacks roots for the sites the proxy lets through untouched.
-    Verification stays on everywhere; nothing is trusted that neither lists.
+    corporate proxy, the proxy's root is only in the machine bundle, and that
+    bundle alone lacks roots for the sites the proxy lets through untouched.
+
+    The machine bundle is the PEM file named by the first of
+    REQUESTS_CA_BUNDLE, SSL_CERT_FILE and CURL_CA_BUNDLE that is set and not
+    empty; the others are ignored. A named file that is missing, unreadable or
+    holds no certificate raises TrustBundleError instead of being skipped.
+    Verification stays on everywhere; nothing is trusted that neither file lists.
     """
-    paths = [Path(certifi.where()).resolve()]
-    sources = ["certifi"]
-    for name in ENV_CA_BUNDLES:
-        value = environ.get(name)
-        if not value:
-            continue
-        candidate = Path(value).resolve()
-        if candidate.is_file() and candidate not in paths:
-            paths.append(candidate)
-            sources.append(name)
+    parts, sources = [Path(certifi.where()).read_bytes()], ["certifi"]
+    name = next((n for n in ENV_CA_BUNDLES if environ.get(n)), None)
+    if name is not None:
+        configured = Path(environ[name])
+        try:
+            ssl.create_default_context().load_verify_locations(cafile=configured)
+            parts.append(configured.read_bytes())
+        except OSError as exc:  # ssl.SSLError is an OSError
+            raise TrustBundleError(f"{name}={configured} is not a usable CA bundle: {exc}") from exc
+        sources.append(name)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_bytes(b"\n".join(p.read_bytes() for p in paths))
+    dest.write_bytes(b"\n".join(parts))
     return TrustBundle(dest, tuple(sources))
 ```
 
@@ -6353,7 +7045,7 @@ Run:
 .venv/Scripts/python.exe -m pytest -q tests/unit/test_fetch.py
 ```
 
-Expected: `68 passed`.
+Expected: `86 passed`.
 
 - [ ] **Step 5: Document it**
 
@@ -6378,7 +7070,7 @@ Run each gate as its own shell call (the README's Windows gates, with forward sl
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Expected: `310 passed`.
+Expected: `363 passed`.
 
 ```bash
 .venv/Scripts/mypy.exe
@@ -6413,20 +7105,26 @@ Create `.scratch/mutations/task-8.json` (one mutation per new test; `old` occurs
   {
     "test": "tests/unit/test_fetch.py::test_trust_bundle_is_certifi_alone_without_machine_settings",
     "file": "elections_calendar/fetch.py",
-    "old": "dest.write_bytes(b\"\\n\".join(p.read_bytes() for p in paths))",
-    "new": "dest.write_bytes(b\"\\n\".join(p.read_bytes() for p in paths) + b\"\\n\")"
+    "old": "parts, sources = [Path(certifi.where()).read_bytes()], [\"certifi\"]",
+    "new": "parts, sources = [], [\"certifi\"]"
   },
   {
-    "test": "tests/unit/test_fetch.py::test_trust_bundle_adds_each_configured_bundle_once",
+    "test": "tests/unit/test_fetch.py::test_the_first_configured_bundle_is_the_machine_bundle",
     "file": "elections_calendar/fetch.py",
-    "old": "if candidate.is_file() and candidate not in paths:",
-    "new": "if candidate.is_file():"
+    "old": "name = next((n for n in ENV_CA_BUNDLES if environ.get(n)), None)",
+    "new": "name = next((n for n in ENV_CA_BUNDLES if n in environ), None)"
   },
   {
-    "test": "tests/unit/test_fetch.py::test_a_combined_bundle_trusts_the_configured_ca",
+    "test": "tests/unit/test_fetch.py::test_a_configured_bundle_that_cannot_be_used_is_an_error",
     "file": "elections_calendar/fetch.py",
-    "old": "for name in ENV_CA_BUNDLES:",
-    "new": "for name in ():"
+    "old": "ssl.create_default_context().load_verify_locations(cafile=configured)",
+    "new": "pass"
+  },
+  {
+    "test": "tests/unit/test_fetch.py::test_a_combined_bundle_trusts_only_what_it_lists",
+    "file": "elections_calendar/fetch.py",
+    "old": "parts.append(configured.read_bytes())",
+    "new": "parts.append(b\"\")"
   }
 ]
 ```
@@ -6437,7 +7135,7 @@ Run:
 PYTHONDONTWRITEBYTECODE=1 .venv/Scripts/python.exe .scratch/mutate.py .scratch/mutations/task-8.json
 ```
 
-Expected: every line starts with `KILLED`, then `3/3 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. Then confirm the tree is unchanged:
+Expected: `baseline: all ... tests pass`, then every line starts with `KILLED` and shows `failed` with no `error`, then `4/4 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. `BASELINE FAILED` means a listed test fails before any mutation: fix that first. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. An `INVALID` or `TIMEOUT` line is not a kill: the mutation broke collection, imports or termination instead of the behaviour, so rewrite it until the test fails on an assertion. Then confirm the tree is unchanged:
 
 ```bash
 git diff --exit-code
@@ -6474,8 +7172,38 @@ Expected: no output (`.venv/` and `.scratch/` are ignored).
 Record the new commit hash and the next task in the ledger (`C:/Users/senescalk/Desktop/handovers/elections-v2-sdd-ledger.md`) and the resume doc (`C:/Users/senescalk/Desktop/handovers/elections-v2-RESUME.md`).
 
 
+## Requirements for later plans
+
+Decisions this plan leaves open on purpose, each with the plan that owns it:
+
+- **Plan 2, hard time bound (C15, FP07):** run each source in a child process and kill it at
+  `SOURCE_DEADLINE_S`; test a slow DNS lookup and a server that drips its headers at that
+  boundary.
+- **Plan 2, jurisdictions (C18, C19, FP04):** set `jurisdiction_kind = "subdivision"` when the
+  jurisdiction names a subdivision of the place: `PlaceRegistry.resolve_subdivision` for
+  registered ones (today only GB-SCT and GB-WLS), and decide how to recognise unregistered
+  first-level subdivisions (pycountry's ISO 3166-2 names). Until then "Senate special
+  election" for Virginia resolves to the US Senate. National evidence in the label ("United
+  States Senate") must still win, and Canada's "federal by-election" (no chamber word) must map
+  to the House of Commons at national level.
+- **Plan 2, stored IDs (C9, FP03):** decide whether snapshots and the ledger store place and
+  institution IDs. If they do, registering an `unknown:` name later, or renaming a chamber,
+  needs an explicit migration, never a silent new identity.
+- **Plan 2, renewals (C12, FP06):** emit `expected_renewal` claims only for active chambers; a
+  suspended chamber's name still resolves for dated evidence.
+- **Plan 2, saved records (C20, FP10):** the ledger and snapshot loaders treat `RecordError` as
+  a corrupt record, never as an empty one.
+- **Plan 2, trust (C1):** stop the scrape with `TrustBundleError`'s message, and record
+  `bundle.sources` in the run diagnostics.
+- **Plan 5, cross-month spans:** a span is bucketed in its first overlapping month (Task 3).
+  The extension must make a span that continues into a later month discoverable there; the
+  bucket rule alone does not prove it.
+- **Plan 5, R5 (C1, FP13):** before R5 closes, the branch CI run (§15 step 1, with the user's
+  go-ahead) must show a fresh Linux install and certifi alone verifying all 9 hosts from
+  GitHub's runners.
+
 ## After Plan 1
 
-The branch then holds 8 new commits on top of `b16b54f`, all gates green (310 tests),
+The branch then holds 8 new commits on top of `b16b54f`, all gates green (363 tests),
 and nothing has been pushed. Plan 2 (source adapters and ledger) is written next, against this
 code. It consumes the interfaces listed in each task's **Interfaces** block.
