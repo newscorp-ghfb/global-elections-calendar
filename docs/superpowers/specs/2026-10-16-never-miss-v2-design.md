@@ -35,7 +35,7 @@ The scraper (`scraper.py`, 7 sources, daily GitHub Action on `newscorp-ghfb/glob
 
 **Goals**
 
-- **G1 No silent drops.** Every input unit a source exposes gets exactly one outcome: parsed, partial, unparsed, or ignored with a reason. Every relevant unresolved unit is visible to users.
+- **G1 No silent drops.** Every input unit in each source's recognised container gets exactly one outcome: parsed, partial, unparsed, or ignored with a reason. Every relevant unresolved unit is visible to users.
 - **G2 Visible failure.** Broken, blocked or degraded sources show up within one run: extension banner, `HEALTH.md`, red CI run.
 - **G3 Scope = everything the sources list:** national, subnational, municipal, by-elections, referendums (decision D1).
 - **G4 Window:** 1 month back, the current month, and 3 months ahead (D2).
@@ -44,6 +44,13 @@ The scraper (`scraper.py`, 7 sources, daily GitHub Action on `newscorp-ghfb/glob
   - add Wikipedia national and local calendars (one page per year in the window), NDI and EISA;
   - use ElectionGuide's full lists and A-WEB's "all" view;
   - fix OSCE, IPU, Carter Center and EEAS.
+
+**What "never miss" means here (limits)**
+- **Within the recognised containers, structure is guaranteed:** every unit is discovered, counted twice and accounted for (§7, §9.1).
+- **What it doesn't cover:**
+  - content a source moves into a container the adapter doesn't recognise. That is caught only indirectly, by the layout, drop and cross-source checks (§9.3, §9.5);
+  - whether each unit was *interpreted* correctly. That is checked semantically only where §13.2 says: national contests, Appendix B and October 2026 subnational.
+- **Neither this spec nor its tests can prove** that no election is ever missed; they make every known way of missing one visible.
 
 **Non-goals**
 
@@ -110,6 +117,18 @@ The scraper (`scraper.py`, 7 sources, daily GitHub Action on `newscorp-ghfb/glob
 - **Synthetic CI identities (NM-T08).** GitHub job tokens can't be simulated offline. Instead, workflow tests check each job's `permissions`, its conditions and the artifact-digest check (extending RT-02/RT-03), and the branch dry run (§15 step 1) shows that a real branch run can't write.
 - **A separate, isolated workflow for the alert test.** The recipient of scheduled-run failure emails is set per workflow file (whoever created it or last changed its cron), so only the production workflow can prove its own alert route. R9 removes the missed-refresh cost instead.
 
+### 3.3 Changes from the updated-spec red-team review (`Downloads/never_miss_v2_spec_red_team_review.md`)
+
+| ID | Finding | Change | Where |
+|---|---|---|---|
+| U1 | V2-F01: an event ID was used as the unit locator, so one event in two views (or a baseline + provisional pair) collided | `unit_id` = where the unit was observed (page key + position); the event stays in `source_event_id`. A new `merge_id` = `served/` or `provisional/` + `claim_id`. `snapshot_id` excludes the fields stamped after hashing. A duplicate `merge_id` stops the merge | §5.2, §5.3, §5.10, §10.8, §10.9 |
+| U2 | V2-F02: umbrella was assigned before provisional, so incomplete aggregates could create contests | `provisional` is the first role; provisional aggregates always become `provisional_change` attention items | §10.2, §10.3 |
+| U3 | V2-F03: falling back to `generated_at` for both sides let a delayed v1 response undo a rollback | Each feed's order key is computed on its own (`published_at`, else its own `generated_at`), plus a guard against future timestamps | §12.1, §11.3 |
+| U4 | V2-F04: `ledger_mismatch` had no acceptance rule | It is now an invalid candidate: never promoted, baseline (or unavailable) served, no provisional changes from it. Validation checks every served snapshot's recorded checks | §9.3, §11.3, §5.10 |
+| U5 | V2-F05: rollback needed an archive hash nothing recorded | Recovery pairs come from git history: the `pre-v2` pair goes in `RELEASES.md`, and each v2 commit's `status.json` carries its own. `republish.py --from-commit` verifies the digest | §11.5, §15 |
+| U6 | Clarifications | Future acknowledgements have no effect until their time (the 10-minute allowance is removed); `accept_drop` is described separately from exit-only acknowledgements; the `provisional` flag is serialised and end-date-only changes count; a push with green gates is green; "never miss" limits are stated in §2 | §9.6, §5.3, §10.3, §11.6, §2 |
+| U7 | Found while revising | `main` gets a bot commit daily, so a rebase is always needed: a rebase over feed-only commits needs gates but no fresh review. `pre-v2` is tagged after the final rebase, so the rollback revert can't undo a feed update. Commits to `main` need a one-time `MERGE_APPROVED` (Desktop hook) | §15 |
+
 ## 4. Architecture
 
 ```
@@ -174,8 +193,9 @@ scripts/build_extension_zip.py  scripts/build_places.py  scripts/republish.py
 
 | Field | Meaning |
 |---|---|
-| `claim_id` | `<unit_id>#<n>`; one unit may emit 0..N claims |
-| `unit_id` | `<source>:<locator>`. Locator: the source event ID if one exists (`electionguide:5259`), otherwise page key + structural path (`wikipedia:national-2026@rev1380378807/September/li[3]/li[1]`) |
+| `unit_id` | `<source>:<page key>/<position>`, i.e. *where* the unit was observed, never the event ID alone. Page key = view, year or page (`electionguide:upcoming`, `ndi:p2:upcoming`, `wikipedia:national-2026@rev1380378807`); position = row index or structural path (`/r17`, `/September/li[3]/li[1]`). The same event seen in two views gets two unit IDs (the second is ignored as `duplicate`); the event itself is `source_event_id` |
+| `claim_id` | `<unit_id>#<n>`, unique within one snapshot; one unit may emit 0..N claims |
+| `merge_id` | `<origin>/<claim_id>`, with origin `served` or `provisional` (§9.3). This is the claim's identity in the merge, so a baseline claim and a changed candidate claim from the same unit never collide |
 | `source` | Source key |
 | `link` | Source URL for this claim |
 | `source_event_id` | Publisher event ID, namespaced (`electionguide:5259`), or `null` |
@@ -200,7 +220,7 @@ A child holds the resolved values plus all its claims.
 
 | Field | Meaning |
 |---|---|
-| `child_id` | First 12 hex characters of SHA-1 over the sorted `claim_id`s of its anchor claims (all its claims if it has no anchors). Claim IDs, not unit IDs, because one unit can produce several contests. Deterministic per run |
+| `child_id` | First 12 hex characters of SHA-1 over the sorted `merge_id`s of its anchor claims (all its non-provisional claims if it has no anchors). Claim-level IDs, not unit IDs, because one unit can produce several contests. Deterministic per run |
 | `place_id`, `country`, `country_code` | `country` is the display name from `places.yaml`; `country_code` is ISO 3166-1 alpha-2 or `null` |
 | `jurisdiction`, `jurisdiction_kind`, `level`, `institution`, `office_class`, `office_label`, `kind`, `round`, `indirect` | Resolved (§10.5) |
 | `date`, `end_date`, `date_precision`, `date_meaning`, `date_status` | Resolved (§10.5) |
@@ -208,7 +228,7 @@ A child holds the resolved values plus all its claims.
 | `occurrence_confirmed` | `true` only when a claim for *this child* states it was held (ElectionGuide past list, EISA "Held …") |
 | `status_conflict`, `date_conflict`, `unverified`, `ambiguous` | Flags (§10) |
 | `possible_matches` | List of `child_id`s, provisional |
-| `sources` | Its claims as `{name, link, source_event_id, date, end_date, date_text, fetched_at, fallback, evidence_kind, selected, rejected_reason}` |
+| `sources` | Its claims as `{name, link, source_event_id, date, end_date, date_text, fetched_at, fallback, provisional, evidence_kind, selected, rejected_reason}` |
 
 ### 5.4 Card (entry in `months[YYYY-MM]`; doubles as the legacy projection)
 
@@ -299,9 +319,11 @@ Only the existing values are used: `Upcoming`, `Held`, `Postponed`, `Cancelled`,
 - **`candidate.json`:** the latest attempt: `snapshot_id`, `fetched_at`, `parser_version`, `scope {years, pages}`, `units[]` (with outcome and raw text), `claims[]`, plus the download diagnostics.
 - **`baseline.json`:** the last promoted complete candidate, with the same shape, plus:
   - `units_seen_history`: per scope, `(fetched_at, units_seen)` for each promotion in the last 30 days (for the cumulative-drop check, §9.3);
-  - `disappeared[]`: future-dated keyed units that vanished, with `since` (§9.3).
+  - `disappeared[]`: future-dated keyed units that vanished, with `since` (§9.3);
+  - `checks {ledger, discovery}`: both `true`, recorded when it was promoted (checked again at validation, §11.3).
 - **`health_state.json`:** per reason code (and scope), `last_absent_at`: the last published generation in which this source *didn't* have that reason. Updated on every published generation, promoted or not. Used to void acknowledgements on recurrence (§9.6).
-- All three are committed in the same commit as the feed (§11). `snapshot_id` = SHA-256 over the canonical JSON of `units` and `claims`.
+- All three are committed in the same commit as the feed (§11).
+- **`snapshot_id`** = SHA-256 over the canonical JSON of `units` and `claims`, **excluding** the provenance fields stamped on claims afterwards (`snapshot_id`, `fetched_at`, `fallback`, `provisional`). So the hash never depends on itself.
 
 ## 6. Shared parsing
 
@@ -437,9 +459,11 @@ Every unit gets exactly one outcome. Claims link back to units. Headers are matc
 |---|---|---|---|
 | Layout recognised, paging complete, no sudden drop | Candidate; relevant unparsed/partial units become attention items | Promoted | `ok`, or `warning` if any relevant unit is unparsed/partial |
 | Drop, with no recorded explanation (`valid_empty`, `year_rollover`) and no valid `accept_drop` (§9.6). For the same year/page scope, `units_seen` is either more than 50% below the baseline (`sudden_drop`) or more than 50% below the 30-day high-water mark in `units_seen_history` (`cumulative_drop`, which catches 100 → 60 → 36) | Baseline (original age shown), plus the candidate's provisional changes (below) | Kept; candidate quarantined | `warning` (`sudden_drop` / `cumulative_drop`) |
-| Download failure, incomplete paging, layout not recognised, challenge page, deadline, discovery mismatch | Baseline, or `unavailable`; plus provisional changes from pages that were fully parsed | Kept | `error` |
+| **Invalid candidate:** download failure, incomplete paging, layout not recognised, challenge page, deadline, `required_year_missing`, `discovery_mismatch` or `ledger_mismatch` | Baseline, or `unavailable` (first run); plus provisional changes from pages that were fully parsed (none on `ledger_mismatch`, since its accounting can't be trusted) | Kept; an invalid candidate **never** advances the baseline | `error` |
 | No baseline and the candidate is valid (first run) | Candidate | Promoted | As for row 1 (bootstrap is not an error) |
-| No baseline and the candidate is invalid | Nothing; `unavailable` | — | `error` |
+| No baseline and the candidate is invalid (any condition in the invalid row) | Nothing; `unavailable` | — | `error` |
+
+- **Publishing with a quarantined source:** the rest of the generation is still built and validated (§11.3). It publishes, red, if every invariant holds for the data actually served. Otherwise only `status.json` and `HEALTH.md` are committed (§11.6).
 
 - **Parser version change:** a different parser major version marks the baseline `comparable=false`. The drop checks are skipped and the history restarts; structural checks still apply.
 - **Provisional changes from a candidate that isn't promoted** (quarantined or incomplete):
@@ -449,7 +473,7 @@ Every unit gets exactly one outcome. Claims link back to units. Headers are matc
 
   The baseline is never partly replaced.
 - **Disappeared units** (sources with `source_event_id`):
-  - **Which units:** a baseline unit dated on or after T that is absent from a promoted complete candidate, and from every other view of that source;
+  - **Which events:** a `source_event_id` in the baseline, dated on or after T, that no unit of a promoted complete candidate carries in any view;
   - **What it produces:** an attention item `disappeared_unit` ("No longer listed by <source>: <text>, was <date>") and the info reason `units_disappeared`;
   - **How long it lasts:** it is kept in `baseline.json` `disappeared[]` for 7 days, or until its date passes or it reappears.
 
@@ -485,7 +509,7 @@ Every unit gets exactly one outcome. Claims link back to units. Headers are matc
 **Rules:**
 - **Validity:**
   - all fields are required, and both timestamps must carry a timezone (`Z` or an offset); naive timestamps are invalid;
-  - `acknowledged_at ≤ now < expires_at`. `acknowledged_at` may be at most 10 minutes in the future, for clock skew; anything later is invalid;
+  - the entry is in effect only while `acknowledged_at ≤ now < expires_at`. An entry whose `acknowledged_at` is still in the future has **no effect yet**; `HEALTH.md` lists it as "not yet active". One more than 1 day in the future is invalid;
   - `0 < expires_at - acknowledged_at ≤ 14 days`;
   - the entry expires when the current UTC time reaches `expires_at`;
   - there's no auto-renewal;
@@ -493,7 +517,7 @@ Every unit gets exactly one outcome. Claims link back to units. Headers are matc
 - **Matching:** an acknowledgement matches only the exact source + reason + scope.
 - **Recurrence:** it is void once `health_state.json` shows `last_absent_at` for that reason and scope later than `acknowledged_at`. That is, a *published* generation ran without the problem, so a recurrence needs a new entry. Promotion of a baseline alone doesn't count, since a promoted run can still carry the reason.
 - **Accepting a legitimate drop:** an `accept_drop` entry tells the drop checks (§9.3) to accept a candidate for one scope that has at least `accept_units_seen_min` units. It has the same fields and validity rules as an acknowledgement, plus `scope` and `accept_units_seen_min`. A promotion under it restarts that scope's `units_seen_history`.
-- **Effect:** it changes **only the exit code**. Severity, acceptance decisions, the banner (shown as "acknowledged until …") and `HEALTH.md` are unchanged.
+- **Effect of an acknowledgement:** it changes **only the exit code**. Severity, acceptance decisions, the banner (shown as "acknowledged until …") and `HEALTH.md` are unchanged. An acknowledgement can never promote a candidate; only `accept_drop` (below) affects acceptance, and only for drops.
 - **Never acknowledgeable:** schema, legacy-contract, merge, conservation and publication failures, `ledger_mismatch` and `discovery_mismatch` (both are code defects, fixed in code), `fallback_stale`, and `attention_truncated`.
 
 ## 10. Merge
@@ -513,8 +537,8 @@ Referendum questions are children only when a source lists the questions; otherw
 ### 10.2 Roles and Phase A: anchors
 
 **Roles.** Every claim gets exactly one role before matching starts. The first rule that applies wins:
-1. **`umbrella`:** class `general`, or an aggregate label that isn't identity (§6.3, §10.4).
-2. **`provisional`:** `provisional=true` (§9.3).
+1. **`provisional`:** `provisional=true` (§9.3). This comes first, so incomplete evidence can never take on any other role, including umbrella.
+2. **`umbrella`:** class `general`, or an aggregate label that isn't identity (§6.3, §10.4).
 3. **`anchor`:** all of the following hold:
    - `evidence_kind=calendar`, day precision and `date_meaning=voting_period`;
    - a specific institution, or kind `referendum_day` / `referendum_question`;
@@ -555,7 +579,8 @@ Weak claims never change Phase A contests.
 
 **Phase D: provisional claims** (after Phase C):
 - **Candidates:** matched against every contest from Phases A–C, on identity (§10.1) within the same year. The date is **ignored**, because the date may be exactly what changed.
-- **Exactly 1 candidate:** the claim is attached as a provisional source, shown as "from an incomplete fetch on <date>". If its date differs from the contest's resolved value, the child gets `date_conflict`; if its status claim differs, `status_conflict`.
+- **Aggregate or generic claims** (class `general`, or a non-identity aggregate label) always become an attention item `provisional_change`. They never create an aggregate contest and never link as umbrellas.
+- **Exactly 1 candidate:** the claim is attached as a provisional source (`provisional: true` in `sources[]`, shown as "from an incomplete fetch on <date>"). If its interval differs from the contest's resolved value (start date **or** end date), the child gets `date_conflict`; if its status claim differs, `status_conflict`.
 - **0 or 2+ candidates:** an attention item `provisional_change`.
 - **Limits:** provisional claims never create, select, confirm or resolve anything (a provisional postponement can never make a status `Postponed`).
 
@@ -599,7 +624,7 @@ Each claim records whether it was `selected`, or its `rejected_reason`.
 
 ### 10.8 Conservation (identity-based)
 
-- **Dispositions:** every merge input claim ID has exactly one disposition: `anchor_member(child_id)`, `attached(child_id)`, `provisional(child_id)`, `umbrella_link(group_ids)`, `standalone(child_id)`, `undated(undated_id)` or `attention(item_id)`. The checks run on the uncapped attention list (§5.5).
+- **Dispositions:** every merge input `merge_id` has exactly one disposition: `anchor_member(child_id)`, `attached(child_id)`, `provisional(child_id)`, `umbrella_link(group_ids)`, `standalone(child_id)`, `undated(undated_id)` or `attention(item_id)`. The checks run on the uncapped attention list (§5.5).
 - **Checks:**
   - set(inputs) = set(dispositions), with no duplicates and no unknown IDs;
   - every link target exists;
@@ -611,7 +636,7 @@ Each claim records whether it was `selected`, or its `rejected_reason`.
 
 ### 10.9 Determinism
 
-- Inputs are sorted by `unit_id` before merging, and every tie-break is total.
+- Inputs are sorted by `merge_id` before merging, and every tie-break is total. A duplicate `merge_id` stops the merge (fail closed); nothing is ever silently overwritten.
 - **Tests:** exhaustive permutations for sets of ≤6 claims; Hypothesis property tests with a fixed seed for larger sets. The output must be byte-identical for identical evidence.
 
 ## 11. Publishing and CI
@@ -658,7 +683,9 @@ The **final serialised bytes** of `elections.json` are checked:
 1. against `schemas/feed-v2.schema.json`;
 2. against the legacy contract: every card has `date` (YYYY-MM-DD), a non-empty `country`, a string `type`, a legacy-enum `status`, and `sources[{name, link}]`, with `source_names`/`links` consistent;
 3. against the merge invariants (§10.8);
-4. against the size cap: `elections.json` ≤ 2 MB.
+4. against the size cap: `elections.json` ≤ 2 MB;
+5. timestamps: `generated_at` and `published_at` are UTC and no more than 10 minutes ahead of the runner's clock;
+6. every served snapshot passed its ledger and discovery checks when it was promoted (recorded in the snapshot), and no served source is a candidate that failed them.
 
 `status.json` is checked against its schema. Local writes go to temp files and are renamed into place. A truncated attention list (§5.5) is valid; it doesn't fail validation.
 
@@ -671,12 +698,18 @@ The **final serialised bytes** of `elections.json` are checked:
 
 `RELEASES.md` records, for each release: the code SHA, the `requirements*.txt` hashes, the extension ZIP SHA-256 and file list, the destination, the date, and who approved it.
 
+**Recovery pairs.** A rollback restores a feed from git history; no separate archive system is needed. A *recovery pair* is (`main` commit, SHA-256 of the exact `elections.json` blob at that commit). The bytes come from `git show <commit>:elections.json`, which outputs the stored blob unchanged.
+- **The pre-v2 pair:** before the first v2 publication (§15 step 4), the `pre-v2` tag commit (the last v1 feed on `main`) and its blob digest go into `RELEASES.md` as the `pre-v2` recovery pair. It is checked once by re-reading the blob and comparing.
+- **v2 pairs:** every v2 publication commit carries its own pair, because that commit's `status.json` has `serving_feed_sha256` for the `elections.json` beside it.
+- **Choosing which feed to restore:** the user picks the commit. `republish.py --from-commit <sha>` refuses unless the blob's digest equals the recorded one (from `RELEASES.md` for `pre-v2`, otherwise from that commit's `status.json`).
+
 ### 11.6 Outcome matrix (enforced by the `verdict` job; covered by NM-T05)
 
 "Publishing allowed" = main + (schedule, or dispatch with `publish:true`). Branch runs and `publish:false` dispatches never commit, whatever the row.
 
 | Attempt | Committed when publishing is allowed | Final result |
 |---|---|---|
+| Push to a branch, gates passed (scrape and publish skipped by design) | nothing | green: the `verdict` job reports "gates only" and doesn't treat the missing artifact as a failure |
 | Gates failed | nothing (scrape doesn't run) | red |
 | `PAUSE_PUBLISHING` present | nothing | green, summary "paused" (a forgotten pause shows up as the extension's stale-feed banner) |
 | Scrape crashed, or artifact incomplete / manifest mismatch | nothing | red |
@@ -703,7 +736,15 @@ The **final serialised bytes** of `elections.json` are checked:
   - `status.serving_feed_sha256` equals it → the status describes this exact feed;
   - no match → refetch once; if still mismatched, show "current health can't be confirmed for this data";
   - a good feed is never discarded because of `status.json`.
-- **Ordering:** a response replaces the cached feed only if its order key is later. The key is `published_at`, falling back to `generated_at` when the response or the cache has no `published_at` (v1 feeds). An equal key means the same publication: no change. This blocks stale CDN responses, yet still accepts a rollback republication (new `published_at`, older `generated_at`) and the v1 scraper's output after a code revert. Freshness banners and "Data as of" always use `generated_at`, never `published_at`.
+- **Ordering:** a response replaces the cached feed only if its order key is later.
+  - **The key is computed for each feed on its own:** that feed's `published_at` if it has a valid one, otherwise that feed's `generated_at` (v1 feeds). The cached key is never downgraded just because the incoming feed is a v1 feed.
+  - **An equal key** means the same publication: no change.
+  - **Examples:**
+    - cached rollback republication (`published_at` 16 Oct 12:00, `generated_at` 14 Oct) vs a delayed v1 response (`generated_at` 15 Oct 02:00): 15 Oct 02:00 < 16 Oct 12:00, so rejected;
+    - the reverted v1 scraper's next feed (`generated_at` 17 Oct 00:02): accepted;
+    - a stale CDN copy of the defective feed: rejected.
+  - **Poisoning guard:** a cached key more than 1 day ahead of the client clock stops counting as a watermark, so a bad timestamp can block updates for at most a day. The producer also refuses to publish timestamps more than 10 minutes ahead of its own clock (§11.3, `republish.py`).
+  - **Freshness banners and "Data as of"** always use `generated_at`, never `published_at`.
 - **Cache:** keys are `elections_cache_v2` and `status_cache`. A failed write keeps the previous cache.
 
 ### 12.2 Banner
@@ -855,6 +896,7 @@ The footer reads "Data as of `generated_at`" (plus the older `data_as_of` when t
 | S5-T01…T22 | Feed/status relationships; late/out-of-order responses; validation of both documents; sleep/restart/worker termination; freshness thresholds and clock skew; civil dates across time zones and DST; month-only, year-only and expected windows; Held vs Past; conflicts suppress "today"; 20 attention items, 5 samples; attention section always reachable; child counting "1 of 27"; deduplicated totals and aggregates; tabs and counters in one state; pin migration; real ZIP same-folder update; legacy/v2 renderer matrix; hostile text and URLs; keyboard and screen reader; ZIP contents and permissions; large collections and cache-write failure; offline and expired cache |
 | S6-RT-01…RT-07 | Clean-environment gates with deliberate failures; dry-run and publish privilege separation, including inert "publish" text in fixtures; approval tied to the exact candidate; independent expectations and first-baseline review; rehearsed rollback with an interleaved publisher; real-artifact upgrade; deterministic alert delivery |
 | NM-T01…T08 | T01: a 4-cell row among 100 stays a discovered unparsed unit; 100 → 60 → 36 triggers `cumulative_drop`; a legitimate drop is promoted only under a valid `accept_drop`; the cross-count catches a discovery bug. T02: baseline + a correction on a fetched page + a timed-out page → baseline kept, correction shown as a provisional conflict; complete data with no change → no spurious conflict. T03: a newer defective v2 cache is replaced by a rollback republication; a delayed pre-rollback response is rejected; then the v1 scraper's output after a revert is accepted. T04: same `content_id`, different bytes → the served check and the feed/status link use the byte digest. T05: the full §11.6 matrix on branch and main. T06: round-1 / round-2 / unstated claims in all 6 orders give the same contests with no bridge; an unstated single-round election matches normally. T07: future, zero-length, reversed and naive acknowledgements and the exact expiry instant can't mute anything; healthy then recurring needs a new entry. T08: workflow tests check job permissions and conditions and refuse an artifact whose digest changed (with RT-02/RT-03) |
+| V2-T01…T07 | T01: one event in two views, plus its baseline claim and a changed provisional claim during another page's timeout, give distinct unit/merge IDs, one contest with visible provisional evidence, and nothing overwritten; an unchanged candidate gives no provisional change. T02: an incomplete candidate with a generic aggregate and no matching card gives an attention item, not a contest; with a matching card it stays provisional and selects nothing; a complete aggregate still groups normally. T03: cached rollback vs a delayed v1 response → rejected; a v1 feed generated after the rollback publication → accepted; v2/v2 and equal-key controls hold; a cached key more than 1 day in the future stops blocking. T04: 100 units discovered and counted but 99 outcomes → never promoted, with or without a baseline; served data is the fallback or unavailable; run red; a complete candidate promotes. T05: in a temporary repo, verify a recovery pair, republish, run the exact revert, check the client accepts it and the final digest and original `generated_at`; a missing or altered pair blocks restoration. T06: at a frozen time, an acknowledgement at now+5 min has no effect, exact expiry ends it, a valid one changes only the exit code, and only `accept_drop` changes acceptance. T07: the same artifact under schedule/main, branch dispatch, main `publish:false` and malformed input reaches the (mocked) writer only in the allowed context |
 
 ### 13.4 Layers and gates
 
@@ -901,19 +943,22 @@ The footer reads "Data as of `generated_at`" (plus the older `data_as_of` when t
 
 Every step that writes outside this machine needs the user's go-ahead at the time.
 
+**Commits to `main`** (the merge, marker files, rollback steps) are blocked by the Desktop hook unless `MERGE_APPROVED` exists at the repo root. The marker is created for one approved action at a time and deleted straight after; it is never left in place.
+
 1. **Branch CI:** push `feat/never-miss-v2` to `origin` and let CI run the gates. Then run `workflow_dispatch` on the branch (`publish:false`):
    - read `HEALTH.md` in the run summary, confirming the user can see it (O7);
    - diagnose IPU in CI (O1).
 2. **Reviewed first baselines:** from the dry-run artifact, compare the candidate baselines with the live check and the expected file. The user approves them, and they're committed to the branch.
 3. **Merge:**
    1. Run the whole-branch review on a named SHA, which already includes the step 2 baselines.
-   2. Tag `pre-v2` on `main`.
-   3. The user says "merge". `MERGE_APPROVED` is created with that SHA written in it.
-   4. Check that the branch `HEAD` equals that SHA, then fast-forward `main` and tag `v2.0.0`.
-   5. Delete the marker straight away.
-
-   Any commit after the review, including a rebase, needs the gates and a fresh review before the merge.
-4. **Publish the feed:** push `main`. The next scheduled run publishes the v2 feed. Then check the served file, `HEALTH.md`, and v1.0.2 rendering (manual, plus S5-T17 evidence).
+   2. The user says "merge".
+   3. **Rebase:** fetch `origin/main` and rebase the branch onto it (`main` gets a bot commit every day).
+      - A rebase over commits that touch **only `elections.json`** needs the gates but no fresh review, provided `git diff <reviewed SHA> <rebased SHA> -- . ':!elections.json'` is empty.
+      - Any other new commit or difference needs the gates and a fresh review.
+   4. Tag `pre-v2` on the `main` commit the branch was rebased onto. Then `pre-v2..v2.0.0` holds only branch commits, and the rollback revert can't undo a feed update.
+   5. Create `MERGE_APPROVED` with the rebased SHA written in it. Check that the branch `HEAD` equals that SHA, then fast-forward `main` and tag `v2.0.0`.
+   6. Delete the marker straight away.
+4. **Publish the feed:** record and check the `pre-v2` recovery pair (§11.5), then push `main`. The next scheduled run publishes the v2 feed. Then check the served file, `HEALTH.md`, and v1.0.2 rendering (manual, plus S5-T17 evidence).
 5. **Alert test** (production drill, with the user's go-ahead at the time):
    1. Commit `ALERT_TEST`.
    2. The next scheduled run publishes normally and then fails with "alert test".
@@ -926,8 +971,8 @@ Every step that writes outside this machine needs the user's go-ahead at the tim
    - confirm the Store update and its permission prompt (O4).
 7. **Rollback** (target: same day, under 2 h from the decision; rehearsed in RT-05):
    1. Commit `PAUSE_PUBLISHING`.
-   2. Run `scripts/republish.py <archived elections.json>`. It checks the archive against its hash in `RELEASES.md`, then writes it back with only two top-level fields set: `published_at` (now) and `republished_from_sha256`. Everything else, including the original `generated_at`, is kept. It also writes a matching `status.json` (`outcome: republished`), with LF line endings and exact bytes (§16 `.gitattributes`). Commit and push.
-   3. Revert `pre-v2..v2.0.0` as one commit.
+   2. Run `scripts/republish.py --from-commit <sha>` on a recovery pair (§11.5). It checks the blob's digest, then writes the feed back with only two top-level fields set: `published_at` (now) and `republished_from_sha256`. Everything else, including the original `generated_at`, is kept. It also writes a matching `status.json` (`outcome: republished`), with LF line endings and exact bytes (§16 `.gitattributes`). Commit and push.
+   3. Revert `pre-v2..v2.0.0` as one commit. That range holds only the branch's code, config and baseline commits; publication commits come after `v2.0.0`. So the revert doesn't touch `elections.json` or `status.json`. Afterwards, check that the served digest still equals the republished one.
    4. Remove `PAUSE_PUBLISHING`.
 
    **What existing clients do:**
@@ -972,9 +1017,9 @@ Every step that writes outside this machine needs the user's go-ahead at the tim
 |---|---|---|---|
 | I1 No silent drops (every unit discovered and accounted for, relevant ones visible) | S2-T5–T7, S4-T17, S5-T10–T11, NM-T01, ledger and cross-count unit tests | all adapters, negative fixtures, 4-cell-row fixture | pytest |
 | I2 Failures visible within one run | S4-T03, S4-T10, S4-T16, S5-T01–T03, RT-07 | negative fixtures | pytest + rollout |
-| I3 Baseline integrity (no partial promotion, no silent erosion, corrections still visible) | S1-T4–T6, S4-T01–T04, NM-T01, NM-T02, RT-04 | 100/40 and 100/60/36 synthetic, 2026-10-16 | pytest |
-| I4 Only validated generations publish; the verdict is reported on every path | S3-T16, S4-T05–T09, NM-T05, NM-T08, RT-02–RT-03 | temporary git repos, workflow tests | pytest |
-| I5 Merge correctness and determinism (one role per claim) | S3-T1–T15, S3-T18–T19, NM-T06, property tests | synthetic + 2026-10-16 | pytest |
+| I3 Baseline integrity (no partial or ledger-invalid promotion, no silent erosion, corrections still visible) | S1-T4–T6, S4-T01–T04, NM-T01, NM-T02, V2-T01, V2-T02, V2-T04, RT-04 | 100/40 and 100/60/36 synthetic, 2026-10-16 | pytest |
+| I4 Only validated generations publish; the verdict is reported on every path | S3-T16, S4-T05–T09, NM-T05, NM-T08, V2-T07, RT-02–RT-03 | temporary git repos, workflow tests | pytest |
+| I5 Merge correctness and determinism (one role per claim, unique merge IDs) | S3-T1–T15, S3-T18–T19, NM-T06, V2-T01, V2-T02, property tests | synthetic + 2026-10-16 | pytest |
 | I6 Legacy compatibility | S1-T7, S3-T17, S5-T17, SC2 | v1.0.2 files at `ff30417`, frozen feed | pytest |
 | I7 Freshness honesty | S4-T11, S5-T04–T05, S5-T22 | fake clock | pytest |
 | I8 Dry runs cannot publish | S4-T18, RT-02 | workflow tests | pytest + rollout |
@@ -982,9 +1027,9 @@ Every step that writes outside this machine needs the user's go-ahead at the tim
 | I10 Alerts are delivered | S4-T13, RT-07 | `ALERT_TEST` | rollout |
 | I11 Safe rendering | S5-T18, S4-T19 | hostile-text fixtures | pytest |
 | I12 Expected elections present | SC1, Appendix B | `tests/expected/2026-10-16.yaml` | pytest |
-| I13 Recovery reaches existing clients | NM-T03, RT-05, S5-T02 | cached-profile fixtures, republished archive | pytest + rollout |
+| I13 Recovery reaches existing clients, from a verified recovery pair | NM-T03, V2-T03, V2-T05, RT-05, S5-T02 | cached-profile fixtures, temporary repo with recovery pairs | pytest + rollout |
 | I14 Publication is verified by the bytes served | NM-T04, S4-T09 | two same-content generations | pytest |
-| I15 Acknowledgements are bounded in time and scope | NM-T07, S4-T14–T15 | fake clock, `health_state.json` | pytest |
+| I15 Acknowledgements are bounded in time and scope | NM-T07, V2-T06, S4-T14–T15 | fake clock, `health_state.json` | pytest |
 
 ## Appendix B — Regression cases (each must appear in the 2026-10-16 end-to-end output)
 
