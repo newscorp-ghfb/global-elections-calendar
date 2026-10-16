@@ -56,7 +56,7 @@ The scraper (`scraper.py`, 7 sources, daily GitHub Action on `newscorp-ghfb/glob
 
 **Success criteria**
 
-- **SC1.** An offline end-to-end run on the 2026-10-16 fixtures produces every contest in `tests/expected/2026-10-16.yaml`, including every Appendix B case.
+- **SC1.** An offline end-to-end run on the 2026-10-16 fixtures produces every contest in `tests/expected/2026-10-16.yaml`, including every Appendix B case. The file covers all national contests and every October 2026 subnational entry; for other months, subnational completeness is guaranteed structurally (§13.2).
 - **SC2.** Every record in the 2026-10-16 production feed maps to exactly one v2 record. The only exceptions are in `tests/expected/legacy-mapping-exceptions.yaml`.
 - **SC3.** Every acceptance test in §13 passes, and every gate in §14 is green locally and in CI.
 - **SC4.** The real v1.0.2 extension files render the v2 feed (S1-T7 / S5-T17).
@@ -92,6 +92,24 @@ The scraper (`scraper.py`, 7 sources, daily GitHub Action on `newscorp-ghfb/glob
 | V4 | `status.json` on `main` records only `published` / `validation_failed`; `superseded` / `paused` show in the run artifact and summary (§5.8) | A superseded run can't push, and a paused run must not commit |
 | V5 | `before_window` isn't a reason to ignore a unit; such units keep their outcome and are counted by relevance (§9.1) | The ledger outcome and relevance stay separate, as §5.5 already assumes |
 
+### 3.2 Changes from the full-spec red-team review (`Downloads/never_miss_v2_full_spec_red_team_review.md`)
+
+| ID | Finding | Change | Where |
+|---|---|---|---|
+| R1 | NM-F01: a malformed row could escape discovery, and a slow decline (100 → 60 → 36) never trips the 50% check | Units are discovered loosely (every row, item or cell in the recognised container) and cross-counted by a second, independent pass. A 30-day high-water mark adds a `cumulative_drop` check. A legitimate drop needs a time-limited `accept_drop`. Future-dated keyed units that vanish become attention items | §7, §9.1, §9.3, §9.6 |
+| R2 | NM-F02: a correction on a page that did download is lost when another page fails | Changes in a candidate that isn't promoted enter the merge as `provisional` claims. They can flag a conflict on the matching contest or become an attention item, but never replace baseline data | §5.2, §9.3, §10.3 |
+| R3 | NM-F03: rollback serves an older feed, which v2 clients would reject | A new `published_at` field orders publications. Rollback republishes the archived data with a new `published_at` and keeps its original `generated_at` | §5.7, §12.1, §15 |
+| R4 | NM-F04: `generation_id` doesn't cover every field, so it can't prove the new file is being served | Renamed `content_id` (meaning unchanged). `status.json` carries the SHA-256 of the feed bytes; the served check and the extension's feed/status link compare that digest | §5.7, §5.8, §11.2, §12.1 |
+| R5 | NM-F05: exit and publish behaviour for degraded, invalid and crashed runs wasn't explicit | `scraper.py` exits 0 whenever it wrote a complete artifact. A read-only `verdict` job sets the final result on every path. Full matrix in §11.6 | §11.2, §11.6 |
+| R6 | NM-F06: anchor and weak definitions overlapped on "unknown round" | One role per claim; an unstated round doesn't make a claim weak; the month-disagreement rule needs every identity field to agree | §10.2, §10.3 |
+| R7 | NM-F07: a future `acknowledged_at` could stretch the 14-day limit | `acknowledged_at ≤ now < expires_at`, timezone required, interval > 0 and ≤ 14 days. Recurrence is detected from a committed `health_state.json` | §9.6 |
+| R8 | Clarifications (review §5) | Attention cap vs conservation; freshness is a tie-break, not a veto; subnational oracle = Appendix B + every October 2026 subnational entry; rollover for earlier years; "3 attempts" = 1 try + 2 retries; host matching on the parsed URL; `MERGE_APPROVED` tied to the reviewed SHA; O8 → O7 | §5.5, §10.5, §13.2, §7, §8, §12.6, §15 |
+| R9 | Alert test (review §5) | **Changes an approved step:** the `ALERT_TEST` run now publishes normally and only then fails. The approved version published nothing, which leaves the feed ~48 h old before the next run, so every user would see the red 36-hour banner for about 12 h | §11.4, §15 |
+
+**Not adopted:**
+- **Synthetic CI identities (NM-T08).** GitHub job tokens can't be simulated offline. Instead, workflow tests check each job's `permissions`, its conditions and the artifact-digest check (extending RT-02/RT-03), and the branch dry run (§15 step 1) shows that a real branch run can't write.
+- **A separate, isolated workflow for the alert test.** The recipient of scheduled-run failure emails is set per workflow file (whoever created it or last changed its cron), so only the production workflow can prove its own alert route. R9 removes the missed-refresh cost instead.
+
 ## 4. Architecture
 
 ```
@@ -115,16 +133,16 @@ elections_calendar/
     identity.py  match.py  select.py  cards.py  conservation.py
   feed.py                       v2 feed + legacy projection, status.json, HEALTH.md
   validate.py                   JSON Schema, legacy contract, merge invariants
-  publish.py                    generation id, atomic local writes
+  publish.py                    content id, published_at, artifact manifest, atomic local writes
 data/
   places.yaml  institutions.yaml
   certs/emsign-root-ca-g1.pem
-  sources/<source>/baseline.json  candidate.json
+  sources/<source>/baseline.json  candidate.json  health_state.json
 schemas/feed-v2.schema.json  schemas/status-v1.schema.json
-known_issues.yml
-tests/  (fixtures/, expected/, unit/, adapters/, merge/, pipeline/, extension/)
+known_issues.yml                (acknowledgements and accept_drop entries)
+tests/  (fixtures/, expected/, unit/, adapters/, merge/, pipeline/, workflow/, extension/)
 extension/  (v2.0.0)
-scripts/build_extension_zip.py  scripts/build_places.py
+scripts/build_extension_zip.py  scripts/build_places.py  scripts/republish.py
 ```
 
 **Data flow:** fetch → adapter (input units → claims, plus a ledger) → acceptance decision (baseline vs candidate) → merge (claims → children → cards; attention items) → feed and status built → validation → publish.
@@ -174,6 +192,7 @@ scripts/build_extension_zip.py  scripts/build_places.py
 | `evidence_kind` | `calendar` \| `expected_renewal` \| `observation` \| `umbrella` |
 | `indirect` | `true` for indirect elections |
 | `fetched_at`, `fallback`, `snapshot_id` | Provenance |
+| `provisional` | `true` for a new or changed claim taken from a candidate that wasn't promoted (§9.3) |
 
 ### 5.3 Child (one contest)
 
@@ -209,19 +228,23 @@ A child holds the resolved values plus all its claims.
 ### 5.5 Undated listings and attention items
 
 - **`undated[]`** holds year-only calendar claims that didn't attach to exactly one contest: `{undated_id, place_id, country, office_label, year, sources[], possible_matches[]}`.
-- **`attention_items[]`** is the **complete** list of relevant unresolved items in the data being served:
+- **`attention_items[]`** lists every relevant unresolved item in the data being served (all of them, unless `attention_truncated` > 0):
 
 | Field | Meaning |
 |---|---|
 | `item_id` | Stable within the generation |
-| `kind` | `unparsed_unit` \| `partial_unit` \| `undated_listing` (refers to an `undated_id`) \| `unresolved_evidence` |
+| `kind` | `unparsed_unit` \| `partial_unit` \| `undated_listing` (refers to an `undated_id`) \| `unresolved_evidence` \| `provisional_change` (§9.3) \| `disappeared_unit` (§9.3) |
 | `source`, `link`, `snapshot_id` | Provenance |
 | `relevance` | `in_or_after_window` \| `unknown` (only these are attention items; `before_window` units stay in the ledger) |
 | `text` | Display text, at most 300 characters, sanitised |
 | `reason` | Reason code |
 | `possible_matches` | Child IDs, provisional |
 
-- **Cap:** at most 500 attention items. Beyond that, `attention_truncated` holds the overflow count and the run is red.
+- **Cap:** at most 500 items are serialised: `in_or_after_window` first (by date), then `unknown`.
+  - The overflow count goes in `attention_truncated`, the full list goes in the run artifact (`attention_full.json`), and the run is red.
+  - Conservation (§10.8) checks the uncapped list.
+  - Items only reference `child_id`s and `undated_id`s, which are always serialised, so truncation can't leave dangling references.
+  - A truncated feed is still valid (§11.3); it publishes, and the red run comes from the non-acknowledgeable `attention_truncated` warning.
 
 ### 5.6 `source_health[]` (one entry per source)
 
@@ -237,8 +260,10 @@ A child holds the resolved values plus all its claims.
 ### 5.7 `elections.json` top level
 
 - `schema_version`: `2`
-- `generation_id`: SHA-256 over the canonical JSON of `months`, `undated`, `attention_items` and the served snapshot IDs
-- `generated_at`: UTC build time of this generation
+- `content_id`: SHA-256 over the canonical JSON of `months`, `undated`, `attention_items` and the served snapshot IDs. It identifies the *election content*: two generations with the same evidence share it. It is **not** a publication identity (that's the byte digest in `status.json`, §5.8)
+- `generated_at`: UTC build time of the data in this file
+- `published_at`: UTC time this file was published. Equal to `generated_at` for normal runs. A rollback republication (§15) sets a new `published_at` and keeps the original `generated_at`. Clients order feeds by it (§12.1)
+- `republished_from_sha256`: only on republished feeds; the digest of the archived file they were restored from
 - `data_as_of`: oldest `served_fetched_at` among sources contributing records
 - `current_month`, `window {months[], years[]}`
 - `months`, `undated`, `attention_items`, `attention_truncated`
@@ -251,9 +276,9 @@ A child holds the resolved values plus all its claims.
 The publish job writes it to the run artifact on every attempt, but **commits it to `main` only when it commits a generation** (`published` or `validation_failed`). `superseded` and `paused` attempts show in the artifact and the run summary only: a superseded run can't push, and a paused run must not commit.
 
 - `schema_version: 1`, `attempt_id` (`<UTC timestamp>-<run id>`), `attempt_at`, `trigger`, `code_sha`
-- `outcome`: `published` \| `validation_failed` \| `superseded` \| `paused`
+- `outcome`: `published` \| `validation_failed` \| `superseded` \| `paused` \| `republished` (written by the rollback script, §15)
 - `severity`, `reasons[]`
-- `serving_generation_id`, `serving_generated_at`
+- The feed being served: `serving_feed_sha256` (SHA-256 of the exact `elections.json` bytes), `serving_published_at`, `serving_generated_at`, `serving_content_id`. On `validation_failed` these describe the feed that was kept, so a failed attempt never claims that a new feed was delivered
 - `sources[{name, severity, using_fallback, served_fetched_at}]`, `acknowledged[]`
 
 `superseded` is not an error for the extension; the CI run is red so the user can re-run that day.
@@ -272,8 +297,11 @@ Only the existing values are used: `Upcoming`, `Held`, `Postponed`, `Cancelled`,
 ### 5.10 Source snapshots (`data/sources/<source>/`)
 
 - **`candidate.json`:** the latest attempt: `snapshot_id`, `fetched_at`, `parser_version`, `scope {years, pages}`, `units[]` (with outcome and raw text), `claims[]`, plus the download diagnostics.
-- **`baseline.json`:** the last promoted complete candidate, with the same shape.
-- Both are committed in the same commit as the feed (§11). `snapshot_id` = SHA-256 over the canonical JSON of `units` and `claims`.
+- **`baseline.json`:** the last promoted complete candidate, with the same shape, plus:
+  - `units_seen_history`: per scope, `(fetched_at, units_seen)` for each promotion in the last 30 days (for the cumulative-drop check, §9.3);
+  - `disappeared[]`: future-dated keyed units that vanished, with `since` (§9.3).
+- **`health_state.json`:** per reason code (and scope), `last_absent_at`: the last published generation in which this source *didn't* have that reason. Updated on every published generation, promoted or not. Used to void acknowledgements on recurrence (§9.6).
+- All three are committed in the same commit as the feed (§11). `snapshot_id` = SHA-256 over the canonical JSON of `units` and `claims`.
 
 ## 6. Shared parsing
 
@@ -351,26 +379,32 @@ Sources give a default (ElectionGuide, IPU and Wikipedia national: `national`; W
 
 Every unit gets exactly one outcome. Claims link back to units. Headers are matched by meaning, using normalised header text, never by column position alone.
 
+**Discovery is loose; parsing is strict.**
+- **What counts as a unit:** once the layout check has found the source's container (table, list, card block, JSON list), **every** row, item, card or cell in it is a unit. Field requirements (cell count, classes, links) are applied only when parsing.
+- **When a row doesn't fit:** it becomes `unparsed` or `partial` with a reason (e.g. `too_few_cells`), or is ignored with an allowlisted reason (§9.1). It never just isn't discovered.
+- **Independent cross-count:** a second pass counts the same container's rows/items with a minimal stdlib `html.parser` counter (for JSON, the list length). It shares no selector code with the adapter. If its count differs from the number of discovered units → error `discovery_mismatch`.
+
 | Source | Request(s) | Unit | Layout recognised when | Mapping and meaning |
 |---|---|---|---|---|
-| ElectionGuide | `/elections/type/upcoming/`, `/past/`, `/anticipated/` | Data row of `#electionsTable` with ≥5 `td` | Header contains Country, Election for, Start Date, End Date | Election link `/elections/id/N/` → `source_event_id`. Start/End are ISO with `(d)`/`(t)` → `date_status` per row. Upcoming's Status "Date not confirmed" → tentative. `date_meaning=voting_period`. Past rows → `status_claim=held` / `occurrence_confirmed`. **Coverage check:** past list's oldest row must predate the window start, otherwise reason `coverage_gap`. Rows appearing in several views are linked through `source_event_id` |
-| Wikipedia national | MediaWiki API `action=parse&page=<Y>_national_electoral_calendar&prop=text\|revid&format=json&formatversion=2&maxlag=5`, once per requested year | Each `li` with its own text, at any depth, under month sections and "Indirect elections" | Month `h2` headings found with lists; API JSON has no `error` key | Date from the top-level `li` prefix (§6.1, including day lists). Country = first link of the country entry. **Offices are split by their separate links**, and round qualifiers stay with their own office. Leftover text is checked; anything unaccounted makes the unit partial. "Indirect elections" entries get `indirect=true`. `date_meaning=voting_period`. `revid` is recorded |
+| ElectionGuide | `/elections/type/upcoming/`, `/past/`, `/anticipated/` | Every `tr` in the body of `#electionsTable`; fewer than 5 `td` → unparsed (`too_few_cells`) | Header contains Country, Election for, Start Date, End Date | Election link `/elections/id/N/` → `source_event_id`. Start/End are ISO with `(d)`/`(t)` → `date_status` per row. Upcoming's Status "Date not confirmed" → tentative. `date_meaning=voting_period`. Past rows → `status_claim=held` / `occurrence_confirmed`. **Coverage check:** past list's oldest row must predate the window start, otherwise reason `coverage_gap`. Rows appearing in several views are linked through `source_event_id` |
+| Wikipedia national | MediaWiki API `action=parse&page=<Y>_national_electoral_calendar&prop=text\|revid&format=json&formatversion=2&maxlag=5`, once per requested year | Every `li`, at any depth, under month sections and "Indirect elections"; an `li` with no text of its own (only a nested list) → ignored `container_item` | Month `h2` headings found with lists; API JSON has no `error` key | Date from the top-level `li` prefix (§6.1, including day lists). Country = first link of the country entry. **Offices are split by their separate links**, and round qualifiers stay with their own office. Leftover text is checked; anything unaccounted makes the unit partial. "Indirect elections" entries get `indirect=true`. `date_meaning=voting_period`. `revid` is recorded |
 | Wikipedia local | Same, `<Y>_local_electoral_calendar` | Same, parsed recursively | Same | Country entry → one card grouping; nested items → structured children inheriting the date, country and parent jurisdiction. Default level `subnational`, overridden per §6.4 |
-| NDI | `/elections-calendar?page=N` | Card `div.partial.-election.-feed` | Two `.bound` blocks with cards and pagers | Block 1 = upcoming, block 2 = past (archive). Order is verified by date direction. `?page=N` advances both. Continue while upcoming has a next page or the past block's oldest card is ≥ the window start. Cap 10 pages; repeated-page detection by card-name set. Date from the **visible card text**. "TBD" in the title → `date_status=tentative` and month precision. Country = `data-location`. The type label sets the level |
-| OSCE | `/odihr/elections` | `tr.search-target` | Header = Date, Country, Election, Activity | Precision from the **visible date `div` text**. `data-filter-date` is only a cross-check for day precision (a mismatch makes the unit partial). Badge span → status words. Year-only → undated. `date_meaning=voting_period` |
-| IPU | `data.ipu.org/elections/` | Table row | Header contains "Expected date of next election" and "Principal mode of designation" | `evidence_kind=expected_renewal`, `date_status=tentative`. Designation "appointed" → ignored (`appointed_chamber`); "indirect" → `indirect=true`. CI fallback endpoints (`api.data.ipu.org/v1/reports/elections`, CSV export) depend on open item O1 |
-| A-WEB | `list.do?menuNo=300052&option=all` | Table row | Header has country, election, date columns | A single day → `voting_period`, `date_status=unknown`. Ranges → `date_meaning=unknown`. External EMB links are kept as claim links only if they pass the allowlist (§12.6) |
+| NDI | `/elections-calendar?page=N` | Every direct child of each block's `.election-wrapper` (today all are `div.partial.-election.-feed`, 10 per block) | Two `.bound` blocks with cards and pagers | Block 1 = upcoming, block 2 = past (archive). Order is verified by date direction. `?page=N` advances both. Continue while upcoming has a next page or the past block's oldest card is ≥ the window start. Cap 10 pages; repeated-page detection by card-name set. Date from the **visible card text**. "TBD" in the title → `date_status=tentative` and month precision. Country = `data-location`. The type label sets the level |
+| OSCE | `/odihr/elections` | Every `tr` in the elections table body (with or without `.search-target`) | Header = Date, Country, Election, Activity | Precision from the **visible date `div` text**. `data-filter-date` is only a cross-check for day precision (a mismatch makes the unit partial). Badge span → status words. Year-only → undated. `date_meaning=voting_period` |
+| IPU | `data.ipu.org/elections/` | Every `tr` in the body of the table whose header matched | Header contains "Expected date of next election" and "Principal mode of designation" | `evidence_kind=expected_renewal`, `date_status=tentative`. Designation "appointed" → ignored (`appointed_chamber`); "indirect" → `indirect=true`. CI fallback endpoints (`api.data.ipu.org/v1/reports/elections`, CSV export) depend on open item O1 |
+| A-WEB | `list.do?menuNo=300052&option=all` | Every `tr` in the body of the table whose header matched | Header has country, election, date columns | A single day → `voting_period`, `date_status=unknown`. Ranges → `date_meaning=unknown`. External EMB links are kept as claim links only if they pass the allowlist (§12.6) |
 | EISA | Calendar page → find heading "EISA African Election Calendar {Y}" → its `data-footable_id` → `wp-admin/admin-ajax.php?action=wp_ajax_ninja_tables_public_action&table_id=ID&target_action=get-all-data` (no nonce needed, verified) | JSON row | The current year's heading exists and the JSON is a list of rows with `country`, `election`, `date` | A blank country inherits the previous row's country **within the same table only**; blank in the first row → partial. Date grammar: `Held D Month YYYY` (held, voting_period); `D Month YYYY`; `Month YYYY` (month); `YYYY` (undated); `Postponed from X [to Y]`; `Mon YYYY - Mon YYYY` (expected_window); `Stagerred: … - …` (unknown, phased) |
-| Carter Center | `/programs/democracy/elections-observed/` | Row of `table.has-fixed-layout` under the headings "Elections Monitored by The Carter Center" or "Expert Missions" | Either heading found with its table | Cells: country link + comma-separated `Month YYYY` / `Month-Month YYYY` tokens, one claim per token. `evidence_kind=observation`, month precision. Expert missions are flagged |
-| EEAS | `/eeas/eu-election-observation-missions-1_en` | Link text matching `EOM <Country> <YYYY>`, deduplicated by href | At least one such link | `evidence_kind=observation`, year only. Never sets a date. Unmatched → `unresolved_evidence` |
+| Carter Center | `/programs/democracy/elections-observed/` | Every `tr` of the tables under the headings "Elections Monitored by The Carter Center" and "Expert Missions" (header rows → ignored `header_row`) | Either heading found with its table | Cells: country link + comma-separated `Month YYYY` / `Month-Month YYYY` tokens, one claim per token. `evidence_kind=observation`, month precision. Expert missions are flagged |
+| EEAS | `/eeas/eu-election-observation-missions-1_en` | Every `td` of the mission table (today: 17 rows of 2 cells; year rows such as "2026" → ignored `year_heading`, blank cells → ignored `empty_cell`, a repeated href → ignored `duplicate`). A cell whose text doesn't match `EOM <Country> <YYYY>` → unparsed | The table containing `EOM <Country> <YYYY>` links is found | `evidence_kind=observation`, year only. Never sets a date. Unmatched → `unresolved_evidence` |
 
 **Year rollover:**
-- A missing **next-year** page (HTTP 404, or the API's `missingtitle`) → `not_published_yet`, an info-level reason. A coverage gap for that year is recorded in `per_year`.
-- A missing **current-year** page → error `current_year_missing`.
+- A missing page (HTTP 404, or the API's `missingtitle`) for a requested year **after the current year** → `not_published_yet`, an info-level reason. A coverage gap for that year is recorded in `per_year`.
+- A missing page for the **current year or an earlier requested year** → error `required_year_missing`. This covers January, when the window includes December of the previous year.
 
 ## 8. Fetching (`fetch.py`)
 
-- **Retries:** up to 3 attempts per request with exponential backoff (2 s, 4 s, 8 s), honouring `Retry-After` (capped at 60 s). Timeout 60 s per request.
+- **Retries:** 3 attempts per request in total (the first try plus 2 retries), waiting 2 s and then 4 s, or `Retry-After` when given (capped at 60 s). Timeout 60 s per attempt.
+- **Redirects:** at most 5 per request, `https` only. Each hop gets TLS verification for its own host (so the OSCE trust store below applies only on OSCE hosts). The final URL is recorded.
 - **Deadlines:** 4 min per source, 12 min for the whole scrape. A source that runs out gets outcome `deadline` and its unfinished pages are recorded.
 - **Parallelism:** up to 4 sources at once; requests within one source run one at a time.
 - **TLS verification is on everywhere.** OSCE's chain ends at emSign Root CA – G1, which isn't in certifi, so for `odihr.osce.org` and `www.osce.org` only, the trust store is certifi **plus** `data/certs/emsign-root-ca-g1.pem`. The SHA-256 fingerprint of that file is pinned in code and checked at load.
@@ -384,7 +418,8 @@ Every unit gets exactly one outcome. Claims link back to units. Headers are matc
 ### 9.1 Ledger invariants (checked in shared code, per source)
 
 - **Set equality:** the set of `unit_id`s seen equals the union of the four outcome sets. The sets are disjoint and contain no duplicates.
-- **Ignored units** carry an allowlisted reason code (`header_row`, `appointed_chamber`, `duplicate_view`).
+- **Ignored units** carry an allowlisted reason code: `header_row`, `year_heading`, `empty_cell`, `container_item`, `appointed_chamber`, `duplicate` (the same event already seen in another view, or the same link twice).
+- **Discovery cross-count** (§7): the independent count must equal the number of units seen; otherwise error `discovery_mismatch`.
 - **Being before the window is not a reason to ignore a unit.** Such units keep their parsed/partial/unparsed outcome; relevance (§6.1) is recorded separately, and only relevant unparsed/partial units become attention items.
 - **Partial units** keep their parsed claims plus the leftover text.
 - **Any violation** sets the source's severity to `error` with reason `ledger_mismatch`.
@@ -401,20 +436,33 @@ Every unit gets exactly one outcome. Claims link back to units. Headers are matc
 | Situation | Served | Baseline | Severity |
 |---|---|---|---|
 | Layout recognised, paging complete, no sudden drop | Candidate; relevant unparsed/partial units become attention items | Promoted | `ok`, or `warning` if any relevant unit is unparsed/partial |
-| Sudden drop: `units_seen` more than 50% below the baseline for the same year/page scope, with no recorded explanation (`valid_empty`, `year_rollover`) | Baseline (original age shown) | Kept; candidate quarantined | `warning` (`sudden_drop`) |
-| Download failure, incomplete paging, layout not recognised, challenge page, deadline | Baseline, or `unavailable` | Kept | `error` |
+| Drop, with no recorded explanation (`valid_empty`, `year_rollover`) and no valid `accept_drop` (§9.6). For the same year/page scope, `units_seen` is either more than 50% below the baseline (`sudden_drop`) or more than 50% below the 30-day high-water mark in `units_seen_history` (`cumulative_drop`, which catches 100 → 60 → 36) | Baseline (original age shown), plus the candidate's provisional changes (below) | Kept; candidate quarantined | `warning` (`sudden_drop` / `cumulative_drop`) |
+| Download failure, incomplete paging, layout not recognised, challenge page, deadline, discovery mismatch | Baseline, or `unavailable`; plus provisional changes from pages that were fully parsed | Kept | `error` |
 | No baseline and the candidate is valid (first run) | Candidate | Promoted | As for row 1 (bootstrap is not an error) |
 | No baseline and the candidate is invalid | Nothing; `unavailable` | — | `error` |
 
-- **Parser version change:** a different parser major version marks the baseline `comparable=false`. The drop check is skipped; structural checks still apply.
+- **Parser version change:** a different parser major version marks the baseline `comparable=false`. The drop checks are skipped and the history restarts; structural checks still apply.
+- **Provisional changes from a candidate that isn't promoted** (quarantined or incomplete):
+  - its claims from fully parsed pages are compared with the served baseline's claims, by `source_event_id` when there is one, otherwise by identity key (§10.1) within the same year;
+  - a claim that is new, or whose date, end date or status claim differs, enters the merge as a `provisional` claim (§10.3); everything else is dropped, because the baseline already has it;
+  - the info reason `provisional_changes` counts them, and `HEALTH.md` lists them.
+
+  The baseline is never partly replaced.
+- **Disappeared units** (sources with `source_event_id`):
+  - **Which units:** a baseline unit dated on or after T that is absent from a promoted complete candidate, and from every other view of that source;
+  - **What it produces:** an attention item `disappeared_unit` ("No longer listed by <source>: <text>, was <date>") and the info reason `units_disappeared`;
+  - **How long it lasts:** it is kept in `baseline.json` `disappeared[]` for 7 days, or until its date passes or it reappears.
+
+  Contests that other sources still list are unaffected.
 - **One generation:** baselines and the feed move together in one commit (§11). A failed validation advances nothing.
 
 ### 9.4 Severity and reasons
 
-- **Error codes:** `fetch_failed`, `tls_error`, `timeout`, `dns_error`, `http_error`, `challenge_page`, `api_error`, `layout_not_recognised`, `current_year_missing`, `pagination_incomplete`, `deadline`, `unavailable`, `ledger_mismatch`.
-- **Warning codes:** `unparsed_relevant`, `partial_relevant`, `sudden_drop`, `coverage_gap`, `no_cross_source_match`, `fallback_stale` (served fallback older than 7 days), `served_mismatch`, `attention_truncated`, `ack_invalid`.
-- **Info codes** (reason-level only; never raise severity): `not_published_yet`, `count_change`.
+- **Error codes:** `fetch_failed`, `tls_error`, `timeout`, `dns_error`, `http_error`, `challenge_page`, `api_error`, `layout_not_recognised`, `required_year_missing`, `pagination_incomplete`, `deadline`, `unavailable`, `ledger_mismatch`, `discovery_mismatch`.
+- **Warning codes:** `unparsed_relevant`, `partial_relevant`, `sudden_drop`, `cumulative_drop`, `coverage_gap`, `no_cross_source_match`, `fallback_stale` (served fallback older than 7 days), `served_mismatch`, `attention_truncated`, `ack_invalid`.
+- **Info codes** (reason-level only; never raise severity): `not_published_yet`, `count_change`, `provisional_changes`, `units_disappeared`.
 - **Mapping:** source severity = the worst reason level. Run severity = the worst source severity combined with the merge, validation and publish results.
+- **Exit policy (as approved in Section 4):** the run is red when any error- or warning-level reason remains after acknowledgements. Info never turns it red. §11.6 gives the full matrix.
 
 ### 9.5 Cross-source match diagnostic
 
@@ -436,14 +484,17 @@ Every unit gets exactly one outcome. Claims link back to units. Headers are matc
 
 **Rules:**
 - **Validity:**
-  - all fields are required;
-  - `expires_at - acknowledged_at` must be ≤ 14 days;
+  - all fields are required, and both timestamps must carry a timezone (`Z` or an offset); naive timestamps are invalid;
+  - `acknowledged_at ≤ now < expires_at`. `acknowledged_at` may be at most 10 minutes in the future, for clock skew; anything later is invalid;
+  - `0 < expires_at - acknowledged_at ≤ 14 days`;
   - the entry expires when the current UTC time reaches `expires_at`;
   - there's no auto-renewal;
-  - a malformed entry is itself a warning (`ack_invalid`).
-- **Matching:** an acknowledgement matches only the exact source + reason + scope. It is voided by any healthy run of that source after `acknowledged_at`, so a recurrence needs a new entry.
+  - an invalid entry has no effect and is itself a warning (`ack_invalid`).
+- **Matching:** an acknowledgement matches only the exact source + reason + scope.
+- **Recurrence:** it is void once `health_state.json` shows `last_absent_at` for that reason and scope later than `acknowledged_at`. That is, a *published* generation ran without the problem, so a recurrence needs a new entry. Promotion of a baseline alone doesn't count, since a promoted run can still carry the reason.
+- **Accepting a legitimate drop:** an `accept_drop` entry tells the drop checks (§9.3) to accept a candidate for one scope that has at least `accept_units_seen_min` units. It has the same fields and validity rules as an acknowledgement, plus `scope` and `accept_units_seen_min`. A promotion under it restarts that scope's `units_seen_history`.
 - **Effect:** it changes **only the exit code**. Severity, acceptance decisions, the banner (shown as "acknowledged until …") and `HEALTH.md` are unchanged.
-- **Never acknowledgeable:** schema, legacy-contract, merge, conservation and publication failures, `fallback_stale`, and `attention_truncated`.
+- **Never acknowledgeable:** schema, legacy-contract, merge, conservation and publication failures, `ledger_mismatch` and `discovery_mismatch` (both are code defects, fixed in code), `fallback_stale`, and `attention_truncated`.
 
 ## 10. Merge
 
@@ -459,9 +510,20 @@ The identity key is:
 
 Referendum questions are children only when a source lists the questions; otherwise there is one `referendum_day` contest per place and date.
 
-### 10.2 Phase A: anchors
+### 10.2 Roles and Phase A: anchors
 
-- **Anchor claims:** `evidence_kind=calendar`, day precision, `date_meaning=voting_period`, specific institution or kind, and jurisdiction `nationwide` or `named`.
+**Roles.** Every claim gets exactly one role before matching starts. The first rule that applies wins:
+1. **`umbrella`:** class `general`, or an aggregate label that isn't identity (§6.3, §10.4).
+2. **`provisional`:** `provisional=true` (§9.3).
+3. **`anchor`:** all of the following hold:
+   - `evidence_kind=calendar`, day precision and `date_meaning=voting_period`;
+   - a specific institution, or kind `referendum_day` / `referendum_question`;
+   - jurisdiction `nationwide` or `named`.
+
+   **An unstated round doesn't stop a claim being an anchor**, since most single-round elections never state one.
+4. **`weak`:** everything else.
+
+**Round bridging:** an anchor with an unstated round is compatible with anchors of any stated round (§10.1). If it joins two different stated rounds into one component, that component isn't fully compatible, so the rule below applies: every member becomes its own `ambiguous` contest and the unstated claim is never assigned to a round. This is rare, because rounds fall on different dates.
 - **Compatibility graph:** an edge joins two anchors with compatible identity keys and overlapping date intervals.
 - **Connected components:**
   - a component in which **every pair** is compatible becomes one contest (for intervals that's equivalent to sharing a common day);
@@ -470,14 +532,14 @@ Referendum questions are children only when a source lists the questions; otherw
 
 ### 10.3 Phase B: weak claims
 
-**Weak claims** are every non-anchor claim: month/year precision, unknown round/institution/jurisdiction, expected renewals, observations.
+**Weak claims** are the claims with role `weak` (§10.2), e.g. month/year precision, unresolved institution, jurisdiction `unknown`, expected renewals, observations. A weak claim with an unstated round that is compatible with contests of two different stated rounds has 2 candidates, so it becomes unresolved (below), never assigned.
 
 **Candidates** for each weak claim are taken from **all** Phase A contests (before the window is applied), filtered by:
 - identity compatibility;
 - date compatibility: day and month precision = the intervals overlap; year = same year;
 - jurisdiction: equal; or the weak claim's jurisdiction is `unknown` **and** there's exactly one candidate.
 
-**Month disagreement:** when no overlapping candidate exists, a month-precision claim may attach to the **single** contest of the same place, institution and level in the whole year, with `date_conflict=true` (e.g. EISA's "October 2026" Cape Verde entry joins the 15 Nov contest). Two or more contests in that year → unresolved.
+**Month disagreement:** when no overlapping candidate exists, a month-precision claim may attach to the **single** contest in the whole year that is compatible with it on **every** identity field (§10.1: place, level, institution, jurisdiction, round, kind), with `date_conflict=true` (e.g. EISA's "October 2026" Cape Verde entry joins the 15 Nov contest). Two or more contests in that year → unresolved.
 
 **Outcome by number of candidates:**
 - **Exactly 1:** attach the claim to that contest.
@@ -491,6 +553,12 @@ Weak claims never change Phase A contests.
 
 **Phase C:** standalone weak claims cluster among themselves under the Phase A rules, using precision-appropriate date compatibility.
 
+**Phase D: provisional claims** (after Phase C):
+- **Candidates:** matched against every contest from Phases A–C, on identity (§10.1) within the same year. The date is **ignored**, because the date may be exactly what changed.
+- **Exactly 1 candidate:** the claim is attached as a provisional source, shown as "from an incomplete fetch on <date>". If its date differs from the contest's resolved value, the child gets `date_conflict`; if its status claim differs, `status_conflict`.
+- **0 or 2+ candidates:** an attention item `provisional_change`.
+- **Limits:** provisional claims never create, select, confirm or resolve anything (a provisional postponement can never make a status `Postponed`).
+
 ### 10.4 Umbrellas and aggregates
 
 - **What counts as an umbrella:** claims of class `general`, and aggregate labels that aren't identity (§6.3), become umbrella links.
@@ -502,11 +570,11 @@ Weak claims never change Phase A contests.
 ### 10.5 Selecting resolved values
 
 **Order:**
-1. **Eligibility:** `calendar` > `expected_renewal` > `observation`; umbrellas are excluded.
+1. **Eligibility:** `calendar` > `expected_renewal` > `observation`; umbrella and provisional claims are excluded.
 2. **Interval coverage:** if one eligible `voting_period` claim's interval contains every other eligible claim's single day, take that interval. A range is never built from min/max of disagreeing single days.
 3. **`date_status`:** confirmed > tentative > unknown.
 4. **Precision:** day > month.
-5. **Freshness:** a fallback claim loses only if it's more than 7 days old.
+5. **Freshness (a tie-break, not a veto):** at this step a fresh claim beats a fallback claim more than 7 days old. Steps 1–4 come first, so stale evidence that is more confirmed or more precise can still win. When it wins over a fresh claim with a different interval, the child gets `date_conflict` and the label shows the stale claim's original fetch date (§12.3).
 6. **Source priority:** ElectionGuide, OSCE, Wikipedia national, Wikipedia local, NDI, A-WEB, EISA, IPU, Carter Center, EEAS. Then `source_event_id`, then `unit_id`.
 
 Each claim records whether it was `selected`, or its `rejected_reason`.
@@ -531,7 +599,7 @@ Each claim records whether it was `selected`, or its `rejected_reason`.
 
 ### 10.8 Conservation (identity-based)
 
-- **Dispositions:** every merge input claim ID has exactly one disposition: `anchor_member(child_id)`, `attached(child_id)`, `umbrella_link(group_ids)`, `standalone(child_id)`, `undated(undated_id)` or `attention(item_id)`.
+- **Dispositions:** every merge input claim ID has exactly one disposition: `anchor_member(child_id)`, `attached(child_id)`, `provisional(child_id)`, `umbrella_link(group_ids)`, `standalone(child_id)`, `undated(undated_id)` or `attention(item_id)`. The checks run on the uncapped attention list (§5.5).
 - **Checks:**
   - set(inputs) = set(dispositions), with no duplicates and no unknown IDs;
   - every link target exists;
@@ -568,18 +636,21 @@ Workflow-level `concurrency: {group: publish-elections, cancel-in-progress: fals
 - **`scrape`** (`contents: read`, 20 min, needs `gates`):
   - Install `requirements.txt` into `.venv` with `--require-hashes`.
   - `PAUSE_PUBLISHING` present → summary "paused", success, and a `paused` job output that makes `publish` skip; stop.
-  - `ALERT_TEST` present → summary "alert test", **fail**, stop.
-  - Otherwise run `python scraper.py --live --out out/`. That writes the candidate generation, a verdict file and `HEALTH.md`, all uploaded as an artifact. `HEALTH.md` also goes into the job summary.
+  - `ALERT_TEST` present → an `alert_test` job output; scraping continues as normal (§11.4).
+  - Run `python scraper.py --live --out out/`. It writes the candidate generation (`elections.json`, `status.json`, `HEALTH.md`, `data/sources/*`), `verdict.json` (data verdict, severity, reasons after acknowledgements) and `manifest.json` (SHA-256 of every other file in `out/`). Everything is uploaded as one artifact, and `HEALTH.md` also goes into the job summary.
+  - **`scraper.py` exit code:** 0 whenever it wrote a complete, self-consistent artifact, *whatever the data verdict* (healthy, degraded or validation failed); non-zero only for a crash or an incomplete artifact. So the data verdict never stops `publish` from recording a validation failure.
+  - `published_at` is set here, so the bytes are final before `publish` runs.
   - An `if: always()` step writes a minimal summary even after a crash.
-- **`publish`** (`contents: write`, 15 min, needs `scrape`, conditions per §11.1):
-  1. Download the artifact.
-  2. Push-race check: `git fetch origin main`; if `origin/main != github.sha` → status `superseded` (no data commit), red.
+- **`publish`** (`contents: write`, 15 min, needs `scrape` to have succeeded, conditions per §11.1, skipped when paused):
+  1. Download the artifact and check every file against `manifest.json`. Any mismatch or missing file → publish nothing.
+  2. Push-race check: `git fetch origin main`; if `origin/main != github.sha` → `superseded` (nothing committed).
   3. Commit **one** generation:
-     - if valid: `elections.json`, `status.json`, `HEALTH.md` and promoted `data/sources/*`;
+     - if valid: `elections.json`, `status.json`, `HEALTH.md` and `data/sources/*` (promoted baselines, candidates, `health_state.json`);
      - if validation failed: only `status.json` and `HEALTH.md`, with `elections.json` untouched.
   4. Push without rebase or force.
-  5. **Served check:** fetch the raw `elections.json` URL every 60 s for up to 10 min until `generation_id` matches; otherwise `served_mismatch`.
-  6. Final exit code from run severity after acknowledgements.
+  5. **Served check:** fetch the raw `elections.json` URL every 60 s for up to 10 min until the SHA-256 of the bytes served equals `serving_feed_sha256`; otherwise `served_mismatch`.
+  6. Write the publish outcome as a job output. This job never sets the final result.
+- **`verdict`** (`contents: read`, no secrets, 5 min, `needs: [gates, scrape, publish]`, `if: always()`): reads the job results, `verdict.json` (if the artifact exists) and the publish outcome, writes the final summary, and **sets the run's result per §11.6**. It runs on branches too, so a degraded dry run is red. It never writes or publishes anything.
 
 ### 11.3 Validation before publishing (in `scraper.py`, before writing `out/`)
 
@@ -589,16 +660,32 @@ The **final serialised bytes** of `elections.json` are checked:
 3. against the merge invariants (§10.8);
 4. against the size cap: `elections.json` ≤ 2 MB.
 
-`status.json` is checked against its schema. Local writes go to temp files and are renamed into place.
+`status.json` is checked against its schema. Local writes go to temp files and are renamed into place. A truncated attention list (§5.5) is valid; it doesn't fail validation.
 
 ### 11.4 Recovery switches
 
 - **`PAUSE_PUBLISHING`:** a file at the repo root on `main` that stops publishing while recovering (§15).
-- **`ALERT_TEST`:** a file at the repo root on `main` that makes the next scheduled run fail on purpose, publishing nothing.
+- **`ALERT_TEST`:** a file at the repo root on `main`. The next scheduled run scrapes and publishes **as normal**, and then the `verdict` job fails it on purpose with "alert test". No refresh is lost, so no user sees a stale-feed banner because of the test.
 
 ### 11.5 Release record
 
 `RELEASES.md` records, for each release: the code SHA, the `requirements*.txt` hashes, the extension ZIP SHA-256 and file list, the destination, the date, and who approved it.
+
+### 11.6 Outcome matrix (enforced by the `verdict` job; covered by NM-T05)
+
+"Publishing allowed" = main + (schedule, or dispatch with `publish:true`). Branch runs and `publish:false` dispatches never commit, whatever the row.
+
+| Attempt | Committed when publishing is allowed | Final result |
+|---|---|---|
+| Gates failed | nothing (scrape doesn't run) | red |
+| `PAUSE_PUBLISHING` present | nothing | green, summary "paused" (a forgotten pause shows up as the extension's stale-feed banner) |
+| Scrape crashed, or artifact incomplete / manifest mismatch | nothing | red |
+| Valid, no warning or error left after acknowledgements | full generation | green |
+| Valid, with an unacknowledged warning or error | full generation | red |
+| Validation failed | `status.json` + `HEALTH.md` only | red |
+| Superseded (`main` moved during the run) | nothing | red |
+| Pushed, but served check failed | (already pushed) | red (`served_mismatch`) |
+| `ALERT_TEST` present | as for its data verdict | red, summary "alert test" |
 
 ## 12. Extension v2.0.0
 
@@ -612,10 +699,11 @@ The **final serialised bytes** of `elections.json` are checked:
   - no `schema_version` but `months` present → today's renderer;
   - an unknown or malformed version → legacy fields plus an "update the extension" banner.
 - **Linking the two:**
-  - `status.serving_generation_id == feed.generation_id` → show the relationship;
+  - the extension computes the SHA-256 of the feed bytes it fetched (`crypto.subtle.digest`);
+  - `status.serving_feed_sha256` equals it → the status describes this exact feed;
   - no match → refetch once; if still mismatched, show "current health can't be confirmed for this data";
   - a good feed is never discarded because of `status.json`.
-- **Ordering:** a newer `generated_at` is never replaced by an older one.
+- **Ordering:** a response replaces the cached feed only if its order key is later. The key is `published_at`, falling back to `generated_at` when the response or the cache has no `published_at` (v1 feeds). An equal key means the same publication: no change. This blocks stale CDN responses, yet still accepts a rollback republication (new `published_at`, older `generated_at`) and the v1 scraper's output after a code revert. Freshness banners and "Data as of" always use `generated_at`, never `published_at`.
 - **Cache:** keys are `elections_cache_v2` and `status_cache`. A failed write keeps the previous cache.
 
 ### 12.2 Banner
@@ -646,6 +734,7 @@ The footer reads "Data as of `generated_at`" (plus the older `data_as_of` when t
 | `status_conflict` | "Possibly postponed — sources disagree" (prominent) |
 | `date_conflict` | "Sources disagree on date", with per-source dates in the expanded view |
 | Fallback-sourced date | "Using source data from <date>"; escalates to "Unverified since <date>" after 7 days |
+| Provisional source attached (§10.3 Phase D) | The conflict labels above, plus "newer data from an incomplete fetch on <date>" on that source entry |
 | `level=subnational` | "Subnational" chip |
 
 - **Ranges** show as "18–20 SEP". **Month precision** shows the month with "TBC" and never a day.
@@ -657,6 +746,7 @@ The footer reads "Data as of `generated_at`" (plus the older `data_as_of` when t
 - Placed above the empty state and the card list on every month, labelled "N items across the monitored window (Sep–Jan)".
 - Lists every `attention_items[]` entry: text, source and link, and its possible matches marked as provisional.
 - Never hidden by filters; a search shows "k of N".
+- When `attention_truncated` > 0: "Showing 500 of N; the full list is in the run report".
 
 ### 12.5 Counting, filtering, tabs
 
@@ -700,6 +790,10 @@ The footer reads "Data as of `generated_at`" (plus the older `data_as_of` when t
   | EEAS | `eeas.europa.eu` |
 
   Otherwise the link goes to the source's home page. This applies to the v2 and legacy renderers alike.
+
+  **Hosts are checked on the parsed URL** (`new URL()`), never by substring or suffix tests on the URL string:
+  - scheme `https:`, no user info, port empty or 443;
+  - hostname (lower-cased and punycode, as `URL` gives it) equal to an allowed host, or ending in `.` + an allowed host.
 - **Text:** all feed text is inserted through `textContent`.
 
 ### 12.7 Accessibility and limits
@@ -739,9 +833,15 @@ The footer reads "Data as of `generated_at`" (plus the older `data_as_of` when t
 ### 13.2 Independent expected file
 
 - **`tests/expected/2026-10-16.yaml`** is written **by hand from the source pages, not from the parser**. Each entry has place, office, round, date/range, level, status, and the source with a short quote.
-- **Coverage:** all national contests in the window, plus all Appendix B cases and a subnational sample.
+- **Coverage:**
+  - all national contests in the window;
+  - all Appendix B cases;
+  - **every subnational entry dated in October 2026** across the sources (Wikipedia local alone has 48 list items that month), field by field.
+- **What it does and doesn't prove:** semantic checks of subnational contests stop at the items above. For other months, subnational completeness rests on the structural guarantee (every unit discovered and accounted for, §7, §9.1) rather than on hand-written expectations. This is a stated limit, not exhaustive validation.
 - **The user spot-checks it.**
-- **Strictness:** a national contest the pipeline produces that isn't in the file fails the test; subnational additions are reported as a count.
+- **Strictness:**
+  - a national contest, or an October 2026 subnational contest, that the pipeline produces but the file doesn't list fails the test, and so does a listed one that is missing or duplicated;
+  - subnational additions in other months are reported as a count.
 - **`tests/expected/legacy-mapping-exceptions.yaml`:** the approved exceptions for SC2, e.g. the EEAS fake-date records and the Brazil 25 Oct duplicate pair.
 
 ### 13.3 Acceptance catalogue (all must pass)
@@ -754,6 +854,7 @@ The footer reads "Data as of `generated_at`" (plus the older `data_as_of` when t
 | S4-T01…T19 | 100→40→timeout never makes a partial baseline; bootstrap and justified drops; middle-page failure/repeat/challenge; partial scrape with a correction; validation failure doesn't publish; fallback schema/version honesty; interrupted writes; another writer before push; real raw-URL route; setup/test/deadline/push failure; staleness without new runs; time budget; scheduled email (rollout); acknowledgement expiry/scope/recurrence (T14); malformed acknowledgements and global gates (T15); match-diagnostic limits, and structural checks catching the frozen OSCE column shift (T16); ledger with multi-output units (T17); `publish:false` dispatch can't publish (T18); escaped/redacted diagnostics (T19) |
 | S5-T01…T22 | Feed/status relationships; late/out-of-order responses; validation of both documents; sleep/restart/worker termination; freshness thresholds and clock skew; civil dates across time zones and DST; month-only, year-only and expected windows; Held vs Past; conflicts suppress "today"; 20 attention items, 5 samples; attention section always reachable; child counting "1 of 27"; deduplicated totals and aggregates; tabs and counters in one state; pin migration; real ZIP same-folder update; legacy/v2 renderer matrix; hostile text and URLs; keyboard and screen reader; ZIP contents and permissions; large collections and cache-write failure; offline and expired cache |
 | S6-RT-01…RT-07 | Clean-environment gates with deliberate failures; dry-run and publish privilege separation, including inert "publish" text in fixtures; approval tied to the exact candidate; independent expectations and first-baseline review; rehearsed rollback with an interleaved publisher; real-artifact upgrade; deterministic alert delivery |
+| NM-T01…T08 | T01: a 4-cell row among 100 stays a discovered unparsed unit; 100 → 60 → 36 triggers `cumulative_drop`; a legitimate drop is promoted only under a valid `accept_drop`; the cross-count catches a discovery bug. T02: baseline + a correction on a fetched page + a timed-out page → baseline kept, correction shown as a provisional conflict; complete data with no change → no spurious conflict. T03: a newer defective v2 cache is replaced by a rollback republication; a delayed pre-rollback response is rejected; then the v1 scraper's output after a revert is accepted. T04: same `content_id`, different bytes → the served check and the feed/status link use the byte digest. T05: the full §11.6 matrix on branch and main. T06: round-1 / round-2 / unstated claims in all 6 orders give the same contests with no bridge; an unstated single-round election matches normally. T07: future, zero-length, reversed and naive acknowledgements and the exact expiry instant can't mute anything; healthy then recurring needs a new entry. T08: workflow tests check job permissions and conditions and refuse an artifact whose digest changed (with RT-02/RT-03) |
 
 ### 13.4 Layers and gates
 
@@ -768,7 +869,7 @@ The footer reads "Data as of `generated_at`" (plus the older `data_as_of` when t
 ### 13.5 Bounded live check (not a gate)
 
 `scraper.py --live --dry-run --out .scratch/live/`, run in the background:
-- limits: ≤40 requests, 4 at a time, 3 retries, 60 s per request, 10 min total;
+- limits: ≤40 HTTP requests in total, counting retries and followed redirects; 4 at a time; 3 attempts per request (§8); 60 s per attempt; 10 min total. The check stops and reports when a limit is reached;
 - the output is compared with the fixture expectations;
 - for the first rollout, any unexplained material difference pauses the release until the user accepts it on record.
 
@@ -801,12 +902,23 @@ The footer reads "Data as of `generated_at`" (plus the older `data_as_of` when t
 Every step that writes outside this machine needs the user's go-ahead at the time.
 
 1. **Branch CI:** push `feat/never-miss-v2` to `origin` and let CI run the gates. Then run `workflow_dispatch` on the branch (`publish:false`):
-   - read `HEALTH.md` in the run summary, confirming the user can see it (O8);
+   - read `HEALTH.md` in the run summary, confirming the user can see it (O7);
    - diagnose IPU in CI (O1).
 2. **Reviewed first baselines:** from the dry-run artifact, compare the candidate baselines with the live check and the expected file. The user approves them, and they're committed to the branch.
-3. **Merge:** a whole-branch review, then tag `pre-v2` on `main`. The user says "merge" and creates `MERGE_APPROVED`; then fast-forward `main` and tag `v2.0.0`. Gates are re-run after any rebase.
+3. **Merge:**
+   1. Run the whole-branch review on a named SHA, which already includes the step 2 baselines.
+   2. Tag `pre-v2` on `main`.
+   3. The user says "merge". `MERGE_APPROVED` is created with that SHA written in it.
+   4. Check that the branch `HEAD` equals that SHA, then fast-forward `main` and tag `v2.0.0`.
+   5. Delete the marker straight away.
+
+   Any commit after the review, including a rebase, needs the gates and a fresh review before the merge.
 4. **Publish the feed:** push `main`. The next scheduled run publishes the v2 feed. Then check the served file, `HEALTH.md`, and v1.0.2 rendering (manual, plus S5-T17 evidence).
-5. **Alert test:** commit `ALERT_TEST`, confirm the scheduled-run email, then remove the marker.
+5. **Alert test** (production drill, with the user's go-ahead at the time):
+   1. Commit `ALERT_TEST`.
+   2. The next scheduled run publishes normally and then fails with "alert test".
+   3. The user confirms the email arrived.
+   4. Remove the marker, and check that the following scheduled run is green and the marker is gone from `main`.
 6. **Extension:**
    - build the ZIP and record it in `RELEASES.md`;
    - share it with Load-unpacked users along with the update instructions;
@@ -814,15 +926,21 @@ Every step that writes outside this machine needs the user's go-ahead at the tim
    - confirm the Store update and its permission prompt (O4).
 7. **Rollback** (target: same day, under 2 h from the decision; rehearsed in RT-05):
    1. Commit `PAUSE_PUBLISHING`.
-   2. Restore the archived last-known-good `elections.json` (hash recorded in `RELEASES.md`).
+   2. Run `scripts/republish.py <archived elections.json>`. It checks the archive against its hash in `RELEASES.md`, then writes it back with only two top-level fields set: `published_at` (now) and `republished_from_sha256`. Everything else, including the original `generated_at`, is kept. It also writes a matching `status.json` (`outcome: republished`), with LF line endings and exact bytes (§16 `.gitattributes`). Commit and push.
    3. Revert `pre-v2..v2.0.0` as one commit.
    4. Remove `PAUSE_PUBLISHING`.
 
-   Client/feed combinations covered: v1.0.2 with v1, v1.0.2 with v2, v2 with v2, and v2 with the restored v1 (legacy renderer).
+   **What existing clients do:**
+   - v2 clients accept the republication, because its `published_at` is later than their cached feed's. They show its honest, older "Data as of" and keep their pins.
+   - After the revert, the v1 scraper's daily feed has no `published_at`, so clients compare `generated_at` and accept it as newer (§12.1).
+   - v1.0.2 ignores the extra top-level fields (checked in S1-T7).
+
+   Client/feed combinations covered: v1.0.2 with v1, v1.0.2 with v2, v2 with v2, v2 with the republished v1 (legacy renderer), and v2 with the reverted v1 scraper's output.
 
 ## 16. Housekeeping (after release evidence is retained; separate commits)
 
 - **`.gitignore`:** `.venv/`, `.scratch/`, `dist/`, `__pycache__/`, `.claude/worktrees/`. This goes in the first plan task.
+- **`.gitattributes`:** `elections.json`, `status.json`, `HEALTH.md` and `data/sources/**` marked `-text`, so git never rewrites line endings and the served bytes equal the digest in `status.json` (this machine has `core.autocrlf` on). Also in the first plan task.
 - **README:** architecture, sources, gates for both platforms, and update instructions for both install routes.
 - **Old ZIP:** record the v1.0.2 ZIP's SHA-256 (it was never tracked), then move it to `dist/`.
 - **`build_elections_pptx.py`:** review it, update its text (5 months, 10 sources), and commit it separately from the core release. It doesn't read the feed.
@@ -852,11 +970,11 @@ Every step that writes outside this machine needs the user's go-ahead at the tim
 
 | Invariant | Tests | Fixtures | Gate |
 |---|---|---|---|
-| I1 No silent drops (every unit accounted for, relevant ones visible) | S2-T5–T7, S4-T17, S5-T10–T11, ledger unit tests | all adapters, negative fixtures | pytest |
+| I1 No silent drops (every unit discovered and accounted for, relevant ones visible) | S2-T5–T7, S4-T17, S5-T10–T11, NM-T01, ledger and cross-count unit tests | all adapters, negative fixtures, 4-cell-row fixture | pytest |
 | I2 Failures visible within one run | S4-T03, S4-T10, S4-T16, S5-T01–T03, RT-07 | negative fixtures | pytest + rollout |
-| I3 Baseline integrity | S1-T4–T6, S4-T01–T04, RT-04 | 100/40 synthetic, 2026-10-16 | pytest |
-| I4 Only validated generations publish | S3-T16, S4-T05–T09, RT-02–RT-03 | temporary git repos | pytest |
-| I5 Merge correctness and determinism | S3-T1–T15, S3-T18–T19, property tests | synthetic + 2026-10-16 | pytest |
+| I3 Baseline integrity (no partial promotion, no silent erosion, corrections still visible) | S1-T4–T6, S4-T01–T04, NM-T01, NM-T02, RT-04 | 100/40 and 100/60/36 synthetic, 2026-10-16 | pytest |
+| I4 Only validated generations publish; the verdict is reported on every path | S3-T16, S4-T05–T09, NM-T05, NM-T08, RT-02–RT-03 | temporary git repos, workflow tests | pytest |
+| I5 Merge correctness and determinism (one role per claim) | S3-T1–T15, S3-T18–T19, NM-T06, property tests | synthetic + 2026-10-16 | pytest |
 | I6 Legacy compatibility | S1-T7, S3-T17, S5-T17, SC2 | v1.0.2 files at `ff30417`, frozen feed | pytest |
 | I7 Freshness honesty | S4-T11, S5-T04–T05, S5-T22 | fake clock | pytest |
 | I8 Dry runs cannot publish | S4-T18, RT-02 | workflow tests | pytest + rollout |
@@ -864,6 +982,9 @@ Every step that writes outside this machine needs the user's go-ahead at the tim
 | I10 Alerts are delivered | S4-T13, RT-07 | `ALERT_TEST` | rollout |
 | I11 Safe rendering | S5-T18, S4-T19 | hostile-text fixtures | pytest |
 | I12 Expected elections present | SC1, Appendix B | `tests/expected/2026-10-16.yaml` | pytest |
+| I13 Recovery reaches existing clients | NM-T03, RT-05, S5-T02 | cached-profile fixtures, republished archive | pytest + rollout |
+| I14 Publication is verified by the bytes served | NM-T04, S4-T09 | two same-content generations | pytest |
+| I15 Acknowledgements are bounded in time and scope | NM-T07, S4-T14–T15 | fake clock, `health_state.json` | pytest |
 
 ## Appendix B — Regression cases (each must appear in the 2026-10-16 end-to-end output)
 
