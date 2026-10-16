@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-15T00:02:41Z",
+  "generated_at": "2026-10-16T00:02:31Z",
   "current_month": "2026-10",
   "months": {
     "2026-09": [
@@ -429,7 +429,7 @@
         "date": "2026-10-16",
         "country": "Czech Republic",
         "type": "Czech Senate",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "ElectionGuide"
         ],
@@ -856,6 +856,24 @@
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_Moldova"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-22",
+        "country": "Poland",
+        "type": "Senate Constituency no. 20 by-election",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Poland"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Poland"
           }
         ]
       },
