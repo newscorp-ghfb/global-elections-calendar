@@ -22,7 +22,13 @@ from elections_calendar.model import (
     Reason,
     Relevance,
 )
-from elections_calendar.sources.base import PageCoverage, ParseResult, RawPage, RawPages
+from elections_calendar.sources.base import (
+    PageCoverage,
+    ParseResult,
+    RawPage,
+    RawPages,
+    page_failure,
+)
 
 _USABLE = ("parsed", "partial")
 _PAGE_OUTCOMES = ("ok", "valid_empty")
@@ -266,6 +272,22 @@ def _page_problems(raw: RawPages, result: ParseResult, rules: Mapping[str, Count
             problems.append(f"page {key!r} has {covered[key]} coverage entries, not 1")
         elif key not in keys:
             problems.append(f"coverage for {key!r}, which is no page or unfinished request")
+    pages = {p.request.key: p for p in raw.pages}
+    unfinished = {r.key for r in raw.unfinished}
+    for entry in result.coverage:
+        if entry.key in unfinished and entry.outcome != "unfinished":
+            problems.append(
+                f"page {entry.key!r} is an unfinished request, coverage says {entry.outcome}"
+            )
+        if entry.outcome not in _PAGE_OUTCOMES:
+            continue
+        page = pages.get(entry.key)
+        if page is None:
+            problems.append(f"page {entry.key!r} is {entry.outcome} but no page was fetched")
+        elif (failure := page_failure(page)) is not None:
+            problems.append(
+                f"page {entry.key!r} is {entry.outcome} but its download failed: {failure}"
+            )
     prefixes = [c.unit_prefix for c in result.coverage if c.unit_prefix is not None]
     for u in result.units:
         n = sum(u.unit_id.startswith(prefix) for prefix in prefixes)
@@ -332,7 +354,7 @@ def check(
     if rule is not None:
         for entry in result.coverage:
             page = pages.get(entry.key)
-            if entry.outcome in _PAGE_OUTCOMES and page is not None:
+            if entry.outcome in _PAGE_OUTCOMES and page is not None and page_failure(page) is None:
                 discovery += _discovery_problems(page, entry, result, rule)
     outcomes: dict[Outcome, int] = dict.fromkeys(get_args(Outcome), 0)
     relevance: dict[Relevance, int] = dict.fromkeys(get_args(Relevance), 0)
