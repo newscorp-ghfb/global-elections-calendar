@@ -7,8 +7,6 @@ fake unless a test is about elapsed time.
 import json
 import socket
 import time
-from collections.abc import Iterator
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -35,10 +33,9 @@ from elections_calendar.fetch import (
     user_agent,
 )
 from tests.support.http_server import Reply, TestServer, serve
-from tests.support.tls import ServerCert, authority, server_cert
+from tests.unit.conftest import Pki
 
 NOW = datetime(2026, 10, 16, 12, 0, tzinfo=UTC)
-PROXY_VARS = ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy")
 
 
 class FakeTime:
@@ -52,42 +49,6 @@ class FakeTime:
     def sleep(self, seconds: float) -> None:
         self.sleeps.append(seconds)
         self.now += seconds
-
-
-@dataclass(frozen=True)
-class Pki:
-    bundle: Path  # trusts the test CA only
-    other_bundle: Path  # trusts an unrelated CA only
-    good: ServerCert
-    expired: ServerCert
-    wrong_host: ServerCert
-    other_ca: ServerCert
-
-
-@pytest.fixture(scope="module")
-def pki(tmp_path_factory: pytest.TempPathFactory) -> Pki:
-    directory = tmp_path_factory.mktemp("pki")
-    ca, other = authority("Test CA"), authority("Other CA")
-    return Pki(
-        bundle=ca.write(directory / "ca.pem"),
-        other_bundle=other.write(directory / "other.pem"),
-        good=server_cert(ca, directory, "good"),
-        expired=server_cert(ca, directory, "expired", expired=True),
-        wrong_host=server_cert(ca, directory, "wrong-host", hosts=("example.org",)),
-        other_ca=server_cert(other, directory, "other-ca"),
-    )
-
-
-@pytest.fixture(autouse=True)
-def no_proxies(monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in PROXY_VARS:
-        monkeypatch.delenv(name, raising=False)
-
-
-@pytest.fixture
-def server(pki: Pki) -> Iterator[TestServer]:
-    with serve(pki.good) as running:
-        yield running
 
 
 @pytest.fixture
@@ -645,6 +606,14 @@ def test_a_configured_bundle_that_cannot_be_used_is_an_error(
     with pytest.raises(TrustBundleError, match="REQUESTS_CA_BUNDLE"):
         trust_bundle(tmp_path / "out" / "ca.pem", environ=environ)
     assert not (tmp_path / "out" / "ca.pem").exists()
+
+
+def test_trust_bundle_error_names_its_variable(tmp_path: Path) -> None:
+    missing = tmp_path / "missing.pem"
+    with pytest.raises(TrustBundleError) as caught:
+        trust_bundle(tmp_path / "ca.pem", environ={"SSL_CERT_FILE": str(missing)})
+    assert caught.value.variable == "SSL_CERT_FILE"
+    assert str(caught.value).startswith(f"SSL_CERT_FILE={missing} is not a usable CA bundle: ")
 
 
 @pytest.mark.parametrize(("configured", "outcome"), [("bundle", "ok"), ("other_bundle", "tls_error")])

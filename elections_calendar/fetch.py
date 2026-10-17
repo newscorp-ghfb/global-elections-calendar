@@ -23,9 +23,8 @@ local configuration: a ``verify`` path that does not exist raises ``OSError``.
   bound. Name resolution (``getaddrinfo`` takes no timeout), connecting to
   each resolved address in turn (each try has its own connect timeout) and a
   server that sends its headers a few bytes at a time can all run longer.
-  The hard bound will be the runner (a later plan; not built yet), which
-  fetches each source in a child process and kills it at the source's
-  deadline.
+  The hard bound is ``runner.run_sources``, which fetches each source in a
+  child process and kills it at the source's deadline.
 - URLs and error texts are redacted before they are stored: only values of
   the sources' own query keys (``SAFE_QUERY_KEYS``) are kept. A MediaWiki
   error code outside its grammar becomes ``INVALID_API_CODE``. The body is
@@ -529,7 +528,15 @@ def redact_text(text: str, limit: int = 500) -> str:
 
 
 class TrustBundleError(Exception):
-    """The file a CA-bundle variable names cannot be read or holds no PEM certificate."""
+    """The file a CA-bundle variable names cannot be read or holds no PEM certificate.
+
+    ``variable`` names the environment variable (e.g. ``"REQUESTS_CA_BUNDLE"``); the
+    message also holds the configured path, so only ``variable`` is safe to record.
+    """
+
+    def __init__(self, message: str, variable: str) -> None:
+        super().__init__(message)
+        self.variable = variable
 
 
 @dataclass(frozen=True, slots=True)
@@ -561,7 +568,9 @@ def trust_bundle(dest: Path, environ: Mapping[str, str] = os.environ) -> TrustBu
             ssl.create_default_context().load_verify_locations(cafile=configured)
             parts.append(configured.read_bytes())
         except OSError as exc:  # ssl.SSLError is an OSError
-            raise TrustBundleError(f"{name}={configured} is not a usable CA bundle: {exc}") from exc
+            raise TrustBundleError(
+                f"{name}={configured} is not a usable CA bundle: {exc}", variable=name
+            ) from exc
         sources.append(name)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(b"\n".join(parts))
