@@ -1,0 +1,74 @@
+# Hand-maintained input to scripts/build_institutions.py (spec §6.3).
+# Edit this file, rebuild data/institutions.yaml, and review the diff of both.
+
+# Extra names for IPU chambers: place_id -> IPU chamber name -> aliases.
+aliases:
+  iso:DE: {German Bundestag: [Bundestag], Federal Council: [Bundesrat]}
+  iso:DK: {The Danish Parliament: [Folketing, Folketinget]}
+  iso:FI: {Parliament: [Eduskunta]}
+  iso:IL: {Parliament: [Knesset]}
+  iso:IN: {House of the People: [Lok Sabha], Council of States: [Rajya Sabha]}
+  iso:IS: {Parliament: [Althing, Alþingi]}
+  iso:LV: {Parliament: [Saeima]}
+  iso:NO: {Parliament: [Storting, Stortinget]}
+  iso:RU: {State Duma: [Duma], Council of the Federation: [Federation Council]}
+  iso:SE: {Parliament: [Riksdag]}
+  iso:US:
+    House of Representatives:
+      - United States House of Representatives
+      - U.S. House of Representatives
+      - US House of Representatives
+    Senate: [United States Senate, U.S. Senate, US Senate]
+
+# Legislatures of places the IPU table doesn't cover.
+# office_class: lower_house | upper_house | legislature (unicameral).
+extra:
+  iso:AS:
+    - {name: House of Representatives, office_class: lower_house, designation: direct}
+    - {name: Senate, office_class: upper_house, designation: indirect}
+  iso:BM:
+    - {name: House of Assembly, office_class: lower_house, designation: direct}
+    - {name: Senate, office_class: upper_house, designation: appointed}
+  iso:CK:
+    - {name: Parliament, office_class: legislature, designation: direct}
+  iso:FO:
+    - {name: Løgting, office_class: legislature, designation: direct, aliases: [Parliament]}
+  iso:GB-SCT:
+    - {name: Scottish Parliament, office_class: legislature, designation: direct}
+  iso:GB-WLS:
+    - {name: Senedd, office_class: legislature, designation: direct, aliases: [Welsh Parliament]}
+  iso:GL:
+    - {name: Inatsisartut, office_class: legislature, designation: direct, aliases: [Parliament]}
+  iso:GU:
+    - {name: Legislature, office_class: legislature, designation: direct}
+  iso:HK:
+    - {name: Legislative Council, office_class: legislature, designation: direct}
+  iso:IM:
+    - {name: House of Keys, office_class: lower_house, designation: direct}
+    - {name: Legislative Council, office_class: upper_house, designation: indirect}
+  iso:MP:
+    - {name: House of Representatives, office_class: lower_house, designation: direct}
+    - {name: Senate, office_class: upper_house, designation: direct}
+  iso:NU:
+    - {name: Assembly, office_class: legislature, designation: direct}
+  iso:PG-NSB:
+    - {name: House of Representatives, office_class: legislature, designation: direct}
+  iso:PS:
+    - {name: Palestinian Legislative Council, office_class: legislature, designation: direct}
+  iso:TW:
+    - {name: Legislative Yuan, office_class: legislature, designation: direct}
+  x:abkhazia:
+    - {name: People's Assembly, office_class: legislature, designation: direct}
+  x:kosovo:
+    - {name: Assembly, office_class: legislature, designation: direct}
+  x:northern-cyprus:
+    - {name: Assembly of the Republic, office_class: legislature, designation: direct}
+  x:somaliland:
+    - {name: House of Representatives, office_class: lower_house, designation: direct}
+    - {name: House of Elders, office_class: upper_house, designation: other}
+  x:south-ossetia:
+    - {name: Parliament, office_class: legislature, designation: direct}
+  x:transnistria:
+    - {name: Supreme Council, office_class: legislature, designation: direct}
+  x:zanzibar:
+    - {name: House of Representatives, office_class: legislature, designation: direct}
