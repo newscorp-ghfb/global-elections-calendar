@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+import certifi
 import pytest
 import requests
 import urllib3
@@ -25,10 +26,12 @@ from elections_calendar.fetch import (
     Deadline,
     Fetcher,
     FetchResult,
+    TrustBundleError,
     outcome_for,
     parse_retry_after,
     redact_text,
     redact_url,
+    trust_bundle,
     user_agent,
 )
 from tests.support.http_server import Reply, TestServer, serve
@@ -593,3 +596,50 @@ def test_mediawiki_json_nested_too_deep_is_an_api_error(
     body = b"[" * 200_000  # far under MAX_BYTES, but json.loads raises RecursionError
     result = get(pki, fake, server.route("/api", Reply(body=body, content_type=JSON)), mediawiki=True)
     assert (result.outcome, result.stage) == ("api_error", "api")
+
+
+# -- trust bundle -------------------------------------------------------------
+
+
+def test_trust_bundle_is_certifi_alone_without_machine_settings(tmp_path: Path) -> None:
+    bundle = trust_bundle(tmp_path / "out" / "ca.pem", environ={})
+    assert bundle.sources == ("certifi",)
+    assert bundle.path.read_bytes() == Path(certifi.where()).read_bytes()
+
+
+def test_the_first_configured_bundle_is_the_machine_bundle(pki: Pki, tmp_path: Path) -> None:
+    environ = {
+        "REQUESTS_CA_BUNDLE": "",  # set but empty: not configured
+        "SSL_CERT_FILE": str(pki.bundle),
+        "CURL_CA_BUNDLE": str(pki.other_bundle),  # ignored: SSL_CERT_FILE comes first
+    }
+    bundle = trust_bundle(tmp_path / "ca.pem", environ=environ)
+    assert bundle.sources == ("certifi", "SSL_CERT_FILE")
+    content = bundle.path.read_bytes()
+    assert content.startswith(Path(certifi.where()).read_bytes())
+    assert content.count(pki.bundle.read_bytes()) == 1
+    assert pki.other_bundle.read_bytes() not in content
+
+
+@pytest.mark.parametrize("problem", ["missing", "directory", "not a certificate"])
+def test_a_configured_bundle_that_cannot_be_used_is_an_error(
+    pki: Pki, tmp_path: Path, problem: str
+) -> None:
+    notes = tmp_path / "notes.pem"
+    notes.write_text("not a certificate\n", encoding="utf-8")
+    configured = {"missing": tmp_path / "missing.pem", "directory": tmp_path}.get(problem, notes)
+    environ = {"REQUESTS_CA_BUNDLE": str(configured), "SSL_CERT_FILE": str(pki.bundle)}
+    with pytest.raises(TrustBundleError, match="REQUESTS_CA_BUNDLE"):
+        trust_bundle(tmp_path / "out" / "ca.pem", environ=environ)
+    assert not (tmp_path / "out" / "ca.pem").exists()
+
+
+@pytest.mark.parametrize(("configured", "outcome"), [("bundle", "ok"), ("other_bundle", "tls_error")])
+def test_a_combined_bundle_trusts_only_what_it_lists(
+    pki: Pki, fake: FakeTime, server: TestServer, tmp_path: Path, configured: str, outcome: str
+) -> None:
+    machine = str(getattr(pki, configured))
+    bundle = trust_bundle(tmp_path / "ca.pem", environ={"SSL_CERT_FILE": machine})
+    url = server.route("/page", Reply(body=b"ok"))
+    with Fetcher(verify=str(bundle.path), clock=fake.clock, sleep=fake.sleep) as f:
+        assert f.get(url, deadline=Deadline.after(60, fake.clock)).outcome == outcome

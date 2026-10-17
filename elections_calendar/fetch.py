@@ -32,16 +32,20 @@ the adapter and nothing returns ``None`` silently.
 
 import email.utils
 import json
+import os
 import re
 import socket
+import ssl
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from pathlib import Path
 from types import TracebackType
 from typing import Self
 from urllib.parse import unquote_plus, urljoin, urlsplit, urlunsplit
 
+import certifi
 import requests
 import urllib3
 from requests.utils import resolve_proxies
@@ -64,6 +68,7 @@ BROWSER_UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
 )
+ENV_CA_BUNDLES = ("REQUESTS_CA_BUNDLE", "SSL_CERT_FILE", "CURL_CA_BUNDLE")
 
 _READ_SIZE = 65536
 _CHALLENGE = re.compile(
@@ -523,3 +528,38 @@ def redact_text(text: str, limit: int = 500) -> str:
 
 class TrustBundleError(Exception):
     """The file a CA-bundle variable names cannot be read or holds no PEM certificate."""
+
+
+@dataclass(frozen=True, slots=True)
+class TrustBundle:
+    path: Path
+    sources: tuple[str, ...]  # "certifi", then the variable that named the machine bundle
+
+
+def trust_bundle(dest: Path, environ: Mapping[str, str] = os.environ) -> TrustBundle:
+    """Write one CA file: certifi's roots plus the machine's configured bundle.
+
+    certifi alone verifies every source on a plain network (OSCE's emSign
+    chain included); that is CI. On a machine whose TLS is intercepted by a
+    corporate proxy, the proxy's root is only in the machine bundle, and that
+    bundle alone lacks roots for the sites the proxy lets through untouched.
+
+    The machine bundle is the PEM file named by the first of
+    REQUESTS_CA_BUNDLE, SSL_CERT_FILE and CURL_CA_BUNDLE that is set and not
+    empty; the others are ignored. A named file that is missing, unreadable or
+    holds no certificate raises TrustBundleError instead of being skipped.
+    Verification stays on everywhere; nothing is trusted that neither file lists.
+    """
+    parts, sources = [Path(certifi.where()).read_bytes()], ["certifi"]
+    name = next((n for n in ENV_CA_BUNDLES if environ.get(n)), None)
+    if name is not None:
+        configured = Path(environ[name])
+        try:
+            ssl.create_default_context().load_verify_locations(cafile=configured)
+            parts.append(configured.read_bytes())
+        except OSError as exc:  # ssl.SSLError is an OSError
+            raise TrustBundleError(f"{name}={configured} is not a usable CA bundle: {exc}") from exc
+        sources.append(name)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(b"\n".join(parts))
+    return TrustBundle(dest, tuple(sources))

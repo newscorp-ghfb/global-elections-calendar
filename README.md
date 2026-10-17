@@ -81,3 +81,11 @@ them by hand: edit the inputs and rebuild.
 ```
 
 Tests fail when a committed file is out of date with its inputs.
+
+## TLS
+
+Certificates are verified on every request. The trust store is certifi's
+roots plus, when set, the CA bundle named by `REQUESTS_CA_BUNDLE`,
+`SSL_CERT_FILE` or `CURL_CA_BUNDLE`. On a network whose HTTPS is
+intercepted by a corporate proxy, that variable names the bundle holding
+the proxy's root; CI sets none and uses certifi alone.
