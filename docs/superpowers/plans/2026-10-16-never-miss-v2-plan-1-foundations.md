@@ -43,7 +43,8 @@ Each later plan is written when the previous one has landed, against the code as
 
 **v1 is unaffected:** Task 1 replaces `requirements.txt`, which v1's workflow installs, but
 that workflow's schedule runs only on `main`, and Plan 5 replaces the workflow before anything
-is merged. So this plan needs no v1 smoke test.
+is merged. So this plan needs no v1 smoke test, as long as the branch stays unmerged until
+that cutover (see "Plan 5, v1 cutover" under "Requirements for later plans").
 
 ## Global Constraints
 
@@ -99,44 +100,57 @@ is pinned by the tests named here, in the task that owns the code:
    year; a year outside 1900–2199 is refused. Pinned by
    `test_unparseable_text_is_leftover_never_dropped` and `test_day_ranges` (Task 4),
    `test_invalid_spans_are_rejected` and `test_years_and_rounds_are_bounded` (Task 2).
-3. **Office labels that mention a chamber they do not elect** ("State Senate by-election",
-   "Referendum on reform of the Senate", "House of Assembly by-election" for an Australian
-   seat, a suspended chamber): the scope and kind in the text decide, never the chamber word
-   alone. Pinned by `test_scope_comes_before_chamber_identity`,
+3. **Office labels that mention a chamber they do not elect, and voting areas that do not set
+   the level** ("State Senate by-election", "Referendum on reform of the Senate", "House of
+   Assembly by-election" for an Australian seat, a suspended chamber, "United States Senate
+   special election" held in one state): the scope and kind in the text decide, never the
+   chamber word or the voting area alone. Pinned by `test_scope_comes_before_chamber_identity`,
    `test_a_qualifier_in_the_chambers_own_name_is_not_scope`,
+   `test_the_voting_area_is_not_the_offices_level`,
    `test_suspended_chambers_keep_their_identity_but_are_not_active` and
    `test_classify_named_jurisdiction` (Task 6).
 4. **Times and saved records from outside the model** (a naive or non-UTC "now", a naive
-   `fetched_at`, saved JSON with an unknown word, a string year or `1` for `True`): a naive
-   time is refused; an aware time becomes the UTC civil date, so 23:30 on 31 Oct in New York
-   is a November window; a malformed record raises `RecordError`. Pinned by
-   `test_naive_now_is_rejected` and `test_now_is_converted_to_the_utc_civil_date` (Task 3),
-   `test_claim_rejects_naive_fetched_at`, `test_claim_serialises_non_utc_provenance_as_utc`
-   and `test_saved_records_outside_the_vocabulary_are_rejected` (Task 2).
+   `fetched_at`, saved JSON with an unknown word, a string year or `1` for `True`, a claim
+   that names another source's unit or ends in `#banana`): a naive time is refused; an aware
+   time becomes the UTC civil date, so 23:30 on 31 Oct in New York is a November window; a
+   malformed record raises `RecordError`. Pinned by `test_naive_now_is_rejected` and
+   `test_now_is_converted_to_the_utc_civil_date` (Task 3), `test_claim_rejects_naive_fetched_at`,
+   `test_claim_serialises_non_utc_provenance_as_utc`,
+   `test_saved_records_outside_the_vocabulary_are_rejected` and
+   `test_claim_provenance_must_be_consistent` (Task 2).
 5. **Misbehaving servers and secret-bearing URLs** (bytes dripped slowly, an endless body, a
    slow redirect body, a limit that passes between redirects, a redirect to `http`, a
    challenge page with HTTP 200, an HTML error page from the MediaWiki API, an unknown
-   charset, a token in any query parameter): each ends in bounded time with a named outcome,
-   and no query secret reaches a result or its diagnostics. Pinned by
-   `test_a_dripping_body_cannot_outlast_the_attempt_limit`, `test_an_oversized_body_is_refused`,
-   `test_a_redirect_body_is_never_read`, `test_no_request_is_sent_once_the_attempt_limit_has_passed`,
+   charset, a `Retry-After` of a superscript digit or of thousands of digits, a token in any
+   query parameter or in a MediaWiki error code): each ends with a named outcome, never an
+   exception, and no query secret reaches the result's URLs and error text or the published
+   diagnostics. Pinned by `test_a_dripping_body_cannot_outlast_the_attempt_limit`,
+   `test_an_oversized_body_is_refused`, `test_a_redirect_body_is_never_read`,
+   `test_no_request_is_sent_once_the_attempt_limit_has_passed`,
    `test_a_redirect_to_http_is_refused`, `test_challenge_pages_are_detected`,
-   `test_mediawiki_non_json_is_an_api_error`, `test_text_falls_back_to_utf8_for_an_unknown_charset`
-   and `test_no_query_secret_reaches_the_result` (Task 7).
+   `test_mediawiki_non_json_is_an_api_error`, `test_text_falls_back_to_utf8_for_an_unknown_charset`,
+   `test_a_malformed_retry_after_never_escapes_the_result`,
+   `test_no_query_secret_reaches_the_result` and
+   `test_no_query_secret_reaches_the_published_diagnostics` (Task 7).
 
 Known limits, by design (see "Requirements for later plans"): a generic chamber by-election
-in a named area of a federation ("Senate special election" for Virginia) resolves to the
-national chamber until Plan 2 recognises subdivision names; a slow DNS lookup or a server that
-drips its headers is bounded only by Plan 2's per-source child process.
+in a named area of a federation ("Senate special election" for Virginia, while Virginia is a
+`named` jurisdiction) resolves to the national chamber; once Plan 2 marks Virginia as a
+`subdivision`, it gets no level hint and the source's default applies. The fetcher's limits
+are inactivity limits, not a wall-clock bound: a slow DNS lookup, a connection tried on
+several addresses or a server that drips its headers is bounded only by Plan 2's per-source
+child process, which is not yet built or verified.
 
 ## Spec corrections
 
 Found while this plan was written and checked against the 2026-10-16 captures, then revised
 after the red-team review of the first version (`C:/Users/senescalk/Downloads/never-miss-v2-plan-1-foundations-red-team-review.md`, items F1–F6;
-its acceptance tests are cited as FP01–FP13). **Semantic decisions** change behaviour,
-identity or a promise of the spec: C1, C9, C12, C15 and C18–C21. The user approved all of them
-on 2026-10-16, and each row names the tests that pin it. The others refine names, files or
-details.
+its acceptance tests are cited as FP01–FP13), and again after the review of the revised
+version (`C:/Users/senescalk/Downloads/never-miss-v2-plan-1-updated-red-team-review-2026-10-17.md`,
+items U1–U4 and the timeout contract; acceptance tests UP01–UP08). **Semantic decisions**
+change behaviour, identity or a promise of the spec: C1, C9, C12, C15 and C18–C21. The user
+approved all of them (on 2026-10-16, and the U1 change to C18 on 2026-10-17), and each row
+names the tests that pin it. The others refine names, files or details.
 
 | ID | Spec says | This plan does | Why |
 |---|---|---|---|
@@ -154,13 +168,13 @@ details.
 | C12 (semantic) | §6.3 institutions | Chambers the IPU marks "(Suspended)" or "(Dissolved)" are kept under their plain name with `status: suspended` or `dissolved`, as of the capture date. Their names still resolve; generic chamber words and the unicameral rule use active chambers only; a bicameral place left with one active chamber fails the build | Dropping them (this plan's first version) lost the identity that older or renewal evidence needs (Kazakhstan's Senate, Kuwait's National Assembly); treating them as active would make them electable. Pinned by `test_suspended_chambers_keep_their_identity_but_are_not_active` and `test_build_rejects_a_bicameral_place_left_with_one_active_chamber` (Task 6) |
 | C13 | §14 ruff over the repository | `scraper.py` is excluded from ruff | v1's scraper has 14 ruff errors; Plan 4 replaces it with a thin entry point |
 | C14 | §4 `scripts/build_places.py` | Scripts run as modules: `python -m scripts.build_places` | They import the package; `python scripts/build_places.py` cannot (Tasks 5, 6) |
-| C15 (semantic) | §8 "Timeout 60 s per attempt" | The limit is checked before every request (redirect hops included) and between socket reads. A single read waits at most the time left when its request was sent, so one attempt ends in under 2 × 60 s. A body whose last byte arrived in the read that crossed the limit is kept. DNS resolution and a server that drips its headers are not bounded inside `fetch`: Plan 2's per-source child process, killed at the source deadline, is the hard bound | A blocking read cannot be interrupted portably, and `getaddrinfo` takes no timeout. Pinned by `test_a_dripping_body_cannot_outlast_the_attempt_limit`, `test_no_request_is_sent_once_the_attempt_limit_has_passed`, `test_a_body_completed_by_the_read_that_crossed_the_limit_is_kept` and `test_a_redirect_body_is_never_read` (Task 7) |
+| C15 (semantic) | §8 "Timeout 60 s per attempt" | The fetcher applies socket inactivity limits and cooperative checks against the attempt limit: before every request (redirect hops included) and between socket reads, and a single read waits at most the time left when its request was sent. This is not a wall-clock guarantee: name resolution, a connection tried on each resolved address in turn, and a server that drips its headers can run longer. A body whose last byte arrived in the read that crossed the limit is kept. The hard deadline is owned by Plan 2 and not yet verified: a parent process enforces the earlier of the source and scrape deadlines, terminates and reaps the worker, records an explicit failure, and never lets late or incomplete work replace an accepted snapshot | A blocking read cannot be interrupted portably, `getaddrinfo` takes no timeout, and requests gives each resolved address its own connect timeout, so the first revision's "under 2 × 60 s" did not hold (review, timeout contract). Pinned by `test_a_dripping_body_cannot_outlast_the_attempt_limit`, `test_no_request_is_sent_once_the_attempt_limit_has_passed`, `test_a_body_completed_by_the_read_that_crossed_the_limit_is_kept` and `test_a_redirect_body_is_never_read` (Task 7) |
 | C16 | §13.4 mutation procedure | An untracked helper `.scratch/mutate.py` runs each task's mutation table with exactly that procedure. Every listed test must pass first (the baseline). A mutation is killed only when pytest exits 1 with failed tests and no errors; a collection error, a wrong node id, a crash or no tests run is `INVALID`, a run over 300 s `TIMEOUT` | The first version counted any non-zero exit as a kill, so an import error or a mistyped node id passed as evidence (Task 1) |
 | C17 | §5.6 `parser_version` | `elections_calendar.PARSER_VERSION = "2.0.0"` | One place for later plans to read it (Task 1) |
-| C18 (semantic) | §6.3 classification order | Referendum words first. A subnational word outside the chamber's own name, or a `subdivision` jurisdiction, makes generic chamber words subnational. A by-election lends national identity only to a chamber the text names, in a named constituency | "State Senate by-election" resolved to the US Senate, and "Referendum on reform of the Senate" to a Senate election. Pinned by `test_scope_comes_before_chamber_identity` and `test_a_qualifier_in_the_chambers_own_name_is_not_scope` (Task 6) |
-| C19 (semantic) | §5.2 `jurisdiction_kind` | Adds `subdivision`: the jurisdiction is an ISO 3166-2 subdivision of the place (a state, province or region) | C18 must tell a state's seat from a national constituency; Plan 2's adapters set it (Task 2) |
-| C20 (semantic) | §5.2 records | Every record checks its fields when built: `Literal` words, real `bool`/`int`/`str`/`date` values, years 1900–2199, `round` ≥ 1. `from_dict` does not coerce. A violation raises `RecordError` (a `ValueError`) | Annotations are not enforced at runtime, so saved JSON with "banana", a string year or `1` for `True` loaded silently. Pinned by `test_saved_records_outside_the_vocabulary_are_rejected` and `test_years_and_rounds_are_bounded` (Task 2) |
-| C21 (semantic) | §8 "URLs and error strings are redacted (query-string tokens/keys)" | An allowlist: only the values of the sources' own query keys (`SAFE_QUERY_KEYS`, compared percent-decoded and case-folded) are kept. Every other parameter is replaced whole, key included, in URLs and in bare `?query` or `#fragment` text inside error messages | A list of secret-looking names missed `__cf_chl_tk`, percent-encoded keys and tokens in the key position. Pinned by `test_redact_url`, `test_redact_text_handles_full_urls_bare_queries_and_fragments` and `test_no_query_secret_reaches_the_result` (Task 7) |
+| C18 (semantic) | §6.3 classification order | Referendum words first. A subnational word in the label makes generic chamber words subnational; the voting area never does: a `subdivision` is geography, not evidence of level (§6.4, "`level` is the institution being elected"). A chamber name with a word of its own ("United States Senate", "Federal Senate", "State Duma") is national evidence in every jurisdiction; the US chambers get "United States", "U.S." and "US" aliases. Generic chamber words in a subdivision give the class with no institution and no level hint, so the source's default applies and `unknown` is never hidden. A by-election lends national identity only to a chamber the text names, in a named constituency | "State Senate by-election" resolved to the US Senate, and "Referendum on reform of the Senate" to a Senate election. The first revision then made every subdivision subnational, so "United States Senate special election" in a state became a state office (review U1; the user chose "no level hint" on 2026-10-17). Pinned by `test_scope_comes_before_chamber_identity`, `test_a_qualifier_in_the_chambers_own_name_is_not_scope` and `test_the_voting_area_is_not_the_offices_level` (Task 6) |
+| C19 (semantic) | §5.2 `jurisdiction_kind` | Adds `subdivision`: the jurisdiction is an ISO 3166-2 subdivision of the place (a state, province or region) | Records where the vote is held, apart from the office's level (C18); Plan 2's adapters set it (Task 2) |
+| C20 (semantic) | §5.2 records | Every record checks its fields when built: `Literal` words, real `bool`/`int`/`str`/`date` values, years 1900–2199, `round` ≥ 1. `from_dict` does not coerce. A `Claim` also checks that its `unit_id` belongs to its `source` and that its `claim_id` is `<unit_id>#<n>`, `n` being 0, 1, 2 ... in ASCII digits without a leading zero; whether the unit exists is the ledger's check (Plan 2). A violation raises `RecordError` (a `ValueError`) | Annotations are not enforced at runtime, so saved JSON with "banana", a string year or `1` for `True` loaded silently, and a claim could name another source's unit or end in `#banana` (review U3). Pinned by `test_saved_records_outside_the_vocabulary_are_rejected`, `test_years_and_rounds_are_bounded` and `test_claim_provenance_must_be_consistent` (Task 2) |
+| C21 (semantic) | §8 "URLs and error strings are redacted (query-string tokens/keys)" | An allowlist: only the values of the sources' own query keys (`SAFE_QUERY_KEYS`, compared percent-decoded and case-folded) are kept. Every other parameter is replaced whole, key included, in URLs and in bare `?query` or `#fragment` text inside error messages. A MediaWiki error code that is not 1 to 64 ASCII letters, digits, `_` or `-` becomes `INVALID_API_CODE` (`(invalid)`). `diagnostics()` is the publishable form; `body` is the raw response | A list of secret-looking names missed `__cf_chl_tk`, percent-encoded keys and tokens in the key position, and an API error code reached the diagnostics unchecked (review U4). Pinned by `test_redact_url`, `test_redact_text_handles_full_urls_bare_queries_and_fragments`, `test_no_query_secret_reaches_the_result` and `test_no_query_secret_reaches_the_published_diagnostics` (Task 7) |
 
 Also settled: "91 strings" (§6.2) is 90 country names plus the empty string; BARMM is
 `subnational` through Wikipedia local's default level (§6.4), which Plan 2 checks end to end;
@@ -181,14 +195,15 @@ requests 2.34's `Session.send` reads a redirect's body even with `allow_redirect
 - **Tested plan:** every step was replayed in a fresh clone of `feat/never-miss-v2` when this
   plan was written, with no substitutions: the commands as shown, including a new `.venv`
   from `py -3.14 -m venv` and `pip install --require-hashes -r requirements-dev.txt`
-  (53 packages, on Windows), every gate, all 110 mutations under the
+  (53 packages, on Windows), every gate, all 116 mutations under the
   strict helper, every commit. The expected outputs are measured, not guessed. A fresh Linux
   install is checked by the branch CI run (§15 step 1), which needs the user's go-ahead. If a
   command's output differs, stop and find out why (superpowers:systematic-debugging) before
   you go on.
 - **Per task:** follow the Implement-Review loop in the user's CLAUDE.md (at most 3 rounds).
   The reviewer looks for naive/aware datetime mixing, duplicate side effects, error-path gaps
-  and docstrings that contradict the code. Every completed task is a safe stopping point:
+  and docstrings that contradict the code. Paste each mutation run's output (it names its
+  baseline commit) into the ledger. Every completed task is a safe stopping point:
   record the commit hash and the next task in
   `C:/Users/senescalk/Desktop/handovers/elections-v2-sdd-ledger.md` and
   `C:/Users/senescalk/Desktop/handovers/elections-v2-RESUME.md`.
@@ -901,7 +916,10 @@ Record the new commit hash and the next task in the ledger (`C:/Users/senescalk/
 Type annotations are not enforced at runtime, and Plan 2 loads records back from saved JSON.
 So every record checks its own fields when it is built (spec correction C20): each field must
 hold its annotated type (`True` is not an `int`, a `datetime` is not a `date`) and a `Literal`
-field one of its words; `from_dict` never coerces.
+field one of its words; `from_dict` never coerces. A `Claim` also checks its provenance: its
+`unit_id` must belong to its `source`, as an `InputUnit`'s must, and its `claim_id` must be
+`<unit_id>#<n>`, where `n` is 0, 1, 2 ... in ASCII digits without a leading zero. Whether that
+unit exists is the ledger's check (Plan 2).
 
 `text` keeps the letters of every script. Only Latin, IPA, Greek and Cyrillic letters lose
 their accents; in other scripts a mark makes a different letter (kana voicing, Devanagari
@@ -926,7 +944,8 @@ vowel signs), so a name in any script has a non-empty key (spec correction C9).
     `IGNORED_REASONS: frozenset[str]`; `FIRST_YEAR = 1900`, `LAST_YEAR = 2199`.
   - `RecordError(ValueError)`, raised by every constructor and `from_dict` below when a record
     breaks a rule: a word outside its `Literal`, a non-`bool` flag, a `str` year, a year outside
-    `FIRST_YEAR`-`LAST_YEAR`, a round below 1, an unknown or a missing key.
+    `FIRST_YEAR`-`LAST_YEAR`, a round below 1, an unknown or a missing key, a `unit_id` that is
+  not its record's `source`'s, a `claim_id` that is not `<unit_id>#<n>`.
   - `month_end(year: int, month: int) -> date`.
   - `DateSpan(start: date | None, end: date | None, precision: Precision, year: int)`, frozen;
     constructors `day(d)`, `days(start, end)`, `month(year, month)`,
@@ -937,7 +956,8 @@ vowel signs), so a name in any script has a non-empty key (spec correction C9).
   - `Claim(...)`, the spec §5.2 fields plus `aggregate: bool` and the provenance defaults
     `fetched_at=None, fallback=False, snapshot_id=None, provisional=False`; property
     `merge_id`; `to_dict()` flattens `span` into the four date keys; `from_dict()`.
-- Plan 2's loaders (ledger, snapshots) treat a `RecordError` as a corrupt saved record.
+- Plan 2's loaders (ledger, snapshots) treat a `RecordError` as a corrupt saved record, and the
+  ledger admits a claim only when its unit is in the same snapshot with the same `source`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1078,6 +1098,21 @@ def test_claim_rejects_naive_fetched_at() -> None:
 def test_claim_id_must_extend_unit_id() -> None:
     with pytest.raises(ValueError):
         claim(claim_id="electionguide:upcoming/r18#0")
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"source": "osce"},  # the unit belongs to another source
+        {"claim_id": "electionguide:upcoming/r17#banana"},
+        {"claim_id": "electionguide:upcoming/r17#"},
+        {"claim_id": "electionguide:upcoming/r17#01"},
+        {"claim_id": "electionguide:upcoming/r17#\uff11"},  # a fullwidth digit one
+    ],
+)
+def test_claim_provenance_must_be_consistent(changes: dict[str, object]) -> None:
+    with pytest.raises(RecordError):
+        Claim.from_dict(saved_claim(**changes))
 
 
 def test_merge_id_distinguishes_served_and_provisional() -> None:
@@ -1401,8 +1436,7 @@ class InputUnit:
 
     def __post_init__(self) -> None:
         _check_fields(self)
-        if not self.unit_id.startswith(f"{self.source}:") or "/" not in self.unit_id:
-            raise RecordError(f"unit_id {self.unit_id!r} is not <source>:<page key>/<position>")
+        _check_unit_id(self.unit_id, self.source)
         if self.outcome == "ignored" and self.reason not in IGNORED_REASONS:
             raise RecordError(f"ignored unit needs an allowlisted reason, got {self.reason!r}")
         if self.outcome == "parsed" and self.reason is not None:
@@ -1466,7 +1500,9 @@ class Claim:
 
     def __post_init__(self) -> None:
         _check_fields(self)
-        if not self.claim_id.startswith(f"{self.unit_id}#"):
+        _check_unit_id(self.unit_id, self.source)
+        index = self.claim_id.removeprefix(f"{self.unit_id}#")
+        if index == self.claim_id or not _is_index(index):
             raise RecordError(f"claim_id {self.claim_id!r} is not <unit_id>#<n>")
         if self.round is not None and self.round < 1:
             raise RecordError(f"round {self.round} is not 1 or more")
@@ -1548,6 +1584,16 @@ def _iso_moment(value: object) -> datetime | None:
         raise RecordError(f"{value!r} is not an ISO timestamp") from exc
 
 
+def _check_unit_id(unit_id: str, source: str) -> None:
+    if not unit_id.startswith(f"{source}:") or "/" not in unit_id:
+        raise RecordError(f"unit_id {unit_id!r} is not <source>:<page key>/<position>")
+
+
+def _is_index(text: str) -> bool:
+    """``0``, ``1``, ``2``, ...: ASCII digits without a leading zero."""
+    return text.isascii() and text.isdigit() and (text == "0" or not text.startswith("0"))
+
+
 def _construct[R](cls: type[R], values: dict[str, Any]) -> R:
     """``cls(**values)``, reporting an unknown or a missing field as a RecordError."""
     try:
@@ -1593,7 +1639,7 @@ Run:
 .venv/Scripts/python.exe -m pytest -q tests/unit/test_model.py
 ```
 
-Expected: `53 passed`.
+Expected: `58 passed`.
 
 - [ ] **Step 5: Make the modules mandatory in the layering contract**
 
@@ -1617,7 +1663,7 @@ Run each gate as its own shell call (the README's Windows gates, with forward sl
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Expected: `54 passed`.
+Expected: `59 passed`.
 
 ```bash
 .venv/Scripts/mypy.exe
@@ -1682,8 +1728,8 @@ Create `.scratch/mutations/task-2.json` (one mutation per new test; `old` occurs
   {
     "test": "tests/unit/test_model.py::test_unit_invariants",
     "file": "elections_calendar/model.py",
-    "old": "if not self.unit_id.startswith(f\"{self.source}:\") or \"/\" not in self.unit_id:",
-    "new": "if not self.unit_id.startswith(f\"{self.source}:\"):"
+    "old": "if not unit_id.startswith(f\"{source}:\") or \"/\" not in unit_id:",
+    "new": "if not unit_id.startswith(f\"{source}:\"):"
   },
   {
     "test": "tests/unit/test_model.py::test_claim_round_trips_with_utc_provenance",
@@ -1706,8 +1752,20 @@ Create `.scratch/mutations/task-2.json` (one mutation per new test; `old` occurs
   {
     "test": "tests/unit/test_model.py::test_claim_id_must_extend_unit_id",
     "file": "elections_calendar/model.py",
-    "old": "if not self.claim_id.startswith(f\"{self.unit_id}#\"):",
-    "new": "if not self.claim_id.startswith(f\"{self.source}:\"):"
+    "old": "index = self.claim_id.removeprefix(f\"{self.unit_id}#\")",
+    "new": "index = self.claim_id.rpartition(\"#\")[2]"
+  },
+  {
+    "test": "tests/unit/test_model.py::test_claim_provenance_must_be_consistent",
+    "file": "elections_calendar/model.py",
+    "old": "_check_fields(self)\n        _check_unit_id(self.unit_id, self.source)\n        index = ",
+    "new": "_check_fields(self)\n        index = "
+  },
+  {
+    "test": "tests/unit/test_model.py::test_claim_provenance_must_be_consistent",
+    "file": "elections_calendar/model.py",
+    "old": "return text.isascii() and text.isdigit() and (text == \"0\" or not text.startswith(\"0\"))",
+    "new": "return True"
   },
   {
     "test": "tests/unit/test_model.py::test_merge_id_distinguishes_served_and_provisional",
@@ -1748,7 +1806,7 @@ Run:
 PYTHONDONTWRITEBYTECODE=1 .venv/Scripts/python.exe .scratch/mutate.py .scratch/mutations/task-2.json
 ```
 
-Expected: `baseline: all ... tests pass`, then every line starts with `KILLED` and shows `failed` with no `error`, then `15/15 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. `BASELINE FAILED` means a listed test fails before any mutation: fix that first. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. An `INVALID` or `TIMEOUT` line is not a kill: the mutation broke collection, imports or termination instead of the behaviour, so rewrite it until the test fails on an assertion. Then confirm the tree is unchanged:
+Expected: `baseline: all ... tests pass`, then every line starts with `KILLED` and shows `failed` with no `error`, then `17/17 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. `BASELINE FAILED` means a listed test fails before any mutation: fix that first. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. An `INVALID` or `TIMEOUT` line is not a kill: the mutation broke collection, imports or termination instead of the behaviour, so rewrite it until the test fails on an assertion. Then confirm the tree is unchanged:
 
 ```bash
 git diff --exit-code
@@ -2009,7 +2067,7 @@ Run each gate as its own shell call (the README's Windows gates, with forward sl
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Expected: `68 passed`.
+Expected: `73 passed`.
 
 ```bash
 .venv/Scripts/mypy.exe
@@ -2789,7 +2847,7 @@ Run each gate as its own shell call (the README's Windows gates, with forward sl
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Expected: `133 passed`.
+Expected: `138 passed`.
 
 ```bash
 .venv/Scripts/mypy.exe
@@ -3701,7 +3759,7 @@ Run each gate as its own shell call (the README's Windows gates, with forward sl
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Expected: `194 passed`.
+Expected: `199 passed`.
 
 ```bash
 .venv/Scripts/mypy.exe
@@ -3859,13 +3917,18 @@ Record the new commit hash and the next task in the ledger (`C:/Users/senescalk/
 ### Task 6: Institutions from the IPU table, and office classification
 
 Scope comes before identity (spec correction C18): a chamber's name in an office label does
-not by itself say which body is elected. Referendum words come first ("Referendum on reform
-of the Senate" is a referendum). A subnational word outside the chamber's own name ("State
-Senate", "provincial") or a `subdivision` jurisdiction makes generic chamber words
-subnational. A by-election lends national identity only to a chamber the text names, in a
-named constituency ("House of Commons by-election" for Holborn). It never turns generic words
-into the national chamber: "House of Assembly by-election" for an Australian seat stays
-unresolved.
+not by itself say which body is elected, and neither does the voting area. Referendum words
+come first ("Referendum on reform of the Senate" is a referendum). A subnational word in the
+label ("State Senate", "provincial") makes generic chamber words subnational. A chamber name
+with a word of its own ("United States Senate", "State Duma") is national evidence wherever
+the vote is held: the voters of one state elect its US senators. A `subdivision` jurisdiction
+is geography, not level evidence (spec §6.4): there, generic chamber words ("Senate special
+election" for Ohio) give the class with no institution and no level hint, and the source's
+default level applies. A by-election lends national identity only to a chamber the text
+names, in a named constituency ("House of Commons by-election" for Holborn). It never turns
+generic words into the national chamber: "House of Assembly by-election" for an Australian
+seat stays unresolved. The US chambers get "United States", "U.S." and "US" aliases in
+`data/institutions_manual.yaml`.
 
 Chambers the IPU marks "(Suspended)" or "(Dissolved)" keep their identity with a `status`
 (spec correction C12). Their names still resolve, for older evidence or a proposed renewal.
@@ -4145,10 +4208,8 @@ def test_build_rejects_a_bicameral_place_left_with_one_active_chamber() -> None:
 @pytest.mark.parametrize(
     ("label", "place_id", "kind", "expected"),
     [
-        # a subnational qualifier or a subdivision outranks the chamber's name...
+        # a subnational qualifier outranks the chamber's name...
         ("State Senate by-election", "iso:US", "named", ("upper_house", None, False, "by_election", None, "subnational")),
-        ("Senate by-election", "iso:US", "subdivision", ("upper_house", None, False, "by_election", None, "subnational")),
-        ("Legislative Assembly by-election", "iso:MY", "subdivision", ("legislature", None, False, "by_election", None, "subnational")),
         ("State Houses of Assembly", "iso:NG", "nationwide", ("legislature", None, False, "candidate_election", None, "subnational")),
         # ...and a by-election alone does not make a generic chamber word national
         ("House of Assembly by-election", "iso:AU", "named", ("lower_house", None, False, "by_election", None, None)),
@@ -4171,6 +4232,27 @@ def test_a_qualifier_in_the_chambers_own_name_is_not_scope() -> None:
     )
     office = classify_office("Territorial Assembly", "iso:WF", "nationwide", registry)
     assert (office.institution, office.level_hint) == ("iso:WF/territorial-assembly", "national")
+
+
+@pytest.mark.parametrize(
+    ("label", "place_id", "kind", "expected"),
+    [
+        # national evidence in the text survives a state's voting area (US senators are elected by state)
+        ("United States Senate special election", "iso:US", "subdivision", ("upper_house", "iso:US/senate", False, "by_election", None, "national")),
+        ("U.S. Senate", "iso:US", "subdivision", ("upper_house", "iso:US/senate", False, "candidate_election", None, "national")),
+        # an explicit state office is subnational
+        ("State Senate special election", "iso:US", "subdivision", ("upper_house", None, False, "by_election", None, "subnational")),
+        # bare chamber words in a state say neither: no institution, no level hint
+        ("Senate special election", "iso:US", "subdivision", ("upper_house", None, False, "by_election", None, None)),
+        ("Legislative Assembly by-election", "iso:MY", "subdivision", ("legislature", None, False, "by_election", None, None)),
+        # a by-election in a national constituency names its chamber
+        ("House of Commons by-election", "iso:GB", "named", ("lower_house", "iso:GB/house-of-commons", False, "by_election", None, "national")),
+    ],
+)
+def test_the_voting_area_is_not_the_offices_level(
+    label: str, place_id: str, kind: JurisdictionKind, expected: tuple[object, ...]
+) -> None:
+    assert classify(label, place_id, kind) == expected  # constructed labels
 ```
 
 - [ ] **Step 3: Run it to make sure it fails**
@@ -4203,6 +4285,12 @@ aliases:
   iso:NO: {Parliament: [Storting, Stortinget]}
   iso:RU: {State Duma: [Duma], Council of the Federation: [Federation Council]}
   iso:SE: {Parliament: [Riksdag]}
+  iso:US:
+    House of Representatives:
+      - United States House of Representatives
+      - U.S. House of Representatives
+      - US House of Representatives
+    Senate: [United States Senate, U.S. Senate, US Senate]
 
 # Legislatures of places the IPU table doesn't cover.
 # office_class: lower_house | upper_house | legislature (unicameral).
@@ -4266,25 +4354,32 @@ Create `elections_calendar/offices.py`:
 ``classify`` turns one office text (already split with ``split_offices``)
 into an ``Office``. Scope comes before identity: a chamber's name in the
 text does not by itself say which body is elected. The text is *qualified*
-when it has a subnational word ("State Senate", "provincial") outside the
-chamber's own name, or when the jurisdiction is a subdivision. The order of
-the rules matters:
+when it has a subnational word ("State Senate", "provincial"). The voting
+area is not evidence of level: the voters of one state elect its US
+senators, so a ``subdivision`` jurisdiction never makes a chamber
+subnational (spec §6.4: the level is the institution's). The order of the
+rules matters:
 
 1. referendum words, even when the text names a chamber ("Referendum on
    reform of the Senate");
-2. a chamber of the place named by its IPU name or an alias ("State Duma",
-   "Knesset"), suspended chambers included. A name built only from generic
-   words ("Senate", "House of Commons") counts only when the text is not
-   qualified, and then only nationwide or for a by-election in a named
-   constituency, so "Virginia, Senate" is not the US Senate;
+2. a chamber of the place named by its IPU name or an alias, suspended
+   chambers included. A name with a word of its own ("State Duma",
+   "Knesset", "United States Senate") is national evidence wherever the
+   vote is held. A name built only from generic chamber words ("Senate",
+   "House of Commons") counts only when the text is not qualified, and then
+   only nationwide or for a by-election in a named constituency, so
+   "Virginia, Senate" is not the US Senate;
 3. head of state, governor, mayor;
 4. generic chamber words: "senate" -> the place's one active upper chamber,
    "house of representatives" -> its one active lower chamber (or its only
    chamber), nationwide only; when qualified, a subnational chamber;
+   otherwise the class alone, with no level hint, so the source's default
+   level applies (a bare "Senate" in a state may be either);
 5. local bodies ("municipal", "local", "city council", ...);
 6. generic legislature words ("Parliament", "Legislative", "Congress"):
    subnational when qualified or regional; identity only for a place with one
-   active, unicameral chamber, nationwide; otherwise an aggregate (spec §6.3);
+   active, unicameral chamber, nationwide; in a subdivision one body with no
+   level hint; otherwise an aggregate (spec §6.3);
 7. "General" and anything unrecognised: class ``general``, aggregate.
 
 A by-election says how a seat is filled, not which level owns it: it lends
@@ -4458,15 +4553,15 @@ def _contains(haystack: str, needle: str) -> bool:
     return pattern is not None and pattern.search(haystack) is not None
 
 
-def _without(text: str, name: str) -> str:
-    """``text``'s normalised words with the chamber name ``name`` taken out."""
-    key = norm_name(text)
-    pattern = _name_pattern(name)
-    return key if pattern is None else pattern.sub(" ", key)
-
-
 def _generic(name: str) -> bool:
-    return any(p.search(name) for p in _GENERIC_CHAMBER_WORDS)
+    """Whether a chamber name is only generic chamber words ("House of Commons").
+
+    "United States Senate" and "Federal Senate" have words of their own.
+    """
+    rest = norm_name(name)
+    for pattern in _GENERIC_CHAMBER_WORDS:
+        rest = pattern.sub(" ", rest)
+    return set(rest.split()) <= {"of", "the"}
 
 
 def _named_chamber(text: str, chambers: Iterable[Chamber]) -> tuple[Chamber, str] | None:
@@ -4541,22 +4636,20 @@ def classify(
                 kind = "candidate_election"
         return Office(text, office_class, institution, aggregate, kind, round_, level, recognised)
 
-    in_subdivision = jurisdiction_kind == "subdivision"
     if _REFERENDUM.search(rest):
         level: Level | None = "national" if nationwide else (
             "subnational" if jurisdiction_kind in ("named", "subdivision") else None
         )
         return office("referendum", level=level, kind="referendum_day")
+    qualified = _SUBNATIONAL.search(rest) is not None
     named = _named_chamber(rest, chambers)
     if named is not None:
         found, name = named
-        qualified = in_subdivision or _SUBNATIONAL.search(_without(rest, name)) is not None
         constituency = by_election and jurisdiction_kind == "named"
         if not _generic(name) or (not qualified and (nationwide or constituency)):
             return office(
                 found.office_class, institution=institution_id(place_id, found), level="national"
             )
-    qualified = in_subdivision or _SUBNATIONAL.search(rest) is not None
     if _HEAD_OF_STATE.search(rest):
         institution = f"{place_id}/president" if nationwide else None
         return office(
@@ -4593,7 +4686,8 @@ def classify(
             return office(
                 "legislature", institution=institution_id(place_id, only), level="national"
             )
-        return office("legislature", aggregate=True)
+        # in one state the words name one body: the state's own, or national seats there
+        return office("legislature", aggregate=jurisdiction_kind != "subdivision")
     return office("general", aggregate=True, recognised=bool(_GENERAL.search(rest)))
 
 
@@ -4848,7 +4942,7 @@ Run:
 sha256sum data/institutions.yaml
 ```
 
-Expected: `83cd226687376583f8a184c44dc55ff486cac433bbb4eda245abb69876810cd7  data/institutions.yaml`. Review the file before you commit it.
+Expected: `088909761cad7df3e94da8928c7d885c2a8e65ea299f33d2735a804d23fc823d  data/institutions.yaml`. Review the file before you commit it.
 
 - [ ] **Step 6: Run it to make sure it passes**
 
@@ -4858,7 +4952,7 @@ Run:
 .venv/Scripts/python.exe -m pytest -q tests/unit/test_offices.py
 ```
 
-Expected: `83 passed`.
+Expected: `87 passed`.
 
 - [ ] **Step 7: Layering and README**
 
@@ -4905,7 +4999,7 @@ Run each gate as its own shell call (the README's Windows gates, with forward sl
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Expected: `277 passed`.
+Expected: `286 passed`.
 
 ```bash
 .venv/Scripts/mypy.exe
@@ -5006,14 +5100,20 @@ Create `.scratch/mutations/task-6.json` (one mutation per new test; `old` occurs
   {
     "test": "tests/unit/test_offices.py::test_scope_comes_before_chamber_identity",
     "file": "elections_calendar/offices.py",
-    "old": "qualified = in_subdivision or _SUBNATIONAL.search(rest) is not None",
+    "old": "qualified = _SUBNATIONAL.search(rest) is not None",
     "new": "qualified = False"
   },
   {
     "test": "tests/unit/test_offices.py::test_a_qualifier_in_the_chambers_own_name_is_not_scope",
     "file": "elections_calendar/offices.py",
-    "old": "_SUBNATIONAL.search(_without(rest, name)) is not None",
-    "new": "_SUBNATIONAL.search(rest) is not None"
+    "old": "return set(rest.split()) <= {\"of\", \"the\"}",
+    "new": "return True"
+  },
+  {
+    "test": "tests/unit/test_offices.py::test_the_voting_area_is_not_the_offices_level",
+    "file": "elections_calendar/offices.py",
+    "old": "qualified = _SUBNATIONAL.search(rest) is not None",
+    "new": "qualified = jurisdiction_kind == \"subdivision\" or _SUBNATIONAL.search(rest) is not None"
   }
 ]
 ```
@@ -5024,7 +5124,7 @@ Run:
 PYTHONDONTWRITEBYTECODE=1 .venv/Scripts/python.exe .scratch/mutate.py .scratch/mutations/task-6.json
 ```
 
-Expected: `baseline: all ... tests pass`, then every line starts with `KILLED` and shows `failed` with no `error`, then `13/13 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. `BASELINE FAILED` means a listed test fails before any mutation: fix that first. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. An `INVALID` or `TIMEOUT` line is not a kill: the mutation broke collection, imports or termination instead of the behaviour, so rewrite it until the test fails on an assertion. Then confirm the tree is unchanged:
+Expected: `baseline: all ... tests pass`, then every line starts with `KILLED` and shows `failed` with no `error`, then `14/14 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. `BASELINE FAILED` means a listed test fails before any mutation: fix that first. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. An `INVALID` or `TIMEOUT` line is not a kill: the mutation broke collection, imports or termination instead of the behaviour, so rewrite it until the test fails on an assertion. Then confirm the tree is unchanged:
 
 ```bash
 git diff --exit-code
@@ -5075,14 +5175,25 @@ redirect's whole body even with `allow_redirects=False` (it prepares `Response.n
 size or time limit. Here a redirect's body is never read; its connection is closed. The
 attempt limit is checked before every request, redirect hops included, so nothing is sent
 after it. A body whose last byte (by Content-Length) arrived in the read that crossed the limit
-is complete and is kept. Name resolution and a server that drips its headers are not bounded
-inside `fetch`; Plan 2's per-source child process is the hard bound (spec correction C15).
+is complete and is kept. These are inactivity limits and cooperative checks, not a wall-clock
+bound (spec correction C15): name resolution, a connection tried on each resolved address in
+turn (each try has its own connect timeout) and a server that drips its headers can run
+longer. The hard deadline belongs to Plan 2's per-source child process, which is not yet
+built or verified.
+
+`Retry-After` is seconds only when it is ASCII digits (`str.isdigit` alone accepts a
+superscript two). It is converted with `float`, which turns thousands of digits into `inf`
+where `int` would raise; the 60 s cap then applies. A malformed header falls back to the
+normal back-off and never raises out of `get`.
 
 Redaction is an allowlist (spec correction C21). Diagnostics keep only the values of the
 sources' own query keys (`SAFE_QUERY_KEYS`: the Wikipedia API's, NDI's `page`, A-WEB's
 `menuNo` and `option`, EISA's `table_id` and `target_action`), compared percent-decoded and
 case-folded. Every other parameter is replaced whole, key included, because a token can stand
-where a key would.
+where a key would. A MediaWiki error code is kept only when it is 1 to 64 ASCII letters,
+digits, `_` or `-`; any other code becomes `INVALID_API_CODE`, and its text reaches the
+diagnostics only through the redacted error message. `body` stays the raw response, which may
+echo the request: publish `diagnostics()`, never the result or its body.
 
 **Files:**
 
@@ -5097,16 +5208,18 @@ where a key would.
 - Consumes: `FetchOutcome` (Task 2).
 - Produces (`elections_calendar.fetch`): constants `ATTEMPTS`, `BACKOFF_S`, `RETRY_AFTER_CAP_S`,
   `ATTEMPT_TIMEOUT_S`, `MAX_REDIRECTS`, `MAX_BYTES`, `SOURCE_DEADLINE_S`, `SCRAPE_DEADLINE_S`,
-  `RETRY_STATUSES`, `WIKIPEDIA_UA`, `BROWSER_UA`;
+  `RETRY_STATUSES`, `WIKIPEDIA_UA`, `BROWSER_UA`, `INVALID_API_CODE = "(invalid)"`;
   `Deadline(expires_at: float, clock=time.monotonic)` with `Deadline.after(seconds, clock)`,
   `.remaining() -> float`, `.earliest(other) -> Deadline`;
   `FetchResult(url, final_url, outcome, stage, http_status, content_type, body, elapsed_ms,
-  attempts, error_type=None, error=None, api_code=None)` with `ok`, `text()`, `diagnostics()`;
+  attempts, error_type=None, error=None, api_code=None)` with `ok`, `text()`, `diagnostics()`
+  (the publishable form; `body` is the raw response);
   `Fetcher(*, verify: str, clock, sleep, wall_clock, attempt_timeout, max_bytes)`, a context
   manager, with `.get(url: str, *, deadline: Deadline, mediawiki: bool = False) -> FetchResult`
-  (never raises for network problems) and `.close()`;
+  (never raises for network problems or malformed replies) and `.close()`;
   `outcome_for(exc: Exception) -> tuple[FetchOutcome, bool]`; `user_agent(host: str) -> str`;
-  `parse_retry_after(value: str | None, wall_clock) -> float | None`;
+  `parse_retry_after(value: str | None, wall_clock) -> float | None` (`inf` for a number too
+  large for a float; the caller caps it);
   `SAFE_QUERY_KEYS: frozenset[str]`, `REDACTED = "REDACTED"`; `redact_query(query: str) -> str`,
   `redact_url(url: str) -> str`, `redact_text(text: str, limit: int = 500) -> str`.
 - Produces (tests): `tests.support.tls.authority(common_name) -> Authority`,
@@ -5115,7 +5228,8 @@ where a key would.
   `route(path, *replies) -> str`, `requests`), `serve(cert)` (context manager).
 - Plan 2's per-source runner builds one `Fetcher` per source and a `Deadline` per source
   (`SOURCE_DEADLINE_S`) capped by the scrape's (`SCRAPE_DEADLINE_S`) via `earliest`, and runs
-  each source in a child process that it kills at that deadline (the hard bound, C15).
+  each source in a child process that it kills at that deadline (the hard bound, C15; not yet
+  built or verified).
 
 - [ ] **Step 1: Write the failing test and its support code**
 
@@ -5388,6 +5502,7 @@ Requests go to a local HTTPS server with real TLS; sleeps and the clock are
 fake unless a test is about elapsed time.
 """
 
+import json
 import socket
 import time
 from collections.abc import Iterator
@@ -5402,6 +5517,7 @@ import urllib3
 from elections_calendar.fetch import (
     ATTEMPT_TIMEOUT_S,
     BROWSER_UA,
+    INVALID_API_CODE,
     MAX_BYTES,
     WIKIPEDIA_UA,
     Deadline,
@@ -5603,10 +5719,30 @@ def test_retry_after_is_honoured_and_capped(
         ("Fri, 16 Oct 2026 14:00:10 +0200", 10.0),
         ("Thu, 15 Oct 2026 12:00:00 GMT", 0.0),  # in the past
         ("Fri, 32 Oct 2026 12:00:00 GMT", None),
+        ("\u00b2", None),  # a superscript two is a digit to str.isdigit, not a number
+        ("0" * 20 + "5", 5.0),
+        ("9" * 5000, float("inf")),  # past any cap; int() would refuse it
     ],
 )
 def test_parse_retry_after(header: str | None, seconds: float | None) -> None:
     assert parse_retry_after(header, lambda: NOW) == seconds
+
+
+@pytest.mark.parametrize(
+    ("header", "sleeps"),
+    [
+        ("\u00b2", [2.0, 4.0]),  # unreadable: default back-off
+        ("9" * 400, [60.0, 60.0]),  # too large for a float: capped
+        ("9" * 5000, [60.0, 60.0]),  # too long for int(): capped
+    ],
+)
+def test_a_malformed_retry_after_never_escapes_the_result(
+    pki: Pki, fake: FakeTime, server: TestServer, header: str, sleeps: list[float]
+) -> None:
+    url = server.route("/busy", Reply(status=503, headers={"Retry-After": header}))
+    result = get(pki, fake, url)
+    assert (result.outcome, result.http_status, result.attempts) == ("http_error", 503, 3)
+    assert fake.sleeps == sleeps
 
 
 def test_timeouts_are_retried(pki: Pki, fake: FakeTime, server: TestServer) -> None:
@@ -5935,6 +6071,18 @@ def test_no_query_secret_reaches_the_result(pki: Pki, fake: FakeTime, server: Te
     assert (result.outcome, result.http_status) == ("http_error", 403)
     assert result.final_url == server.url("/b?REDACTED&page=2")
     assert marker not in repr(result) and marker not in repr(result.diagnostics())
+
+
+def test_no_query_secret_reaches_the_published_diagnostics(
+    pki: Pki, fake: FakeTime, server: TestServer
+) -> None:
+    marker = "s3cr3tMARKER"
+    error = {"code": f"bad?token={marker}", "info": f"see ?token={marker}"}
+    body = json.dumps({"error": error}).encode()
+    result = get(pki, fake, server.route("/api", Reply(body=body, content_type=JSON)), mediawiki=True)
+    assert (result.outcome, result.api_code) == ("api_error", INVALID_API_CODE)
+    assert marker not in json.dumps(result.diagnostics())
+    assert marker.encode() in result.body  # the raw body keeps it: never publish the body
 ```
 
 - [ ] **Step 2: Run it to make sure it fails**
@@ -5972,12 +6120,16 @@ the adapter and nothing returns ``None`` silently.
 - At most 5 redirects, https only; TLS is verified on every hop.
 - The caller's ``Deadline`` (4 min per source, 12 min per scrape) bounds
   attempts and back-off waits.
-- Not bounded here: name resolution (``getaddrinfo`` takes no timeout) and a
-  server that sends its headers a few bytes at a time. The hard bound is the
-  runner, which fetches each source in a child process and kills it at the
-  source's deadline.
+- These are inactivity limits and cooperative checks, not a wall-clock
+  bound. Name resolution (``getaddrinfo`` takes no timeout), connecting to
+  each resolved address in turn (each try has its own connect timeout) and a
+  server that sends its headers a few bytes at a time can all run longer.
+  The hard bound is the runner, which fetches each source in a child process
+  and kills it at the source's deadline.
 - URLs and error texts are redacted before they are stored: only values of
-  the sources' own query keys (``SAFE_QUERY_KEYS``) are kept.
+  the sources' own query keys (``SAFE_QUERY_KEYS``) are kept. A MediaWiki
+  error code outside its grammar becomes ``INVALID_API_CODE``. The body is
+  kept raw, so ``diagnostics()`` is what may be published.
 """
 
 import email.utils
@@ -6031,6 +6183,8 @@ SAFE_QUERY_KEYS = frozenset({
     "table_id", "target_action",  # EISA
 })  # fmt: skip
 REDACTED = "REDACTED"
+INVALID_API_CODE = "(invalid)"
+_API_CODE = re.compile(r"[A-Za-z0-9_-]{1,64}")
 _URL_IN_TEXT = re.compile(r"https?://[^\s'\"<>]+")
 _QUERY_IN_TEXT = re.compile(r"(?P<lead>[?#])(?P<query>[^\s'\"<>]+)")
 _PAIR_SEPARATOR = re.compile(r"([&;])")
@@ -6056,6 +6210,13 @@ class Deadline:
 
 @dataclass(frozen=True, slots=True)
 class FetchResult:
+    """What ``Fetcher.get`` returns.
+
+    ``url``, ``final_url``, ``error`` and ``api_code`` are redacted. ``body`` is
+    the raw response and may echo anything the request carried: publish
+    ``diagnostics()``, never the result or its body.
+    """
+
     url: str
     final_url: str
     outcome: FetchOutcome
@@ -6328,10 +6489,17 @@ def _mediawiki(
     return _Attempt(
         "api_error", "api", final_url, status, content_type, body,
         error=redact_text(f"MediaWiki error {code}: {info}"),
-        api_code=code or None,
+        api_code=_api_code(code),
         retryable=code == "maxlag",
         retry_after=parse_retry_after(response.headers.get("Retry-After"), wall_clock),
     )  # fmt: skip
+
+
+def _api_code(code: str) -> str | None:
+    """A MediaWiki error code fit to publish: its own grammar, else ``INVALID_API_CODE``."""
+    if not code:
+        return None
+    return code if _API_CODE.fullmatch(code) else INVALID_API_CODE
 
 
 def outcome_for(exc: Exception) -> tuple[FetchOutcome, bool]:
@@ -6394,13 +6562,14 @@ def parse_retry_after(value: str | None, wall_clock: Callable[[], datetime]) -> 
     """Seconds to wait from a Retry-After header (delta-seconds or HTTP-date).
 
     None when the header is missing or unreadable; the caller then uses its
-    own back-off.
+    own back-off. Only ASCII digits are seconds; a number too large for a
+    float is ``inf``, which the caller's cap turns into 60 s.
     """
     if not value:
         return None
     text = value.strip()
-    if text.isdigit():
-        return float(int(text))
+    if text.isascii() and text.isdigit():  # isdigit alone also accepts other scripts' digits
+        return float(text)  # int() would refuse thousands of digits
     try:
         when = email.utils.parsedate_to_datetime(text)
     except (TypeError, ValueError, IndexError):
@@ -6466,7 +6635,7 @@ Run:
 .venv/Scripts/python.exe -m pytest -q tests/unit/test_fetch.py
 ```
 
-Expected: `79 passed` in a few seconds. A hang means a server reply waits on a real clock: check that `fake.sleep` is passed to the `Fetcher`.
+Expected: `86 passed` in a few seconds. A hang means a server reply waits on a real clock: check that `fake.sleep` is passed to the `Fetcher`.
 
 - [ ] **Step 5: Make the module mandatory in the layering contract**
 
@@ -6490,7 +6659,7 @@ Run each gate as its own shell call (the README's Windows gates, with forward sl
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Expected: `356 passed`.
+Expected: `372 passed`.
 
 ```bash
 .venv/Scripts/mypy.exe
@@ -6575,6 +6744,18 @@ Create `.scratch/mutations/task-7.json` (one mutation per new test; `old` occurs
     "file": "elections_calendar/fetch.py",
     "old": "if when.utcoffset() is None:",
     "new": "if False:"
+  },
+  {
+    "test": "tests/unit/test_fetch.py::test_a_malformed_retry_after_never_escapes_the_result",
+    "file": "elections_calendar/fetch.py",
+    "old": "if text.isascii() and text.isdigit():",
+    "new": "if text.isdigit():"
+  },
+  {
+    "test": "tests/unit/test_fetch.py::test_a_malformed_retry_after_never_escapes_the_result",
+    "file": "elections_calendar/fetch.py",
+    "old": "return float(text)",
+    "new": "return float(int(text))"
   },
   {
     "test": "tests/unit/test_fetch.py::test_timeouts_are_retried",
@@ -6681,7 +6862,7 @@ Create `.scratch/mutations/task-7.json` (one mutation per new test; `old` occurs
   {
     "test": "tests/unit/test_fetch.py::test_mediawiki_errors_are_api_errors",
     "file": "elections_calendar/fetch.py",
-    "old": "api_code=code or None,",
+    "old": "api_code=_api_code(code),",
     "new": "api_code=None,"
   },
   {
@@ -6743,6 +6924,12 @@ Create `.scratch/mutations/task-7.json` (one mutation per new test; `old` occurs
     "file": "elections_calendar/fetch.py",
     "old": "final_url = redact_url(url)",
     "new": "final_url = url"
+  },
+  {
+    "test": "tests/unit/test_fetch.py::test_no_query_secret_reaches_the_published_diagnostics",
+    "file": "elections_calendar/fetch.py",
+    "old": "return code if _API_CODE.fullmatch(code) else INVALID_API_CODE",
+    "new": "return code"
   }
 ]
 ```
@@ -6753,7 +6940,7 @@ Run:
 PYTHONDONTWRITEBYTECODE=1 .venv/Scripts/python.exe .scratch/mutate.py .scratch/mutations/task-7.json
 ```
 
-Expected: `baseline: all ... tests pass`, then every line starts with `KILLED` and shows `failed` with no `error`, then `37/37 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. `BASELINE FAILED` means a listed test fails before any mutation: fix that first. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. An `INVALID` or `TIMEOUT` line is not a kill: the mutation broke collection, imports or termination instead of the behaviour, so rewrite it until the test fails on an assertion. Then confirm the tree is unchanged:
+Expected: `baseline: all ... tests pass`, then every line starts with `KILLED` and shows `failed` with no `error`, then `40/40 mutations killed`, exit code 0. The helper restores each file with `git checkout -- <file>` and checks `git diff --exit-code -- <file>`. `BASELINE FAILED` means a listed test fails before any mutation: fix that first. A `SURVIVED` line means the test does not catch that bug: strengthen the test, never weaken the mutation. An `INVALID` or `TIMEOUT` line is not a kill: the mutation broke collection, imports or termination instead of the behaviour, so rewrite it until the test fails on an assertion. Then confirm the tree is unchanged:
 
 ```bash
 git diff --exit-code
@@ -7045,7 +7232,7 @@ Run:
 .venv/Scripts/python.exe -m pytest -q tests/unit/test_fetch.py
 ```
 
-Expected: `86 passed`.
+Expected: `93 passed`.
 
 - [ ] **Step 5: Document it**
 
@@ -7070,7 +7257,7 @@ Run each gate as its own shell call (the README's Windows gates, with forward sl
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Expected: `363 passed`.
+Expected: `379 passed`.
 
 ```bash
 .venv/Scripts/mypy.exe
@@ -7176,34 +7363,53 @@ Record the new commit hash and the next task in the ledger (`C:/Users/senescalk/
 
 Decisions this plan leaves open on purpose, each with the plan that owns it:
 
-- **Plan 2, hard time bound (C15, FP07):** run each source in a child process and kill it at
-  `SOURCE_DEADLINE_S`; test a slow DNS lookup and a server that drips its headers at that
-  boundary.
-- **Plan 2, jurisdictions (C18, C19, FP04):** set `jurisdiction_kind = "subdivision"` when the
-  jurisdiction names a subdivision of the place: `PlaceRegistry.resolve_subdivision` for
-  registered ones (today only GB-SCT and GB-WLS), and decide how to recognise unregistered
-  first-level subdivisions (pycountry's ISO 3166-2 names). Until then "Senate special
-  election" for Virginia resolves to the US Senate. National evidence in the label ("United
-  States Senate") must still win, and Canada's "federal by-election" (no chamber word) must map
-  to the House of Commons at national level.
+- **Plan 2, hard time bound (C15, FP07, UP07):** owned by Plan 2 and not yet verified. A parent
+  process runs each source in a child process, enforces the earlier of the source deadline
+  (`SOURCE_DEADLINE_S`) and the whole-scrape deadline, terminates and reaps timed-out work, and
+  records an explicit failure outcome in the health data. Test it with a slow DNS lookup, a
+  server that drips its headers, a host whose resolved addresses fail one after another, the
+  scrape budget running out during a source, and worker cleanup. After a cancellation, no late
+  or incomplete result may replace an accepted snapshot; a body `fetch` kept after its
+  cooperative limit (C15) never overrides this deadline.
+- **Plan 2, jurisdictions (C18, C19, FP04, UP01, UP02):** set `jurisdiction_kind =
+  "subdivision"` when the jurisdiction names a subdivision of the place:
+  `PlaceRegistry.resolve_subdivision` for registered ones (today only GB-SCT and GB-WLS), and
+  decide how to recognise unregistered first-level subdivisions (pycountry's ISO 3166-2
+  names). Keep the jurisdiction text and kind on the claim whatever its level. A subdivision
+  is not level evidence (C18): generic chamber words there get no level hint, so the level is
+  the source's default (§6.4). A source whose rows mix national seats and subdivision bodies
+  under such words sets those rows' default to `unknown`, unless its own structure settles the
+  level (Wikipedia local: `subnational`). Canada's "Federal by-election" (no chamber word) is
+  an adapter rule with this contract: place `iso:CA`, a `named` riding and that label give
+  `office_class = lower_house`, `institution = iso:CA/house-of-commons`, `level = national`
+  and `kind = by_election`.
 - **Plan 2, stored IDs (C9, FP03):** decide whether snapshots and the ledger store place and
-  institution IDs. If they do, registering an `unknown:` name later, or renaming a chamber,
-  needs an explicit migration, never a silent new identity.
-- **Plan 2, renewals (C12, FP06):** emit `expected_renewal` claims only for active chambers; a
-  suspended chamber's name still resolves for dated evidence.
-- **Plan 2, saved records (C20, FP10):** the ledger and snapshot loaders treat `RecordError` as
-  a corrupt record, never as an empty one.
+  institution IDs. If they do, define before the first save how the registries are versioned
+  and how stored IDs are migrated or re-resolved when an `unknown:` name is registered or a
+  chamber is renamed; never a silent new identity.
+- **Plan 2, renewals (C12, FP06, UP08):** emit `expected_renewal` claims only for active
+  chambers. A source row with renewal evidence for a suspended or dissolved chamber still gets
+  an explicit ledger outcome (an allowlisted `ignored` reason or an unresolved-evidence
+  record), never a silent drop; a suspended chamber's name still resolves for dated evidence.
+- **Plan 2, saved records (C20, FP10, UP04):** the ledger and snapshot loaders treat
+  `RecordError` as a corrupt record, never as an empty one. The ledger admits a claim only
+  when its `unit_id` names an `InputUnit` of the same snapshot with the same `source`;
+  anything else is a corrupt record too.
 - **Plan 2, trust (C1):** stop the scrape with `TrustBundleError`'s message, and record
   `bundle.sources` in the run diagnostics.
 - **Plan 5, cross-month spans:** a span is bucketed in its first overlapping month (Task 3).
   The extension must make a span that continues into a later month discoverable there; the
   bucket rule alone does not prove it.
+- **Plan 5, v1 cutover:** the branch stays unmerged, with no intermediate production
+  promotion, until the final cutover updates the workflow; that release must still prove the
+  behaviour promised to installed v1.0.2 clients against the new feed (G5, SC4).
 - **Plan 5, R5 (C1, FP13):** before R5 closes, the branch CI run (§15 step 1, with the user's
-  go-ahead) must show a fresh Linux install and certifi alone verifying all 9 hosts from
-  GitHub's runners.
+  go-ahead) must install the exact locks on a fresh Linux runner, run the gates there, and
+  show certifi alone verifying all 9 hosts from GitHub's runners.
 
 ## After Plan 1
 
-The branch then holds 8 new commits on top of `b16b54f`, all gates green (363 tests),
+The branch then holds 8 new commits on top of the commit that holds this plan, all gates
+green (379 tests),
 and nothing has been pushed. Plan 2 (source adapters and ledger) is written next, against this
 code. It consumes the interfaces listed in each task's **Interfaces** block.
