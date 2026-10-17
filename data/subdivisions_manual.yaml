@@ -1,0 +1,12 @@
+# Hand-maintained input to scripts/build_subdivisions.py: English names sources use
+# that pycountry does not list. Edit this file, rebuild data/subdivisions.yaml, review both diffs.
+DE: {Bavaria: DE-BY, Hesse: DE-HE, Lower Saxony: DE-NI, Rhineland-Palatinate: DE-RP,
+     Saxony-Anhalt: DE-ST, North Rhine-Westphalia: DE-NW, Saxony: DE-SN, Thuringia: DE-TH}
+ES: {Andalusia: ES-AN, Castile and León: ES-CL, Catalonia: ES-CT, Basque Country: ES-PV}
+BA: {Federation of Bosnia and Herzegovina: BA-BIH}
+BR: {Federal District: BR-DF}
+CH: {Bern: CH-BE}
+MD: {Gagauzia: MD-GA}
+MX: {Coahuila: MX-COA}
+PK: {Azad Kashmir: PK-JK}
+TH: {Bangkok: TH-10}

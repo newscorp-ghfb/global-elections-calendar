@@ -73,10 +73,12 @@ them by hand: edit the inputs and rebuild.
 |---|---|---|
 | `data/feed_country_history.tsv` | `python -m scripts.count_feed_countries ff30417` | every `elections.json` version in git up to `ff30417` |
 | `data/places.yaml` | `python -m scripts.build_places` | `pycountry`, `data/places_manual.yaml`, the history TSV |
+| `data/subdivisions.yaml` | `python -m scripts.build_subdivisions` | `pycountry`, `data/subdivisions_manual.yaml` |
 | `data/institutions.yaml` | `python -m scripts.build_institutions` | the IPU chamber table fixture, `data/institutions_manual.yaml` |
 
 ```powershell
 .venv\Scripts\python.exe -m scripts.build_places
+.venv\Scripts\python.exe -m scripts.build_subdivisions
 .venv\Scripts\python.exe -m scripts.build_institutions
 ```
 
