@@ -386,7 +386,44 @@ def test_row_structures_html_allows_are_still_rows() -> None:
     )  # fmt: skip
 
 
-def test_a_short_row_is_a_discovered_unparsed_unit() -> None:
+def _cut_status_cells(body: bytes, n: int) -> bytes:
+    """Remove the last two <td> cells of body row ``n`` of table#electionsTable."""
+    pos = body.index(b'id="electionsTable"')
+    pos = body.index(b"<tbody>", pos)
+    for _ in range(n):
+        pos = body.index(b"<tr>", pos + 1)
+    end = body.index(b"</tr>", pos)
+    last = body.rindex(b"<td", pos, end)
+    before_last = body.rindex(b"<td", pos, last)
+    return body[:before_last] + body[end:]
+
+
+def test_a_short_row_is_a_discovered_unparsed_unit() -> None:   # NM-T01
+    original = fixture("electionguide", "upcoming.html")
+    cut = _cut_status_cells(original, 5)
+    assert cut != original and len(cut) < len(original)
+    raw = raw_pages(
+        "electionguide",
+        [
+            (REQUESTS[0], result(cut, url=REQUESTS[0].url)),
+            *[
+                (r, result(fixture("electionguide", f"{r.key}.html"), url=r.url))
+                for r in REQUESTS[1:]
+            ],
+        ],
+    )
+    res = parse(raw)  # includes check(raw, res).ok
+    assert (res.coverage[0].key, res.coverage[0].outcome, res.coverage[0].units_seen) == (
+        "upcoming", "ok", 45,
+    )  # fmt: skip
+    upcoming = [u for u in res.units if u.unit_id.startswith("electionguide:upcoming/")]
+    assert len(upcoming) == 45
+    short = {u.unit_id: u for u in res.units}["electionguide:upcoming/r5"]
+    assert (short.outcome, short.reason) == ("unparsed", "too_few_cells")
+    assert not [c for c in res.claims if c.unit_id == "electionguide:upcoming/r5"]
+
+
+def test_a_short_synthetic_row_is_unparsed() -> None:
     rows = [row(event=i) for i in range(1, 6)]
     rows[4] = rows[4][:5]
     res = parse(views(upcoming=eg_page(HEADERS, rows)))
