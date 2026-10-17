@@ -350,6 +350,10 @@ def test_a_data_table_in_a_calendar_section_is_not_valid_empty() -> None:
     assert outcome('<table class="wikitable"><tr><td>5 January</td><td>Sweden</td></tr></table>') == "layout_not_recognised"
     assert outcome("<table><tr><td>5 January</td></tr></table>") == "layout_not_recognised"
     assert outcome("<dl><dt>5 January</dt></dl>") == "layout_not_recognised"
+    # a dl or table inside a maintenance box is part of the box
+    box = '<table class="ambox"><tr><td>{}</td></tr></table>'
+    assert outcome(box.format("<dl><dt>x</dt></dl>")) == "valid_empty"
+    assert outcome(box.format('<table class="wikitable"><tr><td>x</td></tr></table>')) == "valid_empty"
     assert outcome('<div><table class="wikitable"><tr><td>x</td></tr></table></div>') == "layout_not_recognised"
     for cls in ("ambox", "metadata", "navbox", "mbox-small ambox ambox-content"):
         assert outcome(f'<table class="{cls}"><tr><td>This section is empty.</td></tr></table>') == "valid_empty"
@@ -396,7 +400,10 @@ def test_section_items_and_ids() -> None:
     assert claims[S + "Indirect_elections/li[1]#0"].indirect is True
     assert claims[S + "January/li[1]#0"].indirect is False
     assert claims[S + "January/li[1]#0"].link.endswith("2026_national_electoral_calendar#January")
-    assert [c.claim_id for c in mine(res)] == sorted(claims, key=list(claims).index)
+    assert [c.claim_id for c in mine(res)] == [
+        S + "January/li[1]#0", S + "January/li[2]/li[1]#0", S + "January/li[2]/li[2]#0",
+        S + "Unknown_date/li[1]#0", S + "Indirect_elections/li[1]#0",
+    ]
     # month items without a date of their own take the month
     _, res2 = synth({"March": li("<a>Fiji</a>, Parliament")})
     c = mine(res2)[0]
@@ -516,3 +523,41 @@ def test_unregistered_places_and_unrecognised_offices_are_partial() -> None:
     (unit2,) = of(res2)
     assert (unit2.outcome, unit2.reason, unit2.leftover) == ("partial", "office_not_modelled", "Vice President")
     assert len(mine(res2)) == 1
+
+
+def test_claims_are_part_major_then_span() -> None:
+    br = [c for c in RES.claims if c.unit_id == P + "October/li[2]/li[2]"]
+    assert [(c.claim_id[len(P):], c.office_label) for c in br] == [
+        ("October/li[2]/li[2]#0", "President (1st round)"),
+        ("October/li[2]/li[2]#1", "Chamber of Deputies"),
+        ("October/li[2]/li[2]#2", "Senate"),
+    ]
+    _, res = synth({"January": li("4, 5 October: Sweden, President, Parliament")})
+    got = [(c.claim_id.removeprefix(S), c.office_class, c.span.start) for c in mine(res)]
+    assert got == [
+        ("January/li[1]#0", "head_of_state", date(2026, 10, 4)),
+        ("January/li[1]#1", "head_of_state", date(2026, 10, 5)),
+        ("January/li[1]#2", "legislature", date(2026, 10, 4)),
+        ("January/li[1]#3", "legislature", date(2026, 10, 5)),
+    ]
+
+
+def test_an_h2_that_is_not_a_section_heading_is_a_changed_layout() -> None:
+    items = "<ul><li>5 January: Sweden, Parliament</li></ul>"
+    head = '<div class="mw-heading mw-heading2"><h2 id="January">January</h2></div>'
+    pages = [
+        # a table of contents with its own h2 and items
+        f'<div class="mw-parser-output"><div class="toc"><h2 id="mw-toc-heading">Contents</h2>'
+        f'<ul><li>1 January</li></ul></div>{head}{items}</div>',
+        f'<div class="mw-parser-output">{head}{items}<div><h2 id="Other">Other</h2>{items}</div></div>',
+    ]
+    for html in pages:
+        data = json.dumps({"parse": {"title": TITLE, "revid": 7, "text": html}}).encode()
+        res = one_page(data)
+        assert res.coverage[0].outcome == "layout_not_recognised", html
+        assert not of(res)
+        assert len(of(res, "national-2027")) == 46
+    # direct-child h2 and h2 inside a direct-child mw-heading div are headings
+    plain = f'<div class="mw-parser-output"><h2 id="January">January</h2>{items}</div>'
+    data = json.dumps({"parse": {"title": TITLE, "revid": 7, "text": plain}}).encode()
+    assert one_page(data).coverage[0].outcome == "ok"
