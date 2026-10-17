@@ -63,3 +63,21 @@ Then check that Linux CI can install every pin:
 ```powershell
 .venv\Scripts\python.exe -m pip download --require-hashes --only-binary=:all: --implementation cp --python-version 3.14 --platform manylinux_2_39_x86_64 --platform manylinux_2_34_x86_64 --platform manylinux_2_28_x86_64 --platform manylinux_2_27_x86_64 --platform manylinux_2_17_x86_64 --platform manylinux2014_x86_64 --platform linux_x86_64 --platform any -r requirements-dev.txt -d .scratch/linux-wheels
 ```
+
+## Reference data
+
+These files are generated and committed; review their diffs. Never edit
+them by hand: edit the inputs and rebuild.
+
+| File | Built by | Inputs |
+|---|---|---|
+| `data/feed_country_history.tsv` | `python -m scripts.count_feed_countries ff30417` | every `elections.json` version in git up to `ff30417` |
+| `data/places.yaml` | `python -m scripts.build_places` | `pycountry`, `data/places_manual.yaml`, the history TSV |
+| `data/institutions.yaml` | `python -m scripts.build_institutions` | the IPU chamber table fixture, `data/institutions_manual.yaml` |
+
+```powershell
+.venv\Scripts\python.exe -m scripts.build_places
+.venv\Scripts\python.exe -m scripts.build_institutions
+```
+
+Tests fail when a committed file is out of date with its inputs.
