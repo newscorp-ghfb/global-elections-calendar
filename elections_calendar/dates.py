@@ -85,6 +85,7 @@ _MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
 _TENTATIVE_WORDS = frozenset({"(t)", "date not confirmed", "tbd", "tentative", "expected"})
 _STATUS_ORDER: tuple[StatusClaim, ...] = ("cancelled", "postponed", "disputed", "held")
 _EDGE_PUNCT = " ,;:-"
+_MAX_ROLL_MONTHS = 5  # "Sep - Feb 2027" rolls; "10 Oct - 5 Sep 2026" is likelier a typo
 
 
 @dataclass(frozen=True, slots=True)
@@ -212,13 +213,17 @@ def _range_years(
     """Years for a range whose ends may omit them.
 
     The end rolls into the next year when its month is earlier than the
-    start's ("30 December - 2 January"); within one month an inverted range
-    stays invalid. Only the end year given: the start takes it, or the year
-    before. No year at all: the default is the start's.
+    start's ("30 December - 2 January"), by at most ``_MAX_ROLL_MONTHS``
+    months; a longer wrap ("10 Oct - 5 Sep 2026") raises, so the text stays
+    leftover. Within one month an inverted range stays invalid. Only the end
+    year given: the start takes it, or the year before. No year at all: the
+    default is the start's.
     """
     rolls = last[0] < first[0]
     if y1 is not None and y2 is not None:
         return int(y1), int(y2)
+    if rolls and last[0] + 12 - first[0] > _MAX_ROLL_MONTHS:
+        raise ValueError(f"month {last[0]} after month {first[0]} is too far to roll a year")
     if y2 is not None:
         end = int(y2)
         return (end - 1 if rolls else end), end
@@ -238,7 +243,11 @@ def _day_range(groups: dict[str, str | None], default_year: int | None) -> DateS
 
 
 def _day_list(items: str, year: int) -> tuple[DateSpan, ...]:
-    """'16 March, 18 June, and 16 October' -> one span per date; '4 and 18 Oct' shares a month."""
+    """'16 March, 18 June, and 16 October' -> one span per date; '4 and 18 Oct' shares a month.
+
+    The dates must ascend as written: "30 December, 2 January" spans two
+    years and one list year cannot say which, so it raises.
+    """
     tokens = [t for t in _LIST_SPLIT.split(items) if t]
     month: int | None = None
     days: list[date] = []
@@ -249,7 +258,10 @@ def _day_list(items: str, year: int) -> tuple[DateSpan, ...]:
         if month is None:
             raise ValueError(f"no month for {token!r}")
         days.append(date(year, month, _day(parts[0])))
-    return tuple(DateSpan.day(d) for d in sorted(days))
+    days.reverse()
+    if days != sorted(days):
+        raise ValueError("day list out of order")
+    return tuple(DateSpan.day(d) for d in days)
 
 
 # --- helpers for adapters -------------------------------------------------
