@@ -178,3 +178,20 @@ def test_build_rejects_history_without_a_place() -> None:
     manual = yaml.safe_load(MANUAL.read_text(encoding="utf-8"))
     with pytest.raises(BuildError, match="matches no place"):
         build(manual, {"Atlantis": 3})
+
+
+@pytest.mark.parametrize(
+    ("raw", "place_id"),
+    [
+        ("Scotland (part of United Kingdom)", "iso:GB-SCT"),  # parent spelled without "the"
+        ("Bougainville (part of Papua New Guinea)", "iso:PG-NSB"),
+        ("Scotland (part of Canada)", "unknown:scotland@iso:CA"),  # not one of Canada's
+    ],
+)
+def test_a_registered_subdivision_has_one_id_however_its_parent_is_spelled(
+    raw: str, place_id: str
+) -> None:
+    place = REGISTRY.resolve(raw)
+    assert place is not None
+    assert place.place_id == place_id
+    assert place.registered == (not place_id.startswith("unknown:"))

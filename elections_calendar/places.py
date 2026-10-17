@@ -8,8 +8,10 @@ A name that is not registered still gets a deterministic place with
 ``place_unregistered`` (spec §9.2). Its ID is ``unknown:<key>``, where
 ``key`` is the normalised name with spaces as hyphens, so two unregistered
 names match only when their normalised names are identical. "<Name> (part
-of <Parent>)" gets ``unknown:<key>@<parent ID>``, whether or not the parent
-is registered. Registered IDs never start with ``unknown:``.
+of <Parent>)" is the registered subdivision when <Name> is one of the
+parent's, however the parent is spelled; otherwise it gets
+``unknown:<key>@<parent ID>``, whether or not the parent is registered.
+Registered IDs never start with ``unknown:``.
 """
 
 import re
@@ -77,6 +79,9 @@ class PlaceRegistry:
             parent = self.resolve(part_of["parent"])
             name = norm_name(part_of["name"])
             if parent is not None and name:
+                known = self.resolve_subdivision(parent.place_id, part_of["name"])
+                if known is not None:
+                    return known
                 place_id = f"{UNKNOWN}{_id_key(name)}@{parent.place_id}"
                 return Place(place_id, text, None, parent.place_id, False)
         return Place(f"{UNKNOWN}{_id_key(key)}", text, None, None, False)
