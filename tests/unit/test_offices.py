@@ -134,6 +134,8 @@ def test_split_offices(text: str, place_id: str, parts: list[str]) -> None:
         ("President, round 2", 2, "President"),
         ("Brazilian Presidency", None, "Brazilian Presidency"),
         ("Haiti General Election (Phase 1)", None, "Haiti General Election (Phase 1)"),  # a phase is not a round
+        ("President (round 0)", None, "President (round 0)"),  # no round 0: Claim refuses it
+        ("President (0th round)", None, "President (0th round)"),
     ],
 )
 def test_extract_round(text: str, number: int | None, rest: str) -> None:

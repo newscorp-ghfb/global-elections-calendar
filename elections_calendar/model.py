@@ -137,6 +137,7 @@ class DateSpan:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> DateSpan:
+        _require_record(cls, data)
         try:
             start, end = _iso_date(data["date"]), _iso_date(data["end_date"])
             return cls(start, end, data["date_precision"], data["year"])
@@ -275,6 +276,7 @@ class Claim:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Claim:
+        _require_record(cls, data)
         values = dict(data)
         try:
             span = DateSpan.from_dict(
@@ -318,6 +320,12 @@ def _check_unit_id(unit_id: str, source: str) -> None:
 def _is_index(text: str) -> bool:
     """``0``, ``1``, ``2``, ...: ASCII digits without a leading zero."""
     return text.isascii() and text.isdigit() and (text == "0" or not text.startswith("0"))
+
+
+def _require_record(cls: type[object], data: object) -> None:
+    """A saved record is a JSON object; anything else is a RecordError, not a TypeError."""
+    if not isinstance(data, dict):
+        raise RecordError(f"{cls.__name__}: {type(data).__name__} is not a record")
 
 
 def _construct[R](cls: type[R], values: dict[str, Any]) -> R:
