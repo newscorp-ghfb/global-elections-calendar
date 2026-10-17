@@ -132,9 +132,7 @@ def _has_data_table(elements: tuple[Tag, ...]) -> bool:
     """Whether a section holds a ``dl`` or a table that is not a maintenance box."""
     for el in elements:
         for tag in (el, *el.find_all(["dl", "table"])):
-            if tag.name == "dl":
-                return True
-            if tag.name == "table" and not _is_maintenance(tag):
+            if tag.name in ("dl", "table") and not _is_maintenance(tag):
                 return True
     return False
 
@@ -344,7 +342,15 @@ class Wikipedia:
         ):
             return _PageParse("layout_not_recognised")
         root = BeautifulSoup(text, "lxml").select_one("div.mw-parser-output")
-        if root is None or any(not h.get("id") for h in root.find_all("h2")):
+        if root is None:
+            return _PageParse("layout_not_recognised")
+        headings = {
+            id(found)
+            for el in root.children
+            if isinstance(el, Tag) and (found := _is_heading(el)) is not None
+        }
+        # every h2 must be a section heading with an id; the ledger counts each h2 as one
+        if any(id(h) not in headings or not h.get("id") for h in root.find_all("h2")):
             return _PageParse("layout_not_recognised")
         sections = _sections(root)
         if not any(s.key.casefold() in _MONTH_BY_NAME for s in sections):
