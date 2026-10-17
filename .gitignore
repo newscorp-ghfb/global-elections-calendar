@@ -1,0 +1,14 @@
+# Spec §16
+.venv/
+.scratch/
+dist/
+__pycache__/
+.claude/worktrees/
+# Tool caches and local-only files
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+out/
+.env
+MERGE_APPROVED

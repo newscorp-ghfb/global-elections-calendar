@@ -1,0 +1,14 @@
+-c requirements.txt
+-r requirements.in
+pytest
+pytest-playwright
+playwright
+hypothesis
+mypy
+ruff
+import-linter
+types-requests
+types-PyYAML
+pip-tools
+pycountry
+cryptography
