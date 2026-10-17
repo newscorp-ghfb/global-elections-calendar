@@ -5,11 +5,19 @@
 aliases:
   iso:DE: {German Bundestag: [Bundestag], Federal Council: [Bundesrat]}
   iso:DK: {The Danish Parliament: [Folketing, Folketinget]}
+  iso:DZ: {National People's Assembly: [People's National Assembly]}
+  iso:ET: {House of Peoples' Representatives: [House of People's Representatives]}
   iso:FI: {Parliament: [Eduskunta]}
+  iso:IE:
+    House of Representatives: [Dáil, Dáil Éireann]
+    Senate: [Seanad, Seanad Éireann]
   iso:IL: {Parliament: [Knesset]}
   iso:IN: {House of the People: [Lok Sabha], Council of States: [Rajya Sabha]}
   iso:IS: {Parliament: [Althing, Alþingi]}
+  iso:LT: {Parliament: [Seimas]}
   iso:LV: {Parliament: [Saeima]}
+  iso:MA: {House of Representatives: [Chamber of Representatives]}
+  iso:NL: {House of Representatives: [Second Chamber, Tweede Kamer]}
   iso:NO: {Parliament: [Storting, Stortinget]}
   iso:RU: {State Duma: [Duma], Council of the Federation: [Federation Council]}
   iso:SE: {Parliament: [Riksdag]}

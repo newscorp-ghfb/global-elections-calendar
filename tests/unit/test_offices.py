@@ -10,8 +10,13 @@ from elections_calendar.model import JurisdictionKind, Level
 from elections_calendar.offices import (
     Chamber,
     InstitutionRegistry,
+    claim_level,
     extract_round,
+    is_by_election,
+    is_executive_title,
+    keyword_class,
     labels_similar,
+    office_class_of,
     resolve_level,
     split_offices,
 )
@@ -268,3 +273,135 @@ def test_a_body_named_inside_another_bodys_name_is_not_the_places_own(
     label: str, place_id: str, expected: tuple[object, ...]
 ) -> None:
     assert classify(label, place_id) == expected  # constructed labels
+
+
+def test_office_titles_are_not_general_elections() -> None:
+    for title in ("Attorney General", "Auditor General", "Solicitor General", "Secretary General"):
+        assert keyword_class(title) is None
+    assert keyword_class("General") == "general"
+
+
+def test_a_seat_district_is_not_a_local_body() -> None:
+    assert keyword_class("36th State Assembly district, special election") == "legislature"
+    assert keyword_class("Assembly district 5") == "legislature"
+    assert keyword_class("District council elections") == "local_council"
+    assert keyword_class("school district") is None
+    assert classify("36th State Assembly district, special election", "iso:US", "subdivision") == (
+        "legislature", None, False, "by_election", None, "subnational")
+
+
+def test_body_names_from_the_captured_pages() -> None:
+    for name in ("Landtag", "Cortes", "Abgeordnetenhaus", "Kantonsrat", "Grosser Rat", "Bürgerschaft"):
+        assert keyword_class(name) == "legislature"
+    for name in ("Gemeinderat", "Bezirksverordnetenversammlungen", "Board of Supervisors"):
+        assert keyword_class(name) == "local_council"
+    assert keyword_class("Landrat") is None
+    assert keyword_class("amendments") == keyword_class("constitutional amendment") == "referendum"
+
+
+def test_a_federal_council_is_a_national_aggregate() -> None:
+    assert classify("Federal Council", "iso:DE")[:2] == ("upper_house", "iso:DE/federal-council")
+    # iso:CH is semantic-table row S14
+
+
+def test_chamber_aliases_from_the_captured_pages() -> None:
+    assert classify("Chamber of Representatives", "iso:MA")[:2] == (
+        "lower_house", "iso:MA/house-of-representatives")
+    assert classify("Dáil by-election", "iso:IE", "named")[:4] == (
+        "lower_house", "iso:IE/house-of-representatives", False, "by_election")
+    assert classify("Seanad", "iso:IE")[:2] == ("upper_house", "iso:IE/senate")
+    assert classify("Seimas by-election", "iso:LT", "named")[:4] == (
+        "legislature", "iso:LT/parliament", False, "by_election")
+    assert classify("People's National Assembly", "iso:DZ")[:2] == (
+        "lower_house", "iso:DZ/national-peoples-assembly")
+
+
+@pytest.mark.parametrize(
+    ("label", "place", "jkind", "expected"),
+    [
+        pytest.param("United States Senate special election", "iso:US", "subdivision",
+                     ("upper_house", "iso:US/senate", False, "by_election", "national", True, False), id="S1"),
+        pytest.param("State Senate", "iso:US", "subdivision",
+                     ("upper_house", None, False, "candidate_election", "subnational", True, False), id="S2"),
+        pytest.param("Senate", "iso:US", "subdivision",
+                     ("upper_house", None, False, "candidate_election", None, True, False), id="S3"),
+        pytest.param("Senate special election", "iso:US", "named",
+                     ("upper_house", None, False, "by_election", None, True, False), id="S4"),
+        pytest.param("House of Commons by-election", "iso:GB", "named",
+                     ("lower_house", "iso:GB/house-of-commons", False, "by_election", "national", True, False),
+                     id="S5"),
+        pytest.param("by-election", "iso:CA", "named",
+                     ("general", None, True, "aggregate", None, False, False), id="S6"),
+        pytest.param("Vice President", "iso:MM", "nationwide",
+                     ("general", None, True, "aggregate", None, False, True), id="S7"),
+        pytest.param("President and Vice President", "iso:US", "nationwide",
+                     ("head_of_state", "iso:US/president", False, "candidate_election", "national", True, False),
+                     id="S8"),
+        pytest.param("Lieutenant Governor", "iso:US", "subdivision",
+                     ("general", None, True, "aggregate", None, False, True), id="S9"),
+        pytest.param("Governor and Lieutenant Governor", "iso:US", "subdivision",
+                     ("governor", None, False, "candidate_election", "subnational", True, False), id="S10"),
+        pytest.param("City Attorney (1st round)", "iso:US", "subdivision",
+                     ("general", None, True, "aggregate", None, False, True), id="S11"),
+        pytest.param("Supreme Leader", "iso:IR", "nationwide",
+                     ("general", None, True, "aggregate", None, False, False), id="S12"),
+        pytest.param("Supreme Court", "iso:US", "subdivision",
+                     ("general", None, True, "aggregate", None, False, False), id="S13"),
+        pytest.param("Federal Council", "iso:CH", "nationwide",
+                     ("general", None, True, "aggregate", "national", True, False), id="S14"),
+        pytest.param("Board of Supervisors", "iso:US", "subdivision",
+                     ("local_council", None, True, "aggregate", "subnational", True, False), id="S15"),
+        pytest.param("Ethiopian House of People's Representatives", "iso:ET", "nationwide",
+                     ("lower_house", "iso:ET/house-of-peoples-representatives", False, "candidate_election",
+                      "national", True, False), id="S16"),
+        pytest.param("Dutch Second Chamber", "iso:NL", "nationwide",
+                     ("lower_house", "iso:NL/house-of-representatives", False, "candidate_election",
+                      "national", True, False), id="S17"),
+    ],
+)
+def test_semantic_table(label: str, place: str, jkind: JurisdictionKind, expected: tuple[object, ...]) -> None:
+    o = classify_office(label, place, jkind, REGISTRY)
+    assert (o.office_class, o.institution, o.aggregate, o.kind, o.level_hint, o.recognised,
+            is_executive_title(label)) == expected
+
+
+def test_claim_level_never_guesses_for_an_unrecognised_office() -> None:
+    assert claim_level("subnational", classify_office("by-election", "iso:CA", "named", REGISTRY)) == "unknown"
+    assert claim_level("subnational", classify_office("Senate", "iso:US", "subdivision", REGISTRY)) == "subnational"
+    assert claim_level("national", classify_office("Senate", "iso:US", "subdivision", REGISTRY)) == "national"
+    assert claim_level("subnational", classify_office("State Duma", "iso:RU", "nationwide", REGISTRY)) == "national"
+
+
+def test_split_offices_drops_the_oxford_and() -> None:
+    assert split_offices(
+        "Mayor (1st round), City Attorney (1st round), City Controller, and City Council (1st round)",
+        "iso:US", REGISTRY) == ["Mayor (1st round)", "City Attorney (1st round)", "City Controller",
+                                "City Council (1st round)"]
+    assert split_offices("Governor, Lieutenant Governor, and ballot measure", "iso:US", REGISTRY) == [
+        "Governor", "Lieutenant Governor", "ballot measure"]
+
+
+def test_executive_titles_split_lists_and_joint_tickets_stay_whole() -> None:
+    assert split_offices("Governor, Lieutenant Governor, and Attorney General", "iso:US", REGISTRY) == [
+        "Governor", "Lieutenant Governor", "Attorney General"]
+    assert split_offices(
+        "Governor, Lieutenant Governor, Secretary of State, Attorney General, ballot measures",
+        "iso:US", REGISTRY) == ["Governor", "Lieutenant Governor", "Secretary of State",
+                                "Attorney General", "ballot measures"]
+    assert split_offices("Mayor and Attorney General", "iso:US", REGISTRY) == ["Mayor", "Attorney General"]
+    for ticket in ("Governor and Lieutenant Governor", "President and Vice President"):
+        assert split_offices(ticket, "iso:US", REGISTRY) == [ticket]
+    assert [p for p in ("Governor", "Lieutenant Governor", "Secretary of State", "City Controller",
+                        "Sheriff (1st round)", "Commissioner of Labor", "Governor and Lieutenant Governor",
+                        "City Council") if is_executive_title(p)] == [
+        "Lieutenant Governor", "Secretary of State", "City Controller", "Sheriff (1st round)",
+        "Commissioner of Labor"]
+
+
+def test_public_helpers() -> None:
+    assert office_class_of("Senedd", "iso:GB-WLS", REGISTRY) == "legislature"
+    assert office_class_of("by-election", "iso:GB", REGISTRY) is None
+    assert office_class_of("Attorney General", "iso:US", REGISTRY) == "general"
+    assert office_class_of("Georgia's 13th congressional district", "iso:US", REGISTRY) == "legislature"
+    assert is_by_election("Georgia's 13th congressional district, special election (1st round)")
+    assert not is_by_election("Governor")
