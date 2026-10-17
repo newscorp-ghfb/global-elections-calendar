@@ -248,3 +248,21 @@ def test_the_voting_area_is_not_the_offices_level(
     label: str, place_id: str, kind: JurisdictionKind, expected: tuple[object, ...]
 ) -> None:
     assert classify(label, place_id, kind) == expected  # constructed labels
+
+
+@pytest.mark.parametrize(
+    ("label", "place_id", "expected"),
+    [
+        ("European Parliament election", "iso:SE", ("legislature", None, True, "aggregate", None, None)),
+        ("Sami Parliament election", "iso:NO", ("legislature", None, True, "aggregate", None, None)),
+        ("Moscow City Duma elections", "iso:RU", ("local_council", None, True, "aggregate", None, "subnational")),
+        ("Regional presidents", "iso:PE", ("local_council", None, True, "aggregate", None, "subnational")),
+        ("Municipal president", "iso:MX", ("local_council", None, True, "aggregate", None, "subnational")),
+        ("Russian State Duma elections", "iso:RU", ("lower_house", "iso:RU/state-duma", False, "candidate_election", None, "national")),
+        ("Presidential election", "iso:PE", ("head_of_state", "iso:PE/president", False, "candidate_election", None, "national")),
+    ],
+)
+def test_a_body_named_inside_another_bodys_name_is_not_the_places_own(
+    label: str, place_id: str, expected: tuple[object, ...]
+) -> None:
+    assert classify(label, place_id) == expected  # constructed labels

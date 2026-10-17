@@ -31,6 +31,12 @@ rules matters:
    level hint; otherwise an aggregate (spec §6.3);
 7. "General" and anything unrecognised: class ``general``, aggregate.
 
+A body named inside another body's name is not the place's own: a
+subnational word directly before the chamber's name or "president"
+("Moscow City Duma", "Regional presidents") skips rules 2 and 3, and a
+parliament that is not the place's ("European Parliament", "Sami
+Parliament") is a legislature aggregate with no level hint, before rule 2.
+
 A by-election says how a seat is filled, not which level owns it: it lends
 identity only to a chamber the text names (rule 2), never to generic words.
 A suspended or dissolved chamber keeps its identity, so older evidence still
@@ -92,6 +98,9 @@ _REGIONAL = _rx(r"\b(?:regional|region|provincial|prefectural|departmental|canto
 _SUBNATIONAL = _rx(
     r"\b(?:state|provincial|province|regional|region|prefectural|departmental|cantonal|county"
     r"|municipal|city|territorial)\b"
+)
+_OTHER_PARLIAMENT = _rx(
+    r"\b(?:european|pan-african|central american|andean|mercosur|sami|saami|youth)\s+parliament\b"
 )
 _COUNCIL = _rx(r"\bcouncil(?:s|lors?|lers?)?\b")
 _GENERAL = _rx(r"\bgeneral\b")
@@ -202,6 +211,15 @@ def _contains(haystack: str, needle: str) -> bool:
     return pattern is not None and pattern.search(haystack) is not None
 
 
+def _subnational_before(text: str, needle: str) -> bool:
+    """Whether a subnational word comes right before ``needle`` ("City" in "Moscow City Duma")."""
+    key = norm_name(text)
+    pattern = _name_pattern(needle)
+    found = pattern.search(key) if pattern is not None else None
+    words = key[: found.start()].split() if found is not None else []
+    return bool(words) and _SUBNATIONAL.fullmatch(words[-1]) is not None
+
+
 def _generic(name: str) -> bool:
     """Whether a chamber name is only generic chamber words ("House of Commons").
 
@@ -290,16 +308,19 @@ def classify(
             "subnational" if jurisdiction_kind in ("named", "subdivision") else None
         )
         return office("referendum", level=level, kind="referendum_day")
+    if _OTHER_PARLIAMENT.search(rest):
+        return office("legislature", aggregate=True)
     qualified = _SUBNATIONAL.search(rest) is not None
     named = _named_chamber(rest, chambers)
-    if named is not None:
+    if named is not None and not _subnational_before(rest, named[1]):
         found, name = named
         constituency = by_election and jurisdiction_kind == "named"
         if not _generic(name) or (not qualified and (nationwide or constituency)):
             return office(
                 found.office_class, institution=institution_id(place_id, found), level="national"
             )
-    if _HEAD_OF_STATE.search(rest):
+    president = _HEAD_OF_STATE.search(rest)
+    if president is not None and not _subnational_before(rest, president.group()):
         institution = f"{place_id}/president" if nationwide else None
         return office(
             "head_of_state", institution=institution, level="national" if nationwide else None
