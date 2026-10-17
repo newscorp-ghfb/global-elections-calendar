@@ -77,21 +77,25 @@ def test_a_worker_stalled_mid_handover_cannot_block_the_parent(
 ) -> None:  # review P2-03, A03
     start = time.monotonic()
     (r,) = run_sources(
-        [spec("StallMidWrite")],
+        [spec("StallMidWrite", record=str(tmp_path / "stalled"))],
         WINDOW,
         workdir=tmp_path,
         environ=ca_env,
-        source_deadline_s=3,
+        source_deadline_s=2,
         grace_s=2,
     ).runs
+    assert (tmp_path / "stalled").exists()  # the worker did reach the stalled os.replace
     assert (r.outcome, r.raw.pages) == ("deadline", ())
     assert [q.key for q in r.raw.unfinished] == ["one"]
-    assert time.monotonic() - start < 3 + 2 + 3
+    assert time.monotonic() - start < 2 + 2 + 3
 
 
 def test_deadlines_that_expire_together_are_cut_together(
-    tmp_path: Path, ca_env: dict[str, str]
+    tmp_path: Path, ca_env: dict[str, str], monkeypatch: pytest.MonkeyPatch
 ) -> None:  # review P2-03, A04
+    # terminate() does nothing, like a worker that ignores SIGTERM (on Windows it
+    # is TerminateProcess), so only the kill after the grace period ends them.
+    monkeypatch.setattr(BaseProcess, "terminate", lambda self: None)
     start = time.monotonic()
     runs = run_sources(
         [spec("IgnoreTerm", seconds="30")] * 3,
@@ -102,7 +106,8 @@ def test_deadlines_that_expire_together_are_cut_together(
         grace_s=2,
     ).runs
     assert [r.outcome for r in runs] == ["deadline"] * 3
-    assert time.monotonic() - start < 2 + 2 + 3  # one grace period, not three
+    elapsed = time.monotonic() - start
+    assert 2 + 2 <= elapsed < 2 + 2 + 3  # the kill ran, after one grace period, not three
 
 
 def test_pages_published_before_a_crash_are_kept(
@@ -156,6 +161,18 @@ def test_sources_not_started_before_the_scrape_deadline_are_recorded(
     assert [r.outcome for r in runs] == ["scrape_deadline", "scrape_deadline"]
     assert (runs[1].elapsed_ms, runs[1].raw.pages) == (0, ())
     assert not second.exists()
+
+
+def test_a_stale_pages_directory_is_cleared_before_the_first_worker(
+    server: TestServer, ca_env: dict[str, str], tmp_path: Path
+) -> None:
+    stale = tmp_path / "pages" / "00-pages"
+    stale.mkdir(parents=True)
+    (stale / "0001.page").write_bytes(b"junk left by a killed run")
+    url = server.route("/a", Reply(body=b"a"))
+    (r,) = run_sources([spec("Pages", urls=url)], WINDOW, workdir=tmp_path, environ=ca_env).runs
+    assert (r.outcome, [p.result.body for p in r.raw.pages]) == ("complete", [b"a"])
+    assert not (tmp_path / "pages").exists()
 
 
 def test_nothing_arrives_after_the_deadline(

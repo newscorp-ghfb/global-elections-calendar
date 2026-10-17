@@ -96,9 +96,10 @@ the proxy's root; CI sets none and uses certifi alone.
 
 `runner.run_sources` fetches each source in its own spawned child process, at most four at a
 time, and never waits on a child except through its exit signal. Each source has a **work
-cutoff**: the earlier of its own start plus 4 minutes and the 12-minute scrape deadline. A
-page a worker publishes after its cutoff does not count; the worker is terminated, and killed
-if it is still alive after a 5 s grace period. The **return bound** is longer: `run_sources`
-returns within the latest cutoff plus the grace period plus 2 s, cleanup included, and no
+cutoff**: the earlier of its own start plus 4 minutes and the 12-minute scrape deadline. The
+parent cuts the worker within its wake latency of the cutoff, and no page published after the
+cut counts; a worker cut at its cutoff is reported as a deadline even if it had just finished.
+The cut worker is terminated, and killed if it is still alive after a 5 s grace
+period. The **return bound** is longer: `run_sources` returns within the latest cutoff plus the grace period plus 2 s, cleanup included, and no
 child outlives it. This bounds fetching only. Parsing runs afterwards and has no time bound
 here (Plan 4).

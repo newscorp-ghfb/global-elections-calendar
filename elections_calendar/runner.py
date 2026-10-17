@@ -13,8 +13,10 @@ with ``os.replace`` as ``<n>.page``; ``done`` or ``error`` ends the handover.
 Only published files are read, and only after the worker is gone.
 
 A scrape is bounded twice. The work cutoff of a source is the earlier of its
-own start + ``source_deadline_s`` and the scrape deadline: no page published
-after it counts. ``run_sources`` returns within the latest cutoff + ``grace_s``
+own start + ``source_deadline_s`` and the scrape deadline. The parent cuts the
+worker within its wake latency of the cutoff, and no page published after the
+cut counts. A worker cut at its cutoff is ``deadline`` even if it had just
+finished. ``run_sources`` returns within the latest cutoff + ``grace_s``
 + 2 s, cleanup included. Parsing happens after ``run_sources`` and is not
 bounded here (Plan 4).
 """
@@ -298,13 +300,15 @@ def run_sources(
     """Fetch every source in its own worker process; returns within the latest cutoff + grace + 2 s.
 
     The CA bundle is written first, in the parent: a ``TrustBundleError`` propagates before
-    any worker starts. No worker outlives this call, whatever happens in it.
+    any worker starts. No worker outlives this call, whatever happens in it. ``environ`` only
+    selects the CA bundle: workers inherit ``os.environ``, proxy variables included.
     """
     began = time.monotonic()
     if parallel < 1:
         raise ValueError("parallel must be at least 1")
     bundle = trust_bundle(workdir / "ca-bundle.pem", environ)
     pages_root = workdir / "pages"
+    shutil.rmtree(pages_root, ignore_errors=True)  # left by a killed run
     scrape = _Scrape(
         specs,
         window,

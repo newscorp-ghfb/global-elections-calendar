@@ -78,7 +78,10 @@ class DripHeaders(Pages):
 
 
 class _OnePage(_Base):
-    """Base for adapters that fetch the single page ``one`` from ``https://slow.test/``."""
+    """Base for adapters with the single page ``one``, requested from ``url``.
+
+    ``SlowDns`` and ``LatePage`` use ``https://slow.test/``; ``FailingAddresses`` names its own.
+    """
 
     url = "https://slow.test/"
 
@@ -159,10 +162,22 @@ class LatePage(_OnePage):
 
 
 class StallMidWrite(_OnePage):
-    """``os.replace`` never returns, so the page stays an unpublished ``.tmp`` file."""
+    """The patched ``os.replace`` sleeps 30 s and returns without replacing anything, so the
+    page stays an unpublished ``.tmp`` file. It first writes a marker file to ``record``.
+    """
+
+    def __init__(self, record: str = "") -> None:
+        self._record = record
 
     def fetch(self, window: Window, fetcher: Getter, deadline: Deadline) -> Iterator[RawPage]:
-        os.replace = lambda *args, **kwargs: time.sleep(30)
+        record = self._record
+
+        def stall(*args: Any, **kwargs: Any) -> None:
+            if record:
+                Path(record).write_text("stalled", encoding="utf-8")
+            time.sleep(30)
+
+        os.replace = stall
         yield fake_page("one")
 
 
