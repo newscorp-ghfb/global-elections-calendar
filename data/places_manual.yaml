@@ -1,0 +1,53 @@
+# Hand-maintained input to scripts/build_places.py (spec §6.2).
+# Edit this file, rebuild data/places.yaml, and review the diff of both.
+
+# Source spellings of ISO 3166-1 places that pycountry does not list
+# (pycountry's name, official_name and common_name are added automatically).
+extra_aliases:
+  BN: [Brunei]
+  CD: [Democratic Republic of the Congo, DR Congo, DRC, Congo (Kinshasa), Congo-Kinshasa]
+  CG: [Congo (Brazzaville), Congo-Brazzaville, Republic of Congo]
+  CI: [Ivory Coast]
+  FM: [Micronesia]
+  KP: ["Korea, North"]
+  KR: [Republic of Korea, "Korea, South"]
+  MO: [Macau]
+  NR: [Naoero]
+  PS: [Palestine, Occupied Palestinian Territory, Palestinian Territories]
+  ST: [São Tomé e Príncipe]
+  US: [United States of America]
+  VI: [U.S. Virgin Islands, US Virgin Islands]
+  VG: [British Virgin Islands]
+
+# ISO 3166-2 subdivisions that sources list as if they were countries.
+# Display names of the first three are frozen from feed history (spec §6.2).
+subdivisions:
+  GB-SCT: {display: Scotland (part of the United Kingdom), aliases: [Scotland]}
+  GB-WLS: {display: Wales (part of the United Kingdom), aliases: [Wales]}
+  IN-PB: {display: "Punjab, India", aliases: []}
+  PG-NSB: {display: Bougainville, aliases: [Autonomous Region of Bougainville]}
+
+# Places without an ISO 3166 code. The key must be slug(display).
+extra_places:
+  abkhazia: {display: Abkhazia, parent: iso:GE, aliases: [Republic of Abkhazia]}
+  cherokee-nation: {display: Cherokee Nation, parent: iso:US, aliases: []}
+  cheyenne-and-arapaho-tribes: {display: Cheyenne and Arapaho Tribes, parent: iso:US, aliases: []}
+  european-union: {display: European Union, parent: null, aliases: [EU]}
+  kosovo: {display: Kosovo, parent: null, aliases: [Republic of Kosovo]}
+  muscogee-creek-nation: {display: Muscogee (Creek) Nation, parent: iso:US, aliases: [Muscogee Nation]}
+  northern-cyprus: {display: Northern Cyprus, parent: iso:CY, aliases: [Turkish Republic of Northern Cyprus]}
+  somaliland: {display: Somaliland, parent: iso:SO, aliases: [Republic of Somaliland]}
+  south-ossetia: {display: South Ossetia, parent: iso:GE, aliases: []}
+  transnistria: {display: Transnistria, parent: iso:MD, aliases: [Pridnestrovie]}
+  zanzibar: {display: Zanzibar, parent: iso:TZ, aliases: []}
+
+# Display names for ISO places that never appeared in the feed history and
+# whose pycountry name reads badly. History and the legacy canonical names
+# in scripts/build_places.py take precedence; an override that conflicts
+# with them fails the build.
+display_overrides:
+  BN: Brunei
+  CG: Republic of the Congo
+  FM: Micronesia
+  VG: British Virgin Islands
+  VI: U.S. Virgin Islands
