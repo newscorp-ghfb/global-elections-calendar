@@ -236,3 +236,28 @@ def test_relevance_uses_the_page_year_for_dates_without_one() -> None:
         "in_or_after_window"
     )
     assert relevance("13 September: Sweden", WINDOW_START) == "unknown"
+
+
+@pytest.mark.parametrize(
+    ("text", "default_year", "expected"),
+    [
+        ("Sep - Feb 2027", None, DateSpan.months(2026, 9, 2027, 2)),  # a 5-month wrap rolls
+        ("10 Sep - 5 Feb 2027", None, DateSpan.days(D(2026, 9, 10), D(2027, 2, 5))),
+        ("Aug - Feb 2027", None, None),  # 6 months: likelier a typo than a year rollover
+        ("10 Oct - 5 Sep 2026", None, None),
+        ("10 Oct 2026 - 5 Sep", None, None),
+        ("Oct - Sep", 2026, None),
+    ],
+)
+def test_only_a_short_wrap_rolls_into_the_next_year(
+    text: str, default_year: int | None, expected: DateSpan | None
+) -> None:
+    parsed = parse_date_text(text, default_year=default_year)
+    assert parsed.spans == (() if expected is None else (expected,))
+    assert parsed.ok == (expected is not None)
+
+
+def test_a_day_list_out_of_order_is_leftover() -> None:
+    parsed = parse_date_text("30 December, 2 January", default_year=2026)  # January of which year?
+    assert parsed.spans == ()
+    assert parsed.leftover == "30 December, 2 January"
