@@ -6,7 +6,14 @@ from datetime import UTC, date, datetime, timedelta, timezone
 
 import pytest
 
-from elections_calendar.model import Claim, DateSpan, InputUnit, RecordError, month_end
+from elections_calendar.model import (
+    Claim,
+    DateSpan,
+    InputUnit,
+    Reason,
+    RecordError,
+    month_end,
+)
 from elections_calendar.text import collapse_ws, fold, norm_name, slug
 
 
@@ -237,3 +244,58 @@ def test_slug_and_fold() -> None:
     assert slug("Democratic People's Republic of Korea") == "democratic-peoples-republic-of-korea"
     assert fold("Türkiye") == "turkiye"
     assert collapse_ws(" 18\u00a0\u2013  20\nSeptember ") == "18 – 20 September"
+
+
+def test_reasons_are_checked_records() -> None:
+    assert Reason("coverage_gap", "past list starts 2026-09-02").to_dict() == {
+        "code": "coverage_gap",
+        "detail": "past list starts 2026-09-02",
+    }
+    assert Reason.from_dict({"code": "worker_failed", "detail": "exit code 3"}) == Reason(
+        "worker_failed", "exit code 3"
+    )
+    assert Reason("deadline", "x" * 300).detail == "x" * 300
+    for bad in (
+        {"code": "banana", "detail": ""},
+        {"code": "deadline", "detail": "x" * 301},
+        {"code": "deadline", "detail": 5},
+        {"code": "deadline", "extra": 1},
+        "deadline",
+    ):
+        with pytest.raises(RecordError):
+            Reason.from_dict(bad)  # type: ignore[arg-type]
+
+
+def test_a_duplicate_names_the_unit_it_duplicates() -> None:
+    dup = InputUnit(
+        "electionguide:anticipated/r1",
+        "electionguide",
+        "x",
+        "ignored",
+        "duplicate",
+        "unknown",
+        duplicate_of="electionguide:upcoming/r4",
+    )
+    assert InputUnit.from_dict(dup.to_dict()) == dup
+    for reason, target in (
+        ("duplicate", None),
+        ("container_item", "electionguide:upcoming/r4"),
+        ("duplicate", "wikipedia:national-2026@rev1/January/li[1]"),
+        ("duplicate", "electionguide:anticipated/r1"),
+    ):
+        with pytest.raises(RecordError):
+            InputUnit(
+                "electionguide:anticipated/r1",
+                "electionguide",
+                "x",
+                "ignored",
+                reason,
+                "unknown",
+                duplicate_of=target,
+            )
+
+
+def test_a_saved_unit_without_duplicate_of_still_loads() -> None:
+    saved = InputUnit("s:p/1", "s", "t", "parsed", None, "unknown").to_dict()
+    del saved["duplicate_of"]
+    assert InputUnit.from_dict(saved).duplicate_of is None
