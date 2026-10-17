@@ -74,11 +74,15 @@ class Scene:
     unfinished: tuple[PageRequest, ...] = ()
     rules: dict[str, CountRule] = field(default_factory=lambda: dict(RULES))
     raw_source: str = "s"
+    statuses: dict[str, int] = field(default_factory=dict)  # fetch status per page key
 
     def build(self) -> tuple[RawPages, ParseResult]:
         raw = raw_pages(
             self.raw_source,
-            [(r, result(b, outcome="ok" if b else "timeout")) for r, b in self.pages],
+            [
+                (r, result(b, outcome="ok" if b else "timeout", status=self.statuses.get(r.key, 200)))
+                for r, b in self.pages
+            ],
             self.unfinished,
         )
         parsed = ParseResult("s", tuple(self.units), tuple(self.claims), tuple(self.coverage))
@@ -88,6 +92,12 @@ class Scene:
 def codes(scene: Scene) -> list[str]:
     raw, parsed = scene.build()
     return [r.code for r in check(raw, parsed, rules=scene.rules).reasons]
+
+
+def says(scene: Scene, needle: str) -> bool:
+    """Some problem of the checked scene mentions ``needle`` (the case failed for its own reason)."""
+    raw, parsed = scene.build()
+    return any(needle in p for p in check(raw, parsed, rules=scene.rules).problems)
 
 
 def test_discover_table_rows() -> None:
@@ -251,12 +261,27 @@ RECORD_CASES: dict[str, Callable[[], Scene]] = {
 }
 
 
+RECORD_NEEDLES = {
+    "claim on an unparsed unit": "s:v/r3#0 is on no parsed or partial unit",
+    "claim on a missing unit": "s:v/r9#0 is on no parsed or partial unit",
+    "duplicate claim id": "duplicate claim id s:v/r1#0",
+    "claim of another source": "claim t:v/r1#0 has source 't'",
+    "claim saved with another source": "claim s:v/r1#0 has source 't'",
+    "unit of another source": "unit t:v/r1 has source 't'",
+    "claims #0 and #2": "claims of s:v/r1 are not numbered",
+    "duplicate_of an unparsed unit": "unit s:v/r3 duplicates s:v/r2",
+    "duplicate_of a missing unit": "unit s:v/r3 duplicates s:v/r9",
+    "ignored reason off the allowlist": "'made_up', not allowlisted",
+}
+
+
 @pytest.mark.parametrize("case", list(RECORD_CASES))
 def test_record_problems_are_ledger_mismatches(case: str) -> None:
     scene = RECORD_CASES[case]()
     raw, parsed = scene.build()
     problems = record_problems(parsed)
     assert problems and set(problems) <= set(check(raw, parsed, rules=RULES).problems)
+    assert any(RECORD_NEEDLES[case] in p for p in problems)
     assert codes(scene) == ["ledger_mismatch"]
 
 
@@ -286,12 +311,45 @@ PAGE_CASES: dict[str, Callable[[], Scene]] = {
     ),
     "two coverage entries for one page": lambda: Scene(coverage=[ok(), timeout("v")]),
     "source without a rule": lambda: Scene(rules={}),
+    "ok coverage for an unfinished request": lambda: Scene(
+        unfinished=(req("u"),), coverage=[ok(), ok("u", seen=0)]
+    ),
+    "timeout coverage for an unfinished request": lambda: Scene(
+        unfinished=(req("u"),), coverage=[ok(), timeout("u")]
+    ),
+    "valid_empty coverage on a timed-out page": lambda: Scene(
+        pages=[(req("v"), THREE_ROWS), (req("t"), b"")],
+        coverage=[ok(), PageCoverage("t", None, "valid_empty", "s:t/", 0)],
+    ),
+    "ok coverage on a redirect without Location": lambda: Scene(
+        pages=[(req("v"), THREE_ROWS), (req("r"), b"x")],
+        coverage=[ok(), ok("r", seen=0)],
+        statuses={"r": 302},
+    ),
+}
+PAGE_NEEDLES = {
+    "duplicate unit id": "duplicate unit id s:v/r1",
+    "unit outside every prefix": "unit s:w/r1 is under 0",
+    "unit on a timeout page": "unit s:t/r1 is under 0",
+    "page without coverage": "page 'w' has 0 coverage entries",
+    "unfinished request without coverage": "page 'u' has 0 coverage entries",
+    "coverage for no page": "coverage for 'z'",
+    "two pages with one key": "page key 'v' is requested 2 times",
+    "page and unfinished request with one key": "page key 't' is requested 2 times",
+    "two coverage entries for one page": "page 'v' has 2 coverage entries",
+    "source without a rule": "has no counting rule",
+    "ok coverage for an unfinished request": "page 'u' is ok but no page was fetched",
+    "timeout coverage for an unfinished request": "page 'u' is an unfinished request",
+    "valid_empty coverage on a timed-out page": "page 't' is valid_empty but its download failed",
+    "ok coverage on a redirect without Location": "page 'r' is ok but its download failed",
 }
 
 
 @pytest.mark.parametrize("case", list(PAGE_CASES))
 def test_page_accounting_problems_are_ledger_mismatches(case: str) -> None:
-    assert codes(PAGE_CASES[case]()) == ["ledger_mismatch"]
+    scene = PAGE_CASES[case]()
+    assert codes(scene) == ["ledger_mismatch"]
+    assert says(scene, PAGE_NEEDLES[case])
 
 
 def test_a_unit_under_two_prefixes_is_a_ledger_mismatch() -> None:
@@ -346,9 +404,23 @@ DISCOVERY_CASES: dict[str, Callable[[], Scene]] = {
 }
 
 
+DISCOVERY_NEEDLES = {
+    "one row missing": "the page has 3 units, the result has 2",
+    "r1 r2 r4 for three rows": "missing ['s:v/r3'], unexpected ['s:v/r4']",
+    "units_seen off by one": "units_seen 4, page has 3",
+    "prefix names another key": "unit prefix 's:x/', not 's:v/'",
+    "wrong revid": "page revid 7 differs from 8",
+    "revid missing from the page": "page revid None differs from 7",
+    "prefix without the revision": "unit prefix 's:v/', not 's:v@rev7/'",
+    "unreadable body": "cannot be read for the counting rule",
+}
+
+
 @pytest.mark.parametrize("case", list(DISCOVERY_CASES))
 def test_disagreeing_with_the_page_is_a_discovery_mismatch(case: str) -> None:
-    assert codes(DISCOVERY_CASES[case]()) == ["discovery_mismatch"]
+    scene = DISCOVERY_CASES[case]()
+    assert codes(scene) == ["discovery_mismatch"]
+    assert says(scene, DISCOVERY_NEEDLES[case])
 
 
 def test_reasons_come_ledger_first_one_each_and_cut() -> None:
