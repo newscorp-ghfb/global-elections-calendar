@@ -25,6 +25,7 @@ class Reply:
     headers: Mapping[str, str] = field(default_factory=dict)
     delay: float = 0.0  # seconds before the status line
     drip: float = 0.0  # seconds between 10-byte pieces of the body
+    header_drip: float = 0.0  # seconds between single bytes of the status line and headers
 
 
 @dataclass(frozen=True)
@@ -74,12 +75,15 @@ class _Handler(BaseHTTPRequestHandler):
         reply = self.server.next_reply(self.path)
         time.sleep(reply.delay)
         try:
-            self.send_response(reply.status)
-            self.send_header("Content-Type", reply.content_type)
-            self.send_header("Content-Length", str(len(reply.body)))
-            for name, value in reply.headers.items():
-                self.send_header(name, value)
-            self.end_headers()
+            if reply.header_drip:
+                self._drip_headers(reply)
+            else:
+                self.send_response(reply.status)
+                self.send_header("Content-Type", reply.content_type)
+                self.send_header("Content-Length", str(len(reply.body)))
+                for name, value in reply.headers.items():
+                    self.send_header(name, value)
+                self.end_headers()
             if not reply.drip:
                 self.wfile.write(reply.body)
                 return
@@ -89,6 +93,16 @@ class _Handler(BaseHTTPRequestHandler):
                 time.sleep(reply.drip)
         except OSError:
             self.close_connection = True  # the client gave up, as the test intended
+
+    def _drip_headers(self, reply: Reply) -> None:
+        """Write the status line and headers by hand, one byte at a time."""
+        head = f"HTTP/1.1 {reply.status} Test\r\nContent-Type: {reply.content_type}\r\n"
+        head += f"Content-Length: {len(reply.body)}\r\n"
+        head += "".join(f"{name}: {value}\r\n" for name, value in reply.headers.items())
+        for byte in (head + "\r\n").encode("latin-1"):
+            self.wfile.write(bytes([byte]))
+            self.wfile.flush()
+            time.sleep(reply.header_drip)
 
     def log_message(self, format: str, *args: Any) -> None:
         pass
