@@ -24,7 +24,8 @@ local configuration: a ``verify`` path that does not exist raises ``OSError``.
   each resolved address in turn (each try has its own connect timeout) and a
   server that sends its headers a few bytes at a time can all run longer.
   The hard bound is ``runner.run_sources``, which fetches each source in a
-  child process and kills it at the source's deadline.
+  child process, terminates it at its cutoff (the source or scrape deadline)
+  and kills it if it is still alive after the grace period.
 - URLs and error texts are redacted before they are stored: only values of
   the sources' own query keys (``SAFE_QUERY_KEYS``) are kept. A MediaWiki
   error code outside its grammar becomes ``INVALID_API_CODE``. The body is

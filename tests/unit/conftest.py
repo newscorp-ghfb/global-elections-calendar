@@ -41,6 +41,9 @@ def no_proxies(monkeypatch: pytest.MonkeyPatch) -> None:
     # Fetcher honours proxy variables, and runner workers inherit os.environ.
     for name in PROXY_VARS:
         monkeypatch.delenv(name, raising=False)
+    # A non-empty *_proxy variable makes urllib ignore the Windows registry proxy,
+    # and "*" bypasses every host.
+    monkeypatch.setenv("NO_PROXY", "*")
 
 
 @pytest.fixture
