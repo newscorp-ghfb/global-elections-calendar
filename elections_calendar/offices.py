@@ -18,18 +18,30 @@ rules matters:
    "House of Commons") counts only when the text is not qualified, and then
    only nationwide or for a by-election in a named constituency, so
    "Virginia, Senate" is not the US Senate;
-3. head of state, governor, mayor;
+3. head of state, governor, mayor. A deputy title ("Vice President",
+   "Lieutenant Governor", "Deputy Mayor") is not its head's office: the
+   words right after "vice", "deputy" or "lieutenant" do not match;
 4. generic chamber words: "senate" -> the place's one active upper chamber,
    "house of representatives" -> its one active lower chamber (or its only
    chamber), nationwide only; when qualified, a subnational chamber;
    otherwise the class alone, with no level hint, so the source's default
    level applies (a bare "Senate" in a state may be either);
-5. local bodies ("municipal", "local", "city council", ...);
+   executive titles ("Attorney General", "City Controller", "Lieutenant
+   Governor", "Sheriff") come next: class ``general``, aggregate, not
+   recognised, because they are real offices outside the calendar's classes;
+5. local bodies ("municipal", "local", "city council", ...). "District"
+   counts only alone ("District council"): after a word or before a number
+   it names a seat ("36th State Assembly district"). With the word "federal"
+   and no local word ("Federal Council") the text is a national aggregate
+   of class ``general``;
 6. generic legislature words ("Parliament", "Legislative", "Congress"):
    subnational when qualified or regional; identity only for a place with one
    active, unicameral chamber, nationwide; in a subdivision one body with no
    level hint; otherwise an aggregate (spec §6.3);
 7. "General" and anything unrecognised: class ``general``, aggregate.
+   "General" does not count after attorney, auditor, solicitor, secretary,
+   inspector or comptroller ("Attorney General" is a title, not a general
+   election).
 
 A body named inside another body's name is not the place's own: a
 subnational word directly before the chamber's name or "president"
@@ -39,8 +51,17 @@ Parliament") is a legislature aggregate with no level hint, before rule 2.
 
 A by-election says how a seat is filled, not which level owns it: it lends
 identity only to a chamber the text names (rule 2), never to generic words.
+Seats in a named constituency are lower-house or unicameral seats, so the
+constituency exception of rule 2 never applies to an upper house: a "Senate
+special election" in a named area is not the national Senate.
 A suspended or dissolved chamber keeps its identity, so older evidence still
 resolves; whether it can hold an election now is the caller's decision.
+
+``split_offices`` keeps a joint ticket ("Governor and Lieutenant Governor")
+whole, splits executive titles from a list, and drops the Oxford "and " from
+the last part. ``claim_level`` is the level a source may claim for an office:
+``unknown`` when the office is not recognised, never the source's default
+guess.
 """
 
 import re
@@ -73,11 +94,13 @@ _BY_ELECTION = _rx(
 )
 _REFERENDUM = _rx(
     r"\breferend(?:um|ums|a)\b|\bplebiscites?\b|\bpopular (?:votes?|initiatives?)\b"
-    r"|\bballot (?:measures?|questions?)\b"
+    r"|\bballot (?:measures?|questions?)\b|\bamendments?\b"
 )
-_HEAD_OF_STATE = _rx(r"\bpresiden(?:t|ts|cy|tial)\b")
-_GOVERNOR = _rx(r"\bgovern(?:or|ors|orial|atorial)\b|\bgubernatorial\b")
-_MAYOR = _rx(r"\bmayor(?:s|al|alty)?\b")
+# a deputy title is not its head's office: not right after vice/deputy/lieutenant
+_NOT_DEPUTY = r"(?<!vice )(?<!vice-)(?<!deputy )(?<!deputy-)(?<!lieutenant )"
+_HEAD_OF_STATE = _rx(_NOT_DEPUTY + r"\bpresiden(?:t|ts|cy|tial)\b")
+_GOVERNOR = _rx(_NOT_DEPUTY + r"\bgovern(?:or|ors|orial|atorial)\b|\bgubernatorial\b")
+_MAYOR = _rx(_NOT_DEPUTY + r"\bmayor(?:s|al|alty)?\b")
 _UPPER = _rx(
     r"\bsenat(?:e|es|orial)\b|\bupper (?:house|chamber)\b"
     r"|\bhouse of (?:lords|elders|councillors|councilors)\b"
@@ -89,10 +112,14 @@ _LOWER = _rx(
 _LEGISLATURE = _rx(
     r"\bparliament(?:s|ary)?\b|\blegislat(?:ive|ures?)\b|\bnational assembly\b"
     r"|\bassembl(?:y|ies)\b|\bcongress(?:ional)?\b|\bdiet\b"
+    r"|\b(?:landtag|cortes|abgeordnetenhaus|kantonsrat|grosser rat|bürgerschaft)\b"
 )
 _LOCAL = _rx(
-    r"\b(?:municipal(?:ity|ities)?|local|city|town|village|parish|communal|commune|district"
-    r"|county|borough|ward|metropolitan)\b"
+    r"\b(?:municipal(?:ity|ities)?|local|city|town|village|parish|communal|commune"
+    r"|county|borough|ward|metropolitan|gemeinderat|bezirksverordnetenversammlung(?:en)?"
+    r"|board of supervisors)\b"
+    # "District council", not "36th State Assembly district" or "Assembly district 5"
+    r"|(?<!\w )\bdistrict\b(?!\s+\d)"
 )
 _REGIONAL = _rx(r"\b(?:regional|region|provincial|prefectural|departmental|cantonal)\b")
 _SUBNATIONAL = _rx(
@@ -102,8 +129,27 @@ _SUBNATIONAL = _rx(
 _OTHER_PARLIAMENT = _rx(
     r"\b(?:european|pan-african|central american|andean|mercosur|sami|saami|youth)\s+parliament\b"
 )
+_OXFORD = _rx(r"^(?:and|&)\s+")
 _COUNCIL = _rx(r"\bcouncil(?:s|lors?|lers?)?\b")
-_GENERAL = _rx(r"\bgeneral\b")
+# "Attorney General" and the like are titles, not general elections
+_GENERAL = _rx(
+    r"(?<!attorney )(?<!auditor )(?<!solicitor )(?<!secretary )(?<!inspector )(?<!comptroller )"
+    r"\bgeneral\b"
+)
+_FEDERAL = _rx(r"\bfederal\b")
+# offices the calendar does not cover, usually listed beside a governor or mayor
+_EXECUTIVE_TITLE = _rx(
+    r"\b(?:lieutenant|deputy|vice)[\s-]+(?:governor|mayor|president)s?\b"
+    r"|\battorneys? general\b|\b(?:city|county|district|state's|state) attorneys?\b"
+    r"|\bsecretar(?:y|ies) of (?:the )?(?:state|commonwealth)\b"
+    r"|\b(?:(?:city|county|state|district) )?"
+    r"(?:comptroller|controller|treasurer|auditor|assessor|sheriff|superintendent|clerk)s?\b"
+    r"|\bcommissioner of \w+"
+    r"|\b(?:police and crime|insurance|agriculture|labou?r|land|railroad) commissioners?\b"
+    r"|\bpublic advocate\b"
+)
+# the second part of a joint ticket: "Lieutenant Governor" after "Governor"
+_DEPUTY_OF = _rx(r"^(?:lieutenant|deputy|vice)[\s-]+(governor|mayor|president)$")
 _PLURAL_BODY = _rx(r"\b(?:councils|assemblies|elections|governors|mayors)\b|\band\b")
 _GOVERNORS = _rx(r"\bgovernors\b")
 _MAYORS = _rx(r"\bmayors\b")
@@ -314,7 +360,10 @@ def classify(
     named = _named_chamber(rest, chambers)
     if named is not None and not _subnational_before(rest, named[1]):
         found, name = named
-        constituency = by_election and jurisdiction_kind == "named"
+        # constituency by-elections fill lower-house or unicameral seats, never an upper house
+        constituency = (
+            by_election and jurisdiction_kind == "named" and found.office_class != "upper_house"
+        )
         if not _generic(name) or (not qualified and (nationwide or constituency)):
             return office(
                 found.office_class, institution=institution_id(place_id, found), level="national"
@@ -343,9 +392,13 @@ def classify(
                     level="national",
                 )
             return office(house)
+    if _EXECUTIVE_TITLE.search(rest):
+        return office("general", aggregate=True, recognised=False)
     if _LOCAL.search(rest) or (
         _REGIONAL.search(rest) and not _LEGISLATURE.search(rest)
     ) or (_COUNCIL.search(rest) and not _LEGISLATURE.search(rest)):
+        if _FEDERAL.search(rest) and not _LOCAL.search(rest):
+            return office("general", aggregate=True, level="national")
         single_body = jurisdiction_kind == "named" and not _PLURAL_BODY.search(rest)
         return office("local_council", aggregate=not single_body, level="subnational")
     if _LEGISLATURE.search(rest):
@@ -366,13 +419,17 @@ def split_offices(text: str, place_id: str, registry: InstitutionRegistry) -> li
 
     Commas first, then "and"/"&", never inside parentheses. A split is kept
     only when every part names an office and the parts are not all of one
-    class, so "regional and municipal elections" and "President and Vice
-    President" stay whole.
+    class, so "regional and municipal elections" stays whole. A two-part
+    "and" split whose second part is the deputy title of the first
+    ("Governor and Lieutenant Governor", "President and Vice President") is
+    a joint ticket and stays whole. An executive title is an office of its
+    own class, so "Mayor and Attorney General" splits. The "and " that
+    opens the last part of a list with an Oxford comma is dropped.
     """
     parts: list[str] = []
     for chunk in _split_if_offices(text, (",",), place_id, registry):
         parts.extend(_split_if_offices(chunk, (" and ", " & "), place_id, registry))
-    return parts
+    return [_OXFORD.sub("", part) for part in parts]
 
 
 def _split_if_offices(
@@ -382,17 +439,43 @@ def _split_if_offices(
     parts = [p for p in (collapse_ws(x) for x in _split_top_level(whole, separators)) if p]
     if len(parts) < 2:
         return [whole] if whole else []
-    classes = [_class_of(p, place_id, registry) for p in parts]
+    if separators != (",",) and len(parts) == 2 and _joint_ticket(parts[0], parts[1]):
+        return [whole]
+    classes = [office_class_of(p, place_id, registry) for p in parts]
     if all(c is not None for c in classes) and len(set(classes)) > 1:
         return parts
     return [whole]
 
 
-def _class_of(part: str, place_id: str, registry: InstitutionRegistry) -> OfficeClass | None:
+def _joint_ticket(head: str, second: str) -> bool:
+    """Whether ``second`` is the deputy title of the office ``head`` names (a joint ticket)."""
+    deputy = _DEPUTY_OF.match(extract_round(second)[1])
+    return deputy is not None and keyword_class(head) == keyword_class(deputy.group(1))
+
+
+def office_class_of(part: str, place_id: str, registry: InstitutionRegistry) -> OfficeClass | None:
+    """The class of one office text, or None when it names no office; a title is ``general``."""
     named = _named_chamber(part, registry.chambers(place_id))
     if named is not None:
         return named[0].office_class
+    if _EXECUTIVE_TITLE.search(part):
+        return "general"
     return keyword_class(part)
+
+
+def is_by_election(text: str) -> bool:
+    return _BY_ELECTION.search(text) is not None
+
+
+def is_executive_title(part: str) -> bool:
+    """Whether ``part`` is an executive title and nothing else.
+
+    "Sheriff (1st round)" is; "Governor and Lieutenant Governor" is not,
+    because what is left of it after the title is a governor.
+    """
+    text = extract_round(part)[1]
+    rest = _EXECUTIVE_TITLE.sub(" ", text)
+    return rest != text and keyword_class(rest) is None
 
 
 def _split_top_level(text: str, separators: tuple[str, ...]) -> list[str]:
@@ -431,6 +514,13 @@ def resolve_level(default: Level | None, hints: Iterable[Level | None]) -> Level
     if evidence:
         return evidence.pop()
     return default or "unknown"
+
+
+def claim_level(default: Level, office: Office) -> Level:
+    """The level a source may claim for ``office``: ``unknown`` unless the office is recognised."""
+    if not office.recognised:
+        return "unknown"
+    return resolve_level(default, [office.level_hint])
 
 
 _STOP = frozenset({"of", "the", "and", "for", "in", "a", "an", "election", "elections"})

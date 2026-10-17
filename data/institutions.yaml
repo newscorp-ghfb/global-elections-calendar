@@ -466,7 +466,8 @@ iso:DZ:
   office_class: lower_house
   designation: direct
   status: active
-  aliases: []
+  aliases:
+  - People's National Assembly
 - name: Council of the Nation
   office_class: upper_house
   designation: indirect
@@ -517,7 +518,8 @@ iso:ET:
   office_class: lower_house
   designation: direct
   status: active
-  aliases: []
+  aliases:
+  - House of People's Representatives
 - name: House of the Federation
   office_class: upper_house
   designation: indirect
@@ -724,12 +726,16 @@ iso:IE:
   office_class: lower_house
   designation: direct
   status: active
-  aliases: []
+  aliases:
+  - Dáil
+  - Dáil Éireann
 - name: Senate
   office_class: upper_house
   designation: indirect
   status: active
-  aliases: []
+  aliases:
+  - Seanad
+  - Seanad Éireann
 iso:IL:
 - name: Parliament
   office_class: legislature
@@ -962,7 +968,8 @@ iso:LT:
   office_class: legislature
   designation: direct
   status: active
-  aliases: []
+  aliases:
+  - Seimas
 iso:LU:
 - name: Chamber of Deputies
   office_class: legislature
@@ -987,7 +994,8 @@ iso:MA:
   office_class: lower_house
   designation: direct
   status: active
-  aliases: []
+  aliases:
+  - Chamber of Representatives
 - name: House of Councillors
   office_class: upper_house
   designation: indirect
@@ -1170,7 +1178,9 @@ iso:NL:
   office_class: lower_house
   designation: direct
   status: active
-  aliases: []
+  aliases:
+  - Second Chamber
+  - Tweede Kamer
 - name: Senate
   office_class: upper_house
   designation: indirect
