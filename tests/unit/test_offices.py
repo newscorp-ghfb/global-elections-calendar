@@ -405,3 +405,17 @@ def test_public_helpers() -> None:
     assert office_class_of("Georgia's 13th congressional district", "iso:US", REGISTRY) == "legislature"
     assert is_by_election("Georgia's 13th congressional district, special election (1st round)")
     assert not is_by_election("Governor")
+
+
+def test_a_joint_ticket_followed_by_a_title_splits_after_the_ticket() -> None:
+    assert split_offices(
+        "Governor and Lieutenant Governor, Secretary of State", "iso:US", REGISTRY
+    ) == ["Governor and Lieutenant Governor", "Secretary of State"]
+    assert office_class_of("Governor and Lieutenant Governor", "iso:US", REGISTRY) == "governor"
+    assert office_class_of("Attorney General", "iso:US", REGISTRY) == "general"
+
+
+def test_a_hyphenated_lieutenant_title_is_not_its_principal() -> None:
+    o = classify_office("Lieutenant-Governor", "iso:US", "subdivision", REGISTRY)
+    assert (o.office_class, o.recognised) == ("general", False)
+    assert is_executive_title("Lieutenant-Governor")

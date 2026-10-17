@@ -20,7 +20,7 @@ rules matters:
    "Virginia, Senate" is not the US Senate;
 3. head of state, governor, mayor. A deputy title ("Vice President",
    "Lieutenant Governor", "Deputy Mayor") is not its head's office: the
-   words right after "vice", "deputy" or "lieutenant" do not match;
+   words right after "vice", "deputy" or "lieutenant" (space or hyphen) do not match;
 4. generic chamber words: "senate" -> the place's one active upper chamber,
    "house of representatives" -> its one active lower chamber (or its only
    chamber), nationwide only; when qualified, a subnational chamber;
@@ -97,7 +97,7 @@ _REFERENDUM = _rx(
     r"|\bballot (?:measures?|questions?)\b|\bamendments?\b"
 )
 # a deputy title is not its head's office: not right after vice/deputy/lieutenant
-_NOT_DEPUTY = r"(?<!vice )(?<!vice-)(?<!deputy )(?<!deputy-)(?<!lieutenant )"
+_NOT_DEPUTY = r"(?<!vice )(?<!vice-)(?<!deputy )(?<!deputy-)(?<!lieutenant )(?<!lieutenant-)"
 _HEAD_OF_STATE = _rx(_NOT_DEPUTY + r"\bpresiden(?:t|ts|cy|tial)\b")
 _GOVERNOR = _rx(_NOT_DEPUTY + r"\bgovern(?:or|ors|orial|atorial)\b|\bgubernatorial\b")
 _MAYOR = _rx(_NOT_DEPUTY + r"\bmayor(?:s|al|alty)?\b")
@@ -454,11 +454,11 @@ def _joint_ticket(head: str, second: str) -> bool:
 
 
 def office_class_of(part: str, place_id: str, registry: InstitutionRegistry) -> OfficeClass | None:
-    """The class of one office text, or None when it names no office; a title is ``general``."""
+    """The class of one office text, or None when it names none; a title alone is ``general``."""
     named = _named_chamber(part, registry.chambers(place_id))
     if named is not None:
         return named[0].office_class
-    if _EXECUTIVE_TITLE.search(part):
+    if is_executive_title(part):
         return "general"
     return keyword_class(part)
 
