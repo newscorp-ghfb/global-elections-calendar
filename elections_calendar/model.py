@@ -150,7 +150,8 @@ class InputUnit:
     """One discovered input unit and its single ledger outcome (spec §7, §9.1).
 
     ``unit_id`` is ``<source>:<page key>/<position>``: where the unit was
-    observed, never a publisher event ID.
+    observed, never a publisher event ID. ``duplicate_of`` names the unit of
+    the same source that a ``duplicate`` unit repeats (and only such a unit).
     """
 
     unit_id: str
@@ -160,10 +161,17 @@ class InputUnit:
     reason: str | None
     relevance: Relevance
     leftover: str = ""
+    duplicate_of: str | None = None
 
     def __post_init__(self) -> None:
         _check_fields(self)
         _check_unit_id(self.unit_id, self.source)
+        if (self.reason == "duplicate") != (self.duplicate_of is not None):
+            raise RecordError("duplicate_of is set exactly when the reason is 'duplicate'")
+        if self.duplicate_of is not None:
+            _check_unit_id(self.duplicate_of, self.source)
+            if self.duplicate_of == self.unit_id:
+                raise RecordError("a unit cannot duplicate itself")
         if self.outcome == "ignored" and self.reason not in IGNORED_REASONS:
             raise RecordError(f"ignored unit needs an allowlisted reason, got {self.reason!r}")
         if self.outcome == "parsed" and self.reason is not None:
@@ -180,6 +188,7 @@ class InputUnit:
             "reason": self.reason,
             "relevance": self.relevance,
             "leftover": self.leftover,
+            "duplicate_of": self.duplicate_of,
         }
 
     @classmethod
@@ -286,6 +295,64 @@ class Claim:
         except KeyError as exc:
             raise RecordError(f"Claim: missing {exc}") from exc
         return _construct(cls, {**values, "span": span, "fetched_at": fetched})
+
+
+ReasonCode = Literal[
+    # errors (spec §9.4)
+    "fetch_failed",
+    "tls_error",
+    "timeout",
+    "dns_error",
+    "http_error",
+    "challenge_page",
+    "api_error",
+    "layout_not_recognised",
+    "required_year_missing",
+    "pagination_incomplete",
+    "deadline",
+    "unavailable",
+    "ledger_mismatch",
+    "discovery_mismatch",
+    "worker_failed",
+    # warnings
+    "unparsed_relevant",
+    "partial_relevant",
+    "sudden_drop",
+    "cumulative_drop",
+    "coverage_gap",
+    "no_cross_source_match",
+    "fallback_stale",
+    "served_mismatch",
+    "attention_truncated",
+    "ack_invalid",
+    # info
+    "not_published_yet",
+    "count_change",
+    "provisional_changes",
+    "units_disappeared",
+]
+MAX_DETAIL = 300
+
+
+@dataclass(frozen=True, slots=True)
+class Reason:
+    """Why a source or run is not fully healthy (spec §9.4); ``detail`` is short free text."""
+
+    code: ReasonCode
+    detail: str = ""
+
+    def __post_init__(self) -> None:
+        _check_fields(self)
+        if len(self.detail) > MAX_DETAIL:
+            raise RecordError(f"Reason.detail is longer than {MAX_DETAIL} characters")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"code": self.code, "detail": self.detail}
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Reason:
+        _require_record(cls, data)
+        return _construct(cls, data)
 
 
 def _utc_iso(moment: datetime | None) -> str | None:
