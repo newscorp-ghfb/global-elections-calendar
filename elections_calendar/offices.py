@@ -62,8 +62,8 @@ def _rx(pattern: str) -> re.Pattern[str]:
 
 
 _ROUND = _rx(
-    r"\(?\s*\b(?:(?P<n>\d)(?:st|nd|rd|th)|(?P<w>first|second|third|fourth))[\s-]+round\b\s*\)?"
-    r"|\(?\s*\bround\s+(?P<k>\d)\b\s*\)?"
+    r"\(?\s*\b(?:(?P<n>[1-9])(?:st|nd|rd|th)|(?P<w>first|second|third|fourth))[\s-]+round\b\s*\)?"
+    r"|\(?\s*\bround\s+(?P<k>[1-9])\b\s*\)?"
     r"|\(?\s*\brun[\s-]?offs?\b\s*\)?"
 )
 _ROUND_WORDS = {"first": 1, "second": 2, "third": 3, "fourth": 4}

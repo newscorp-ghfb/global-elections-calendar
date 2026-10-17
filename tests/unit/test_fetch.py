@@ -227,6 +227,8 @@ def test_retry_after_is_honoured_and_capped(
         ("\u00b2", None),  # a superscript two is a digit to str.isdigit, not a number
         ("0" * 20 + "5", 5.0),
         ("9" * 5000, float("inf")),  # past any cap; int() would refuse it
+        ("Mon, 01 Jan " + "9" * 20 + " 00:00:00 GMT", None),  # a year too large for C
+        ("Mon, 01 Jan 2026 00:00:00 +" + "9" * 20, None),  # an offset too large for C
     ],
 )
 def test_parse_retry_after(header: str | None, seconds: float | None) -> None:
@@ -239,6 +241,7 @@ def test_parse_retry_after(header: str | None, seconds: float | None) -> None:
         ("\u00b2", [2.0, 4.0]),  # unreadable: default back-off
         ("9" * 400, [60.0, 60.0]),  # too large for a float: capped
         ("9" * 5000, [60.0, 60.0]),  # too long for int(): capped
+        ("Mon, 01 Jan " + "9" * 20 + " 00:00:00 GMT", [2.0, 4.0]),  # unreadable date
     ],
 )
 def test_a_malformed_retry_after_never_escapes_the_result(
@@ -588,6 +591,16 @@ def test_no_query_secret_reaches_the_published_diagnostics(
     assert (result.outcome, result.api_code) == ("api_error", INVALID_API_CODE)
     assert marker not in json.dumps(result.diagnostics())
     assert marker.encode() in result.body  # the raw body keeps it: never publish the body
+
+
+def test_an_api_code_outside_its_grammar_is_not_published(
+    pki: Pki, fake: FakeTime, server: TestServer
+) -> None:
+    marker = "s3cr3tMARKER"
+    body = json.dumps({"error": {"code": f"token={marker}", "info": "x"}}).encode()
+    result = get(pki, fake, server.route("/api", Reply(body=body, content_type=JSON)), mediawiki=True)
+    assert (result.outcome, result.api_code) == ("api_error", INVALID_API_CODE)
+    assert marker not in json.dumps(result.diagnostics())
 
 
 def test_mediawiki_json_nested_too_deep_is_an_api_error(

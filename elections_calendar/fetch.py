@@ -2,7 +2,8 @@
 
 One ``Fetcher`` per source; requests within a source run one at a time.
 Every request ends in a ``FetchResult`` with an outcome; nothing raises to
-the adapter and nothing returns ``None`` silently.
+the adapter and nothing returns ``None`` silently. The one exception is
+local configuration: a ``verify`` path that does not exist raises ``OSError``.
 
 - 3 attempts in total (first try + 2 retries), waiting 2 s then 4 s, or
   ``Retry-After`` (seconds or HTTP-date, capped at 60 s). Only transient
@@ -22,8 +23,9 @@ the adapter and nothing returns ``None`` silently.
   bound. Name resolution (``getaddrinfo`` takes no timeout), connecting to
   each resolved address in turn (each try has its own connect timeout) and a
   server that sends its headers a few bytes at a time can all run longer.
-  The hard bound is the runner, which fetches each source in a child process
-  and kills it at the source's deadline.
+  The hard bound will be the runner (a later plan; not built yet), which
+  fetches each source in a child process and kills it at the source's
+  deadline.
 - URLs and error texts are redacted before they are stored: only values of
   the sources' own query keys (``SAFE_QUERY_KEYS``) are kept. A MediaWiki
   error code outside its grammar becomes ``INVALID_API_CODE``. The body is
@@ -391,7 +393,7 @@ def _mediawiki(
     info = str(error.get("info", "")) if isinstance(error, dict) else str(error)
     return _Attempt(
         "api_error", "api", final_url, status, content_type, body,
-        error=redact_text(f"MediaWiki error {code}: {info}"),
+        error=redact_text(f"MediaWiki error {_api_code(code) or ''}: {info}"),
         api_code=_api_code(code),
         retryable=code == "maxlag",
         retry_after=parse_retry_after(response.headers.get("Retry-After"), wall_clock),
@@ -475,7 +477,7 @@ def parse_retry_after(value: str | None, wall_clock: Callable[[], datetime]) -> 
         return float(text)  # int() would refuse thousands of digits
     try:
         when = email.utils.parsedate_to_datetime(text)
-    except (TypeError, ValueError, IndexError):
+    except (TypeError, ValueError, IndexError, OverflowError):  # a number too large for C
         return None
     if when.utcoffset() is None:
         when = when.replace(tzinfo=UTC)  # "-0000" dates are UTC with no zone named
@@ -539,9 +541,10 @@ class TrustBundle:
 def trust_bundle(dest: Path, environ: Mapping[str, str] = os.environ) -> TrustBundle:
     """Write one CA file: certifi's roots plus the machine's configured bundle.
 
-    certifi alone verifies every source on a plain network (OSCE's emSign
-    chain included); that is CI. On a machine whose TLS is intercepted by a
-    corporate proxy, the proxy's root is only in the machine bundle, and that
+    certifi alone should verify every source on a plain network such as CI
+    (OSCE's emSign chain included); the branch CI run is still to confirm it.
+    On a machine whose TLS is intercepted by a corporate proxy, the proxy's
+    root is only in the machine bundle, and that
     bundle alone lacks roots for the sites the proxy lets through untouched.
 
     The machine bundle is the PEM file named by the first of

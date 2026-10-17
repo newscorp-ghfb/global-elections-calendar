@@ -182,6 +182,15 @@ def test_saved_records_outside_the_vocabulary_are_rejected(load: Callable[[], ob
         load()
 
 
+@pytest.mark.parametrize("data", [None, "ab", [1, 2], []])
+@pytest.mark.parametrize("load", [DateSpan.from_dict, InputUnit.from_dict, Claim.from_dict])
+def test_a_saved_record_that_is_not_an_object_is_a_record_error(
+    load: Callable[[object], object], data: object
+) -> None:
+    with pytest.raises(RecordError):
+        load(data)
+
+
 @pytest.mark.parametrize(
     "build",
     [
