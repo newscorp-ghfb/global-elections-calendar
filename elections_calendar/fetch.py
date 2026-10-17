@@ -374,7 +374,7 @@ def _mediawiki(
 ) -> _Attempt:
     try:
         data = json.loads(body.decode("utf-8"))
-    except (UnicodeDecodeError, ValueError):
+    except (UnicodeDecodeError, ValueError, RecursionError):  # nested too deep for json
         return _Attempt(
             "api_error", "api", final_url, status, content_type, body,
             error="MediaWiki response is not JSON",

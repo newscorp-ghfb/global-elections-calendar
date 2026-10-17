@@ -585,3 +585,11 @@ def test_no_query_secret_reaches_the_published_diagnostics(
     assert (result.outcome, result.api_code) == ("api_error", INVALID_API_CODE)
     assert marker not in json.dumps(result.diagnostics())
     assert marker.encode() in result.body  # the raw body keeps it: never publish the body
+
+
+def test_mediawiki_json_nested_too_deep_is_an_api_error(
+    pki: Pki, fake: FakeTime, server: TestServer
+) -> None:
+    body = b"[" * 200_000  # far under MAX_BYTES, but json.loads raises RecursionError
+    result = get(pki, fake, server.route("/api", Reply(body=body, content_type=JSON)), mediawiki=True)
+    assert (result.outcome, result.stage) == ("api_error", "api")
