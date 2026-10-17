@@ -1,0 +1,10 @@
+# LF in every working copy whatever core.autocrlf says (it is on here), so
+# checkouts and restores never rewrite line endings.
+* text=auto eol=lf
+# Served files must keep their exact bytes so they match the digest in
+# status.json (spec §16). Fixtures are byte-exact captures of source pages.
+elections.json -text
+status.json -text
+HEALTH.md -text
+data/sources/** -text
+tests/fixtures/** -text

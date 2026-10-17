@@ -1,0 +1,29 @@
+[project]
+name = "elections-calendar"
+version = "2.0.0"
+description = "Global Elections Calendar: daily scraper, feed and Chrome extension"
+requires-python = ">=3.14,<3.15"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+xfail_strict = true
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+warn_unreachable = true
+files = ["elections_calendar", "scripts", "tests"]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+# scraper.py is v1's scraper until a later plan replaces it with a thin entry point.
+extend-exclude = [".scratch", ".claude", "extension", "dist", "scraper.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests quote long real-world source strings verbatim.
+"tests/**" = ["E501"]
