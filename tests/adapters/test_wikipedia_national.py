@@ -508,7 +508,7 @@ def test_items_without_a_country_or_office() -> None:
         ("January/li[1]", "unparsed", "place_missing"),
         ("January/li[2]", "unparsed", "office_missing"),
         ("January/li[3]", "ignored", "container_item"),
-        ("January/li[3]/li[1]", "unparsed", "office_missing"),
+        ("January/li[3]/li[1]", "parsed", None),  # Task 8: a child inherits Sweden
         ("January/li[4]", "ignored", "container_item"),
         ("January/li[4]/li[1]", "parsed", None),
     ]

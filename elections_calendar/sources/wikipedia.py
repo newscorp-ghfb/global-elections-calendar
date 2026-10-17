@@ -2,10 +2,21 @@
 
 Each page is the MediaWiki-API JSON of one article. Its ``h2`` sections hold nested
 ``li`` items; every ``li`` is an input unit and gives one claim per (office, date span).
-An item's text is "<date>: <country>, <office>"; an item without a date takes the
-nearest ancestor's, else its section's month (or the page year).
+An item's text is "<date>: <place>, <jurisdiction>, <office>"; an item without a date
+takes the nearest ancestor's, else its section's month (or the page year).
+
+A nested item inherits the place, the place text and the jurisdiction tokens of its
+nearest ancestor that has a place; it never resolves its own first token as a country.
+With no inherited place, a first token that starts with a year ("2027 Lithuanian
+municipal elections") is an article title and the unit is unparsed. A registered
+subdivision named right after the place (Scotland under the United Kingdom) becomes the
+place. The first token that is an office starts the office text; the tokens before it are
+jurisdiction tokens. An item with children and no office token is a container; a leaf
+without one takes its last token as the office. Two adapter overrides apply after
+classification: the Canadian federal by-election and the US congressional district.
 """
 
+import dataclasses
 import json
 import re
 import urllib.parse
@@ -22,6 +33,7 @@ from elections_calendar.model import (
     DateSpan,
     DateStatus,
     InputUnit,
+    JurisdictionKind,
     Level,
     Outcome,
     StatusClaim,
@@ -30,7 +42,10 @@ from elections_calendar.offices import (
     Office,
     claim_level,
     classify,
+    institution_id,
+    is_by_election,
     is_executive_title,
+    office_class_of,
     split_offices,
 )
 from elections_calendar.places import Place
@@ -74,6 +89,12 @@ _SKIPPED_IN_OWN_TEXT = ("ul", "ol", "sup", "style", "link")
 _MAINTENANCE_TABLES = ("ambox", "metadata", "navbox")
 _DATE_SEPARATORS = (":", ",")
 _INDIRECT = "Indirect_elections"
+_ARTICLE_TITLE = re.compile(r"^\d{4}\s")
+PLACE_SUFFIX = re.compile(
+    r"^(?:[A-Z][\w'’.-]*\s+)+(?:County|District|Region|Prefecture|Province|Parish|Borough)$"
+)
+ELECTION_WORD = re.compile(r"\b(?:by-?|special )?elections?\b", re.IGNORECASE)
+_CONGRESSIONAL = re.compile(r"\bcongressional district\b", re.IGNORECASE)
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,12 +109,34 @@ class _Date:
     failure: str | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class _Where:
+    """The place, country text and jurisdiction tokens an item has or inherits."""
+
+    place: Place | None = None
+    place_text: str | None = None
+    jurisdiction: tuple[str, ...] = ()
+
+
 @dataclass(slots=True)
 class _PageParse:
     outcome: PageOutcome
     revid: int | None = None
     units: list[InputUnit] = field(default_factory=list)
     claims: list[Claim] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class _Walk:
+    """What stays the same while one section's items are parsed."""
+
+    out: _PageParse
+    section: str
+    members: set[int]
+    request: PageRequest
+    link_base: str
+    window: Window
+    registries: Registries
 
 
 @dataclass(frozen=True, slots=True)
@@ -243,7 +286,7 @@ def _country(
     """The item's own country text, its place and the tokens left after it.
 
     A first link that starts the text is the country ("Punjab, India" keeps its
-    comma); otherwise the first token is. Task 8 replaces this step with inheritance.
+    comma); otherwise the first token is. Only items with no inherited place use this.
     """
     if first_link and rest.startswith(first_link):
         after = _split_top(rest[len(first_link) :])
@@ -254,9 +297,49 @@ def _country(
     return tokens[0], registries.places.resolve(tokens[0]), tokens[1:]
 
 
-def _office_text(tokens: list[str]) -> str | None:
-    """The office text of the tokens left after the country. Task 8 replaces this step."""
-    return ", ".join(tokens) or None
+def _is_office(token: str, place: Place, registries: Registries) -> bool:
+    """Whether a token names an office (executive titles count) and not a place."""
+    if registries.subdivisions.find(place.country_code, token) or PLACE_SUFFIX.match(token):
+        return False
+    return (
+        office_class_of(token, place.place_id, registries.institutions) is not None
+        or ELECTION_WORD.search(token) is not None
+    )
+
+
+def _jurisdiction_kind(
+    tokens: tuple[str, ...], place: Place, registries: Registries
+) -> JurisdictionKind:
+    if not tokens:
+        return "nationwide"
+    if registries.subdivisions.find(place.country_code, tokens[0]):
+        return "subdivision"
+    return "named"
+
+
+def _override(
+    office: Office, part: str, place: Place, kind: JurisdictionKind, registries: Registries
+) -> Office:
+    """Apply the adapter overrides (P17) to a classified office: both are recognised, national."""
+    if place.place_id == "iso:CA" and kind == "named" and part.casefold() == "federal by-election":
+        return dataclasses.replace(
+            office, office_class="lower_house", institution="iso:CA/house-of-commons",
+            kind="by_election", aggregate=False, level_hint="national", recognised=True,
+        )
+    if _CONGRESSIONAL.search(part):
+        lower = [
+            c
+            for c in registries.institutions.chambers(place.place_id)
+            if c.office_class == "lower_house" and c.active
+        ]
+        if len(lower) == 1:
+            return dataclasses.replace(
+                office, office_class="lower_house",
+                institution=institution_id(place.place_id, lower[0]),
+                kind="by_election" if is_by_election(part) else "candidate_election",
+                aggregate=False, level_hint="national", recognised=True,
+            )
+    return office
 
 
 class Wikipedia:
@@ -374,10 +457,10 @@ class Wikipedia:
                 for li in items
                 if (up := li.find_parent("li")) is None or id(up) not in members
             ]
+            walk = _Walk(out, section.key, members, request, link_base, window, registries)
             for i, li in enumerate(top, 1):
                 self._parse_item(
-                    out, li, f"wikipedia:{page_key}/{section.key}/li[{i}]", section.key,
-                    None, [], members, request, link_base, window, registries,
+                    walk, li, f"wikipedia:{page_key}/{section.key}/li[{i}]", None, [], _Where()
                 )
         if out.units:
             out.outcome = "ok"
@@ -385,22 +468,17 @@ class Wikipedia:
 
     def _parse_item(
         self,
-        out: _PageParse,
+        walk: _Walk,
         li: Tag,
         unit_id: str,
-        section: str,
         inherited: _Date | None,
         chain: list[str],
-        members: set[int],
-        request: PageRequest,
-        link_base: str,
-        window: Window,
-        registries: Registries,
+        where: _Where,
     ) -> None:
-        year = request.year
+        year = walk.request.year
         assert year is not None
         text, first_link = _own_text(li)
-        kids = _children(li, members)
+        kids = _children(li, walk.members)
         unit_text = " > ".join([*chain, text])
         head, rest, own_date = _date_prefix(text, year)
         if own_date is not None:
@@ -410,67 +488,111 @@ class Wikipedia:
         elif inherited is not None:
             date = inherited
         else:
-            date = _section_date(section, year)
+            date = _section_date(walk.section, year)
         outcome: Outcome
         outcome, reason, leftover = "parsed", None, ""
         new_claims: list[Claim] = []
-        place: Place | None = None
+        here = where
         if date.failure is not None:
             outcome, reason = "unparsed", date.failure
-        elif not all(plausible(span, window.today) for span in date.spans):
+        elif not all(plausible(span, walk.window.today) for span in date.spans):
             outcome, reason = "unparsed", "implausible_date"
         else:
-            country_text, place, tokens = _country(rest, first_link, registries)
-            office_text = _office_text(tokens) if country_text else None
-            if place is None or country_text is None:
-                outcome, reason = (
-                    ("ignored", "container_item") if kids else ("unparsed", "place_missing")
-                )
-            elif office_text is None:
-                outcome, reason = (
-                    ("ignored", "container_item") if kids else ("unparsed", "office_missing")
-                )
-            else:
-                outcome, reason, leftover, new_claims = self._offices(
-                    unit_id, office_text, country_text, place, date, section, request,
-                    link_base, registries,
-                )
-        relevance_of = relevance(f"{date.text} {unit_text}", window.start, default_year=year)
-        out.units.append(
+            outcome, reason, leftover, here, new_claims = self._item_body(
+                walk, unit_id, rest, first_link, bool(kids), date, where
+            )
+        relevance_of = relevance(f"{date.text} {unit_text}", walk.window.start, default_year=year)
+        walk.out.units.append(
             InputUnit(unit_id, self.source, unit_text, outcome, reason, relevance_of, leftover)
         )
-        out.claims += new_claims
+        walk.out.claims += new_claims
         for j, kid in enumerate(kids, 1):
-            self._parse_item(
-                out, kid, f"{unit_id}/li[{j}]", section, date, [*chain, text], members,
-                request, link_base, window, registries,
-            )
+            self._parse_item(walk, kid, f"{unit_id}/li[{j}]", date, [*chain, text], here)
+
+    def _item_body(
+        self,
+        walk: _Walk,
+        unit_id: str,
+        rest: str,
+        first_link: str | None,
+        has_kids: bool,
+        date: _Date,
+        where: _Where,
+    ) -> tuple[Outcome, str | None, str, _Where, list[Claim]]:
+        """Place, jurisdiction and offices of a dated item.
+
+        Returns (outcome, reason, leftover, where, claims).
+
+        ``where`` is what the item's children inherit.
+        """
+        registries = walk.registries
+        place, place_text, jurisdiction = where.place, where.place_text, where.jurisdiction
+        if place is None:
+            tokens = _split_top(rest)
+            if tokens and _ARTICLE_TITLE.match(tokens[0]):
+                return "unparsed", "article_title", "", where, []
+            place_text, place, tokens = _country(rest, first_link, registries)
+        else:
+            tokens = _split_top(rest)
+        if place is None or place_text is None:
+            if has_kids:
+                return "ignored", "container_item", "", where, []
+            return "unparsed", "place_missing", "", where, []
+        if place.registered and tokens and not jurisdiction:
+            sub = registries.places.resolve_subdivision(place.place_id, tokens[0])
+            if sub is not None:
+                place, tokens = sub, tokens[1:]
+        k = next((i for i, t in enumerate(tokens) if _is_office(t, place, registries)), None)
+        if k is not None:
+            jurisdiction += tuple(tokens[:k])
+            office_text = ", ".join(tokens[k:])
+        elif has_kids:
+            jurisdiction += tuple(tokens)
+            here = _Where(place, place_text, jurisdiction)
+            if all(registries.subdivisions.find(place.country_code, t) for t in tokens):
+                return "ignored", "container_item", "", here, []
+            return "unparsed", "container_text", ", ".join(tokens), here, []
+        elif tokens and (jurisdiction or len(tokens) == 1):
+            office_text = ", ".join(tokens)
+        elif tokens:
+            jurisdiction += tuple(tokens[:-1])
+            office_text = tokens[-1]
+        else:
+            here = _Where(place, place_text, jurisdiction)
+            return "unparsed", "office_missing", "", here, []
+        here = _Where(place, place_text, jurisdiction)
+        outcome, reason, leftover, claims = self._offices(walk, unit_id, office_text, here, date)
+        return outcome, reason, leftover, here, claims
 
     def _offices(
         self,
+        walk: _Walk,
         unit_id: str,
         office_text: str,
-        country_text: str,
-        place: Place,
+        where: _Where,
         date: _Date,
-        section: str,
-        request: PageRequest,
-        link_base: str,
-        registries: Registries,
     ) -> tuple[Outcome, str | None, str, list[Claim]]:
         """Classify the offices of an item: (unit outcome, reason, leftover, claims)."""
+        registries = walk.registries
         institutions = registries.institutions
+        place = where.place
+        assert place is not None
+        names = tuple(dict.fromkeys(where.jurisdiction))
+        jurisdiction = ", ".join(names) or None
+        jkind = _jurisdiction_kind(names, place, registries)
         parts = split_offices(office_text, place.place_id, institutions)
+        if not parts:
+            return "unparsed", "office_missing", "", []
         titles = [p for p in parts if is_executive_title(p)]
         leftover = ", ".join(titles)
         offices: list[Office] = [
-            classify(p, place.place_id, "nationwide", institutions)
+            _override(classify(p, place.place_id, jkind, institutions), p, place, jkind, registries)
             for p in parts
             if not is_executive_title(p)
         ]
         if not offices:
             return "unparsed", "office_not_modelled", leftover, []
-        default: Level = "national" if request.key.startswith("national-") else "subnational"
+        default: Level = "national" if walk.request.key.startswith("national-") else "subnational"
         claims: list[Claim] = []
         for office in offices:
             for span in date.spans:
@@ -479,12 +601,12 @@ class Wikipedia:
                         unit_id=unit_id,
                         claim_id=f"{unit_id}#{len(claims)}",
                         source=self.source,
-                        link=f"{link_base}#{section}",
+                        link=f"{walk.link_base}#{walk.section}",
                         source_event_id=None,
-                        place_raw=country_text,
+                        place_raw=where.place_text or "",
                         place_id=place.place_id,
-                        jurisdiction=None,
-                        jurisdiction_kind="nationwide",
+                        jurisdiction=jurisdiction,
+                        jurisdiction_kind=jkind,
                         level=claim_level(default, office),
                         institution=office.institution,
                         office_class=office.office_class,
@@ -499,7 +621,7 @@ class Wikipedia:
                         status_claim=date.status_claim,
                         previous_date_text=date.previous_text,
                         evidence_kind="calendar",
-                        indirect=section == _INDIRECT,
+                        indirect=walk.section == _INDIRECT,
                     )
                 )
         reason: str | None = None
