@@ -432,3 +432,19 @@ def test_a_round_word_with_letters_only_ignorecase_folds_is_no_round(letter: str
 def test_the_same_round_words_without_the_odd_letters_still_parse() -> None:
     assert extract_round("President (first round)") == (1, "President")
     assert extract_round("President (second round)") == (2, "President")
+
+
+@pytest.mark.parametrize(
+    "label",
+    ["Vice gubernatorial election", "vice-gubernatorial", "Deputy gubernatorial", "Lieutenant gubernatorial"],
+)
+def test_a_vice_gubernatorial_title_is_not_a_governor(label: str) -> None:
+    o = classify_office(label, "iso:PH", "subdivision", REGISTRY)
+    assert (o.office_class, o.recognised) == ("general", False)
+    assert is_executive_title(label)
+
+
+@pytest.mark.parametrize("label", ["Gubernatorial election", "Governor", "Provincial gubernatorial"])
+def test_a_gubernatorial_title_is_still_a_governor(label: str) -> None:
+    assert classify_office(label, "iso:PH", "subdivision", REGISTRY).office_class == "governor"
+    assert not is_executive_title(label)

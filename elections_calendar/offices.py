@@ -99,7 +99,7 @@ _REFERENDUM = _rx(
 # a deputy title is not its head's office: not right after vice/deputy/lieutenant
 _NOT_DEPUTY = r"(?<!vice )(?<!vice-)(?<!deputy )(?<!deputy-)(?<!lieutenant )(?<!lieutenant-)"
 _HEAD_OF_STATE = _rx(_NOT_DEPUTY + r"\bpresiden(?:t|ts|cy|tial)\b")
-_GOVERNOR = _rx(_NOT_DEPUTY + r"\bgovern(?:or|ors|orial|atorial)\b|\bgubernatorial\b")
+_GOVERNOR = _rx(_NOT_DEPUTY + r"(?:\bgovern(?:or|ors|orial|atorial)\b|\bgubernatorial\b)")
 _MAYOR = _rx(_NOT_DEPUTY + r"\bmayor(?:s|al|alty)?\b")
 _UPPER = _rx(
     r"\bsenat(?:e|es|orial)\b|\bupper (?:house|chamber)\b"
@@ -139,7 +139,7 @@ _GENERAL = _rx(
 _FEDERAL = _rx(r"\bfederal\b")
 # offices the calendar does not cover, usually listed beside a governor or mayor
 _EXECUTIVE_TITLE = _rx(
-    r"\b(?:lieutenant|deputy|vice)[\s-]+(?:governor|mayor|president)s?\b"
+    r"\b(?:lieutenant|deputy|vice)[\s-]+(?:governor|mayor|president|gubernatorial)s?\b"
     r"|\battorneys? general\b|\b(?:city|county|district|state's|state) attorneys?\b"
     r"|\bsecretar(?:y|ies) of (?:the )?(?:state|commonwealth)\b"
     r"|\b(?:(?:city|county|state|district) )?"
