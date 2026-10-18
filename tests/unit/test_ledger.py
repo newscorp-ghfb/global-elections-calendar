@@ -362,6 +362,9 @@ PAGE_CASES: dict[str, Callable[[], Scene]] = {
     "units seen on an unfinished request": lambda: Scene(
         unfinished=(req("u"),), coverage=[ok(), PageCoverage("u", None, "unfinished", None, 2)]
     ),
+    "unfinished coverage on a page that was fetched": lambda: Scene(
+        units=[], claims=[], coverage=[PageCoverage("v", None, "unfinished", None, 0)]
+    ),
 }
 PAGE_NEEDLES = {
     "duplicate unit id": "duplicate unit id s:v/r1",
@@ -394,6 +397,9 @@ PAGE_NEEDLES = {
     ),
     "units seen on a page that gave none": "page 't' is timeout but reports units_seen 5",
     "units seen on an unfinished request": "page 'u' is unfinished but reports units_seen 2",
+    "unfinished coverage on a page that was fetched": (
+        "page 'v' is unfinished but its page was fetched"
+    ),
 }
 
 

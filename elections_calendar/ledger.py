@@ -283,6 +283,8 @@ def _page_problems(raw: RawPages, result: ParseResult, rules: Mapping[str, Count
             problems.append(
                 f"page {entry.key!r} is an unfinished request, coverage says {entry.outcome}"
             )
+        if entry.outcome == "unfinished" and entry.key not in unfinished:
+            problems.append(f"page {entry.key!r} is unfinished but its page was fetched")
         if entry.outcome not in _PAGE_OUTCOMES:
             problems += _non_unit_problems(entry, pages.get(entry.key))
             continue
