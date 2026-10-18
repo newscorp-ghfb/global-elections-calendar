@@ -326,6 +326,35 @@ PAGE_CASES: dict[str, Callable[[], Scene]] = {
         coverage=[ok(), ok("r", seen=0)],
         statuses={"r": 302},
     ),
+    "timeout coverage on a page that downloaded": lambda: Scene(
+        units=[], claims=[], coverage=[timeout("v")]
+    ),
+    "http_error coverage on a timed-out page": lambda: Scene(
+        pages=[(req("v"), THREE_ROWS), (req("t"), b"")],
+        coverage=[ok(), PageCoverage("t", None, "http_error", None, 0)],
+    ),
+    "not_published_yet coverage on a page that downloaded": lambda: Scene(
+        units=[], claims=[], coverage=[PageCoverage("v", None, "not_published_yet", None, 0)]
+    ),
+    "required_year_missing coverage on a page that downloaded": lambda: Scene(
+        units=[], claims=[], coverage=[PageCoverage("v", None, "required_year_missing", None, 0)]
+    ),
+    "layout_not_recognised coverage on a timed-out page": lambda: Scene(
+        pages=[(req("v"), THREE_ROWS), (req("t"), b"")],
+        coverage=[ok(), PageCoverage("t", None, "layout_not_recognised", None, 0)],
+    ),
+    "layout_not_recognised coverage on a redirect without Location": lambda: Scene(
+        pages=[(req("v"), THREE_ROWS), (req("r"), b"x")],
+        coverage=[ok(), PageCoverage("r", None, "layout_not_recognised", None, 0)],
+        statuses={"r": 302},
+    ),
+    "units seen on a page that gave none": lambda: Scene(
+        pages=[(req("v"), THREE_ROWS), (req("t"), b"")],
+        coverage=[ok(), PageCoverage("t", None, "timeout", None, 5)],
+    ),
+    "units seen on an unfinished request": lambda: Scene(
+        unfinished=(req("u"),), coverage=[ok(), PageCoverage("u", None, "unfinished", None, 2)]
+    ),
 }
 PAGE_NEEDLES = {
     "duplicate unit id": "duplicate unit id s:v/r1",
@@ -342,6 +371,22 @@ PAGE_NEEDLES = {
     "timeout coverage for an unfinished request": "page 'u' is an unfinished request",
     "valid_empty coverage on a timed-out page": "page 't' is valid_empty but its download failed",
     "ok coverage on a redirect without Location": "page 'r' is ok but its download failed",
+    "timeout coverage on a page that downloaded": "page 'v' is timeout but its download succeeded",
+    "http_error coverage on a timed-out page": "page 't' is http_error but its download failed: timeout",
+    "not_published_yet coverage on a page that downloaded": (
+        "page 'v' is not_published_yet but its download succeeded"
+    ),
+    "required_year_missing coverage on a page that downloaded": (
+        "page 'v' is required_year_missing but its download succeeded"
+    ),
+    "layout_not_recognised coverage on a timed-out page": (
+        "page 't' is layout_not_recognised but its download failed: timeout"
+    ),
+    "layout_not_recognised coverage on a redirect without Location": (
+        "page 'r' is layout_not_recognised but its download failed: http_error"
+    ),
+    "units seen on a page that gave none": "page 't' is timeout but reports units_seen 5",
+    "units seen on an unfinished request": "page 'u' is unfinished but reports units_seen 2",
 }
 
 
@@ -350,6 +395,20 @@ def test_page_accounting_problems_are_ledger_mismatches(case: str) -> None:
     scene = PAGE_CASES[case]()
     assert codes(scene) == ["ledger_mismatch"]
     assert says(scene, PAGE_NEEDLES[case])
+
+
+def test_each_page_outcome_that_matches_its_download_is_accepted() -> None:
+    redirect = {"r": 302}
+    for pages, entry, statuses in (
+        ([(req("t"), b"")], PageCoverage("t", None, "timeout", None, 0), {}),
+        ([(req("r"), b"x")], PageCoverage("r", None, "http_error", None, 0), redirect),
+        ([(req("t"), b"")], PageCoverage("t", None, "not_published_yet", None, 0), {}),
+        ([(req("t"), b"")], PageCoverage("t", None, "required_year_missing", None, 0), {}),
+        ([(req("v"), THREE_ROWS)], PageCoverage("v", None, "layout_not_recognised", None, 0), {}),
+    ):
+        scene = Scene(units=[], claims=[], pages=pages, coverage=[entry], statuses=statuses)
+        raw, parsed = scene.build()
+        assert check(raw, parsed, rules=scene.rules).ok, entry.outcome
 
 
 def test_a_unit_under_two_prefixes_is_a_ledger_mismatch() -> None:

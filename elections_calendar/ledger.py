@@ -17,6 +17,7 @@ from typing import get_args
 from elections_calendar.model import (
     IGNORED_REASONS,
     MAX_DETAIL,
+    FetchOutcome,
     InputUnit,
     Outcome,
     Reason,
@@ -32,6 +33,8 @@ from elections_calendar.sources.base import (
 
 _USABLE = ("parsed", "partial")
 _PAGE_OUTCOMES = ("ok", "valid_empty")
+_DOWNLOAD_OUTCOMES = frozenset(get_args(FetchOutcome)) - {"ok"}  # what page_failure can return
+_NEEDS_A_FAILED_DOWNLOAD = ("not_published_yet", "required_year_missing")
 
 
 @dataclass(frozen=True, slots=True)
@@ -280,6 +283,7 @@ def _page_problems(raw: RawPages, result: ParseResult, rules: Mapping[str, Count
                 f"page {entry.key!r} is an unfinished request, coverage says {entry.outcome}"
             )
         if entry.outcome not in _PAGE_OUTCOMES:
+            problems += _non_unit_problems(entry, pages.get(entry.key))
             continue
         page = pages.get(entry.key)
         if page is None:
@@ -293,6 +297,30 @@ def _page_problems(raw: RawPages, result: ParseResult, rules: Mapping[str, Count
         n = sum(u.unit_id.startswith(prefix) for prefix in prefixes)
         if n != 1:
             problems.append(f"unit {u.unit_id} is under {n} ok or valid_empty page prefixes, not 1")
+    return problems
+
+
+def _non_unit_problems(entry: PageCoverage, page: RawPage | None) -> list[str]:
+    """What a page that gave no units may claim (F-04): the download decides, not the adapter.
+
+    A download outcome must be what ``page_failure`` says; a page that is not published
+    yet needs a failed download; a changed layout needs a clean one; no units are seen.
+    """
+    problems: list[str] = []
+    if entry.units_seen != 0:
+        problems.append(
+            f"page {entry.key!r} is {entry.outcome} but reports units_seen {entry.units_seen}"
+        )
+    if page is None:
+        return problems
+    failure = page_failure(page)
+    how = "succeeded" if failure is None else f"failed: {failure}"
+    if entry.outcome in _DOWNLOAD_OUTCOMES and entry.outcome != failure:
+        problems.append(f"page {entry.key!r} is {entry.outcome} but its download {how}")
+    elif entry.outcome in _NEEDS_A_FAILED_DOWNLOAD and failure is None:
+        problems.append(f"page {entry.key!r} is {entry.outcome} but its download succeeded")
+    elif entry.outcome == "layout_not_recognised" and failure is not None:
+        problems.append(f"page {entry.key!r} is {entry.outcome} but its download {how}")
     return problems
 
 
