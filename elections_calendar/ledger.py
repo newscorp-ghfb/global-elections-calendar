@@ -93,6 +93,7 @@ CountRule = (
 COUNT_RULES: Mapping[str, CountRule] = {
     "electionguide": TableRowsRule("electionsTable"),
     "osce": HeaderTableRowsRule(frozenset({"date", "country", "election", "activity"})),
+    "aweb": HeaderTableRowsRule(frozenset({"country", "election", "date"})),
     "ipu": HeaderTableRowsRule(
         frozenset(
             {
