@@ -12,6 +12,10 @@ files in its own directory: each page is pickled to ``<n>.tmp`` and published
 with ``os.replace`` as ``<n>.page``; ``done`` or ``error`` ends the handover.
 Only published files are read, and only after the worker is gone.
 
+A defect in one source never costs the others: a spec that cannot be loaded, a source that
+cannot start and a page that cannot be read are each ``worker_failed`` with the exception's
+type name as the detail, and the other sources still run.
+
 A scrape is bounded twice. The work cutoff of a source is the earlier of its
 own start + ``source_deadline_s`` and the scrape deadline. The parent cuts the
 worker within its wake latency of the cutoff, and no page published after the
@@ -26,6 +30,7 @@ import multiprocessing
 import multiprocessing.connection
 import os
 import pickle
+import re
 import shutil
 import sys
 import time
@@ -51,15 +56,24 @@ SourceOutcome = Literal["complete", "deadline", "scrape_deadline", "worker_faile
 
 _wait = multiprocessing.connection.wait  # a module-level name so a test can replace it
 _IDLE_WAKE_S = 1.0
+_SOURCE_NAME = re.compile(r"[a-z0-9_-]+")
 
 
 @dataclass(frozen=True, slots=True)
 class AdapterSpec:
-    """Which adapter to run: ``target`` is ``"module:Class"``, ``options`` its keyword arguments."""
+    """Which adapter to run: ``target`` is ``"module:Class"``, ``options`` its keyword arguments.
+
+    ``source`` names the worker's directory, which is later removed, so it is limited to
+    lower-case letters, digits, ``_`` and ``-``.
+    """
 
     source: str
     target: str
     options: tuple[tuple[str, str], ...] = ()
+
+    def __post_init__(self) -> None:
+        if not _SOURCE_NAME.fullmatch(self.source):
+            raise ValueError(f"AdapterSpec.source {self.source!r} is not [a-z0-9_-]+")
 
 
 DEFAULT_ADAPTERS = (
@@ -155,15 +169,21 @@ class _Scrape:
         self._grace_s = grace_s
         self._pages_root = pages_root
         self._context = multiprocessing.get_context("spawn")
-        self.slots = [
-            _Slot(
-                index, spec, _load(spec).requests(window), pages_root / f"{index:02d}-{spec.source}"
-            )
-            for index, spec in enumerate(specs)
-        ]
-        self._pending = deque(self.slots)
         self.live: list[_Slot] = []
         self.runs: dict[int, SourceRun] = {}
+        self.slots: list[_Slot] = []
+        for index, spec in enumerate(specs):
+            directory = pages_root / f"{index:02d}-{spec.source}"
+            try:
+                requests = _load(spec).requests(window)
+            except Exception as exc:  # a bad adapter spec costs that source only
+                requests = ()
+                self.runs[index] = SourceRun(
+                    spec.source, RawPages(spec.source, (), ()), "worker_failed", 0,
+                    type(exc).__name__,
+                )
+            self.slots.append(_Slot(index, spec, requests, directory))
+        self._pending = deque(slot for slot in self.slots if slot.index not in self.runs)
 
     def run(self) -> tuple[SourceRun, ...]:
         while self._pending or self.live:
@@ -200,21 +220,32 @@ class _Scrape:
         slot.scrape_cut = self._scrape_end <= own_cutoff
         slot.cutoff = self._scrape_end if slot.scrape_cut else own_cutoff
         slot.started_at = now
-        slot.directory.mkdir(parents=True)
-        slot.process = self._context.Process(
-            target=_work,
-            args=(
-                slot.spec,
-                str(slot.directory),
-                str(self._bundle),
-                slot.cutoff - now,
-                self._window,
-            ),
-            name=f"source-{slot.spec.source}",
-            daemon=True,
-        )
-        slot.process.start()
+        try:
+            slot.directory.mkdir(parents=True)
+            slot.process = self._context.Process(
+                target=_work,
+                args=(
+                    slot.spec,
+                    str(slot.directory),
+                    str(self._bundle),
+                    slot.cutoff - now,
+                    self._window,
+                ),
+                name=f"source-{slot.spec.source}",
+                daemon=True,
+            )
+            slot.process.start()
+        except Exception as exc:  # this source did not start; the others still run
+            self.runs[slot.index] = self._failed(slot, exc, now)
+            return
         self.live.append(slot)
+
+    @staticmethod
+    def _failed(slot: _Slot, exc: Exception, now: float) -> SourceRun:
+        """A worker_failed run for a slot the parent itself could not run or read."""
+        raw = RawPages(slot.spec.source, (), slot.requests)
+        elapsed_ms = int((now - slot.started_at) * 1000)
+        return SourceRun(slot.spec.source, raw, "worker_failed", elapsed_ms, type(exc).__name__)
 
     def _timeout(self) -> float:
         """Seconds to the nearest cutoff or kill time."""
@@ -233,7 +264,10 @@ class _Scrape:
             if process.sentinel in ready:
                 process.join()  # it has exited: returns at once
                 self.live.remove(slot)
-                self.runs[slot.index] = self._collect(slot, now)
+                try:
+                    self.runs[slot.index] = self._collect(slot, now)
+                except Exception as exc:  # e.g. the worker's directory cannot be read
+                    self.runs[slot.index] = self._failed(slot, exc, now)
 
     def _cut(self, now: float) -> None:
         for slot in self.live:
@@ -269,7 +303,12 @@ class _Scrape:
             else:
                 outcome = "worker_failed"
                 detail = f"exit code {_process(slot).exitcode}"
-        pages: list[RawPage] = [pickle.loads((directory / name).read_bytes()) for name in names]
+        pages: list[RawPage] = []
+        for name in names:
+            try:
+                pages.append(pickle.loads((directory / name).read_bytes()))
+            except Exception as exc:  # an unreadable page stays unfinished, and the source failed
+                outcome, detail = "worker_failed", type(exc).__name__
         shutil.rmtree(directory, ignore_errors=True)
         got = {page.request.key for page in pages}
         raw = RawPages(

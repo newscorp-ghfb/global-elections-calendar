@@ -205,3 +205,34 @@ class Raise(_Base):
 class Crash(_Base):
     def fetch(self, window: Window, fetcher: Getter, deadline: Deadline) -> Iterator[RawPage]:
         os._exit(3)
+
+
+class BadRequests(_Base):
+    """``requests()`` raises, like an adapter with a bad option value."""
+
+    def __init__(self, level: str = "") -> None:
+        self._level = level
+
+    def requests(self, window: Window) -> tuple[PageRequest, ...]:
+        raise ValueError(f"bad option {self._level}")
+
+
+class PartlyCorrupt(_Base):
+    """Two pages; the first is published as bytes that are no pickle."""
+
+    def requests(self, window: Window) -> tuple[PageRequest, ...]:
+        return (PageRequest("one", "https://fake.test/"), PageRequest("two", "https://fake.test/"))
+
+    def fetch(self, window: Window, fetcher: Getter, deadline: Deadline) -> Iterator[RawPage]:
+        import pickle
+
+        real = pickle.dumps
+        calls: list[int] = []
+
+        def corrupt_first(obj: Any, *args: Any, **kwargs: Any) -> bytes:
+            calls.append(1)
+            return b"not a pickle" if len(calls) == 1 else real(obj, *args, **kwargs)
+
+        pickle.dumps = corrupt_first  # the worker's own copy of the module
+        yield fake_page("one")
+        yield fake_page("two")
