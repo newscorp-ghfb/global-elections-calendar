@@ -389,7 +389,7 @@ def test_a_source_whose_directory_cannot_be_read_costs_only_its_own_source(
 
 
 def test_the_default_adapters_import_construct_and_pickle_their_window() -> None:
-    assert [s.source for s in runner.DEFAULT_ADAPTERS] == ["electionguide", "osce", "wikipedia"]
+    assert [s.source for s in runner.DEFAULT_ADAPTERS] == ["electionguide", "osce", "wikipedia", "ipu"]
     shipped = pickle.loads(pickle.dumps(WINDOW))
     for spec_ in runner.DEFAULT_ADAPTERS:
         adapter = runner._load(spec_)  # no options
