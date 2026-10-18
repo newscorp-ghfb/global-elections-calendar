@@ -160,7 +160,7 @@ class ElectionGuide:
         for request in raw.unfinished:
             coverage.append(PageCoverage(request.key, None, "unfinished", None, 0))
         notes: list[Reason] = []
-        if past is not None and past.outcome == "ok":
+        if past is not None and past.outcome in ("ok", "valid_empty"):
             oldest = min(past.kept_starts) if past.kept_starts else None
             if oldest is None or oldest >= window.start:
                 starts = oldest.isoformat() if oldest else "empty"
