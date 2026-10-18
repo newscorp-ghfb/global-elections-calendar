@@ -196,15 +196,16 @@ def _has_data_table(elements: tuple[Tag, ...]) -> bool:
 def _stray_text(section: _Section) -> str | None:
     """What describes text of a counted section that is not in an entry, or None.
 
-    Entries are ``li``. Text is also allowed in a maintenance box, in a sub-heading
-    (``div.mw-heading``, which holds an h3-h6) and in a ``style`` element. Anything else
-    (a ``p``, a div card, text between elements) is a changed layout (spec §7): the
-    entry would be counted nowhere.
+    Entries are ``li``. Text is also allowed in a maintenance box (a ``table`` or ``div``
+    with a box class), in a ``style`` element and, inside a sub-heading (``div.mw-heading``),
+    within its ``h3``-``h6`` and its ``span.mw-editsection``. Anything else (a ``p``, a div
+    card, text between elements, any other child of a sub-heading) is a changed layout
+    (spec §7): the entry would be counted nowhere.
     """
 
     def visit(node: PageElement) -> str | None:
         if isinstance(node, Tag):
-            if node.name in ("li", "style") or _is_sub_heading(node) or _is_maintenance(node):
+            if node.name in ("li", "style") or _is_maintenance(node) or _in_heading(node):
                 return None
             return next((found for child in node.children if (found := visit(child))), None)
         if isinstance(node, PreformattedString) or not str(node).strip():
@@ -217,14 +218,26 @@ def _stray_text(section: _Section) -> str | None:
     return next((found for node in section.nodes if (found := visit(node))), None)
 
 
+def _in_heading(tag: Tag) -> bool:
+    """Whether ``tag`` is the heading text of a sub-heading: an h3-h6 or its edit link."""
+    parent = tag.parent
+    if parent is None or not _is_sub_heading(parent):
+        return False
+    return tag.name in ("h3", "h4", "h5", "h6") or (
+        tag.name == "span" and "mw-editsection" in (tag.get("class") or [])
+    )
+
+
 def _is_sub_heading(tag: Tag) -> bool:
     return tag.name == "div" and "mw-heading" in (tag.get("class") or [])
 
 
-def _is_maintenance(table: Tag) -> bool:
-    for tag in (table, *table.parents):
-        classes = tag.get("class") if isinstance(tag, Tag) else None
-        if classes and any(c in _MAINTENANCE_TABLES for c in classes):
+def _is_maintenance(tag: Tag) -> bool:
+    """Whether ``tag`` is in a maintenance box (a ``table`` or ``div`` with a box class)."""
+    for node in (tag, *tag.parents):
+        if not isinstance(node, Tag) or node.name not in ("table", "div"):
+            continue
+        if any(c in _MAINTENANCE_TABLES for c in node.get("class") or []):
             return True
     return False
 
@@ -318,23 +331,6 @@ def _after_head(text: str, head: str) -> str:
     """The text after a date head and its separator."""
     after = text[len(head) :].lstrip() if text.startswith(head) else text
     return after[1:].strip() if after[:1] in _DATE_SEPARATORS else after
-
-
-def _place_for_children(
-    registries: Registries, rest: str, first_link: str | None, has_kids: bool, where: _Where
-) -> _Where:
-    """What the children of an item with no usable date inherit.
-
-    The item stays unparsed, but its children still need its country: with no place of
-    its own to pass down, its first token is resolved as the country, as for any dated item.
-    """
-    if where.place is not None or not has_kids:
-        return where
-    tokens = _split_top(rest)
-    if not tokens or _ARTICLE_TITLE.match(tokens[0]):
-        return where
-    place_text, place, _ = _country(rest, first_link, registries)
-    return where if place is None or place_text is None else _Where(place, place_text)
 
 
 def _section_date(section: str, year: int) -> _Date:
@@ -569,10 +565,11 @@ class Wikipedia:
         here = where
         if date.failure is not None:
             outcome, reason = "unparsed", date.failure
-            here = _place_for_children(walk.registries, rest, first_link, bool(kids), where)
+            # The item stays unparsed, but its children inherit the place it would have given.
+            here = self._item_body(walk, unit_id, rest, first_link, bool(kids), date, where)[3]
         elif not all(plausible(span, walk.window.today) for span in date.spans):
             outcome, reason = "unparsed", "implausible_date"
-            here = _place_for_children(walk.registries, rest, first_link, bool(kids), where)
+            here = self._item_body(walk, unit_id, rest, first_link, bool(kids), date, where)[3]
         else:
             outcome, reason, leftover, here, new_claims = self._item_body(
                 walk, unit_id, rest, first_link, bool(kids), date, where
