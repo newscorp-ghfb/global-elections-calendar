@@ -6,13 +6,14 @@ from typing import get_args
 import pytest
 
 from elections_calendar.fetch import Deadline, FetchResult
-from elections_calendar.model import Reason, ReasonCode, RecordError
+from elections_calendar.model import MAX_DETAIL, Reason, ReasonCode, RecordError
 from elections_calendar.offices import InstitutionRegistry
 from elections_calendar.places import PlaceRegistry, SubdivisionIndex
 from elections_calendar.sources.base import (
     PAGE_REASONS,
     PageCoverage,
     PageOutcome,
+    PageParse,
     PageRequest,
     ParseResult,
     RawPage,
@@ -20,8 +21,9 @@ from elections_calendar.sources.base import (
     coverage_reasons,
     fetch_pages,
     page_failure,
+    parse_pages,
 )
-from tests.support.pages import FETCHED, raw_pages, result
+from tests.support.pages import FETCHED, claim, raw_pages, result, unit
 
 
 class StubGetter:
@@ -161,3 +163,67 @@ def test_every_page_outcome_without_units_maps_to_a_reason_code() -> None:
         assert coverage_reasons([page]) == (Reason(PAGE_REASONS[outcome], "p"),)
     assert PAGE_REASONS["unfinished"] == "deadline"
     assert all(PAGE_REASONS[o] == o for o in without_units if o != "unfinished")
+
+
+def _pages(*specs: tuple[str, bytes, dict[str, object]]):  # type: ignore[no-untyped-def]
+    return raw_pages(
+        "s",
+        [
+            (PageRequest(key, f"https://example.test/{key}"), result(body, **kw))  # type: ignore[arg-type]
+            for key, body, kw in specs
+        ],
+    )
+
+
+def test_parse_pages() -> None:
+    calls: list[str] = []
+
+    def parse_page(page: RawPage) -> PageParse:
+        calls.append(page.request.key)
+        key = page.request.key
+        if key == "a":
+            uid = "s:a/r1"
+            return PageParse(
+                "ok", [unit("s", uid)], [claim(uid)], year=2026, notes=[Reason("count_change", "n")]
+            )
+        if key == "b":
+            return PageParse("valid_empty", notes=[Reason("coverage_gap", "g")])
+        if key == "c":
+            return PageParse(
+                "layout_not_recognised",
+                [unit("s", "s:c/r1")],
+                [claim("s:c/r1")],
+                "d" * 500,
+                notes=[Reason("count_change", "lost")],
+            )
+        if key == "d":
+            raise RecursionError
+        return PageParse("not_published_yet", detail="soon")
+
+    raw = _pages(
+        ("a", b"x", {}),
+        ("down", b"", {"outcome": "timeout", "status": None}),
+        ("b", b"x", {}),
+        ("c", b"x", {}),
+        ("d", b"x", {}),
+        ("e", b"x", {}),
+    )
+    raw = type(raw)(raw.source, raw.pages, (PageRequest("late", "https://example.test/late", 2027),))
+    out = parse_pages("s", raw, parse_page)
+    assert calls == ["a", "b", "c", "d", "e"]  # never the failed download
+    assert [(c.key, c.outcome, c.unit_prefix, c.units_seen, c.year) for c in out.coverage] == [
+        ("a", "ok", "s:a/", 1, 2026),
+        ("down", "timeout", None, 0, None),
+        ("b", "valid_empty", "s:b/", 0, None),
+        ("c", "layout_not_recognised", None, 0, None),
+        ("d", "layout_not_recognised", None, 0, None),
+        ("e", "not_published_yet", None, 0, None),
+        ("late", "unfinished", None, 0, 2027),
+    ]
+    assert [c.detail for c in out.coverage] == [
+        "", "", "", "d" * MAX_DETAIL, "nested too deep", "soon", ""
+    ]
+    assert [u.unit_id for u in out.units] == ["s:a/r1"]
+    assert [c.claim_id for c in out.claims] == ["s:a/r1#0"]
+    assert out.notes == (Reason("count_change", "n"), Reason("coverage_gap", "g"))
+    assert out.source == "s"
