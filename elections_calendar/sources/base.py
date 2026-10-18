@@ -1,4 +1,4 @@
-"""The adapter contract (spec §8, §9.4).
+"""The adapter contract (spec §7, §9.4).
 
 Every source adapter fetches a few pages (``fetch``), then parses them into
 input units and claims (``parse``); the ledger and the runner build on the
@@ -102,7 +102,8 @@ class PageCoverage:
     """What one page gave. ``unit_prefix`` (e.g. ``"electionguide:upcoming/"``) is set
     exactly when the outcome is ``ok`` or ``valid_empty``; the ledger owns the discovery rules.
     ``detail`` says where a page failed (e.g. the section and element of a changed layout);
-    only a page that gave no units may have one.
+    only a page that gave no units may have one. ``year`` is the request's year, or for a
+    single-page list the year its claims share (A-WEB, P31); it is never verified page scope.
     """
 
     key: str
@@ -239,7 +240,11 @@ def page_failure(page: RawPage) -> PageOutcome | None:
 
 @dataclass(slots=True)
 class PageParse:
-    """What one page gave, before ``parse_pages`` turns it into coverage."""
+    """What one page gave, before ``parse_pages`` turns it into coverage.
+
+    ``year`` is the request's year, or for a single-page list the year its claims share
+    (A-WEB, P31); it is never verified page scope.
+    """
 
     outcome: PageOutcome
     units: list[InputUnit] = field(default_factory=list)
