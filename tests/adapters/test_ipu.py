@@ -391,3 +391,22 @@ def test_ok_parse_with_two_spans_is_date_unparsed() -> None:
         (u,) = res.units
         assert (u.outcome, u.reason, u.leftover) == ("unparsed", "date_unparsed", text)
         assert res.claims == ()
+
+
+@pytest.mark.parametrize(
+    "expected",
+    [
+        "Postponed",
+        "Cancelled",
+        "Held",
+        "Postponed from 31 Dec 2025",
+        "Cancelled 07 Nov 2026",
+        "Postponed to 07 Nov 2026",
+    ],
+)
+def test_a_status_word_in_the_expected_date_is_never_dropped(expected: str) -> None:
+    res = one(expected=expected)
+    (u,) = res.units
+    assert (u.outcome, u.reason, u.leftover) == ("unparsed", "date_unparsed", expected)
+    assert res.claims == ()
+    assert one(expected="-").units[0].reason == "no_expected_date"  # the control

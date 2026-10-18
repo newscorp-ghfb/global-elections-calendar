@@ -117,12 +117,13 @@ class Ipu:
             unit("unparsed", "place_missing")
             return
         parse = parse_date_text(date_text)
-        if parse.ok and not parse.spans:
+        if parse.ok and not parse.spans and parse.status_claim is None:
             unit("ignored", "no_expected_date")
             return
         spans = parse.spans
         if (
             not parse.ok
+            or parse.status_claim is not None
             or len(spans) != 1
             or spans[0].start is None
             or spans[0].start != spans[0].end

@@ -186,7 +186,7 @@ class Carter:
         for token in tokens:
             targeted = token.endswith("*")
             parse = parse_date_text(token[:-1].rstrip() if targeted else token)
-            if not parse.ok or len(parse.spans) != 1:
+            if not parse.ok or parse.status_claim is not None or len(parse.spans) != 1:
                 bad.append(token)
                 continue
             span = parse.spans[0]

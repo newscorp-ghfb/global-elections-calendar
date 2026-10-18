@@ -1,4 +1,4 @@
-"""The ElectionGuide adapter (spec §8): three table views of the IFES Election Guide.
+"""The ElectionGuide adapter (spec §7): three table views of the IFES Election Guide.
 
 Each view (upcoming, past, anticipated) is one ``table#electionsTable``; every body
 row is an input unit. A parsed or partial row gives one claim; an unparsed or ignored row

@@ -1,4 +1,4 @@
-"""The Wikipedia adapter (spec §8): the "YYYY national/local electoral calendar" pages.
+"""The Wikipedia adapter (spec §7): the "YYYY national/local electoral calendar" pages.
 
 Each page is the MediaWiki-API JSON of one article. Its ``h2`` sections hold nested
 ``li`` items; every ``li`` is an input unit and gives one claim per (office, date span).

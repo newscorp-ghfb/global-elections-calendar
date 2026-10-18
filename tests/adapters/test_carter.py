@@ -598,3 +598,19 @@ def test_download_failures_keep_their_own_outcome() -> None:
 def test_a_token_with_two_spans_is_unparsed(bad: str) -> None:
     res = one(bad)
     assert shape(res) == ("unparsed", "date_unparsed", bad)
+
+
+@pytest.mark.parametrize(
+    "cell", ["Cancelled May 2026", "May 2026 Cancelled", "Postponed to June 2026", "Held May 2026"]
+)
+def test_a_token_with_a_status_word_is_unparsed(cell: str) -> None:
+    res = one(cell)
+    assert shape(res) == ("unparsed", "date_unparsed", cell)
+    assert res.claims == ()
+
+
+def test_a_status_token_beside_a_good_one_makes_the_row_partial() -> None:
+    res = one("May 2026, Cancelled June 2026")
+    assert shape(res) == ("partial", "date_unparsed", "Cancelled June 2026")
+    assert len(res.claims) == 1
+    assert res.claims[0].date_text == "May 2026"
