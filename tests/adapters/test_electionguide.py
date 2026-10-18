@@ -501,3 +501,31 @@ def test_coverage_gap_when_the_past_list_starts_inside_the_window() -> None:
     res = parse(views(past=eg_page(HEADERS, [row(start=old, end=old)])))
     assert res.reasons == ()
 
+
+
+@pytest.mark.parametrize(
+    ("label", "round_"),
+    [
+        ("Serbian National Assembly 5 Aprıl 2026", None),
+        ("Serbian National Assembly (fırst round)", None),
+        ("Serbian National Assembly (fİrst round)", None),
+        ("Serbian National Assembly 5 April 2026", None),  # controls: the same labels without the odd letters
+        ("Serbian National Assembly (first round)", 1),
+    ],
+)
+def test_a_label_with_letters_casefold_does_not_fold_is_recorded_not_raised(
+    label: str, round_: int | None
+) -> None:
+    body = fixture("electionguide", "upcoming.html")
+    old = b"Serbian National Assembly"
+    at = body.index(old, body.index(b'id="electionsTable"'))
+    body = body[:at] + label.encode() + body[at + len(old) :]
+    pages = [(r, result(fixture("electionguide", f"{r.key}.html"), url=r.url)) for r in REQUESTS]
+    pages[0] = (REQUESTS[0], result(body, url=REQUESTS[0].url))
+    res = parse(raw_pages("electionguide", pages))  # must not raise; parse() asserts the ledger is ok
+    assert [c.outcome for c in res.coverage] == ["ok", "ok", "ok"]
+    assert len(res.units) == 351
+    unit = next(u for u in res.units if label in u.text)
+    assert (unit.outcome, unit.reason) == ("parsed", None)
+    claim = next(c for c in res.claims if c.unit_id == unit.unit_id)
+    assert claim.round == round_

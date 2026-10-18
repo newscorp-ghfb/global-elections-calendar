@@ -261,3 +261,30 @@ def test_a_day_list_out_of_order_is_leftover() -> None:
     parsed = parse_date_text("30 December, 2 January", default_year=2026)  # January of which year?
     assert parsed.spans == ()
     assert parsed.leftover == "30 December, 2 January"
+
+
+@pytest.mark.parametrize("letter", ["ı", "İ"])
+def test_a_month_with_letters_only_ignorecase_folds_is_unreadable_not_raised(letter: str) -> None:
+    # re.IGNORECASE matches dotless i / dotted I as "i", but casefold() maps them to other letters.
+    text = f"5 Apr{letter}l 2026"
+    parsed = parse_date_text(text)
+    assert parsed.spans == ()
+    assert parsed.leftover == text
+    assert not parsed.ok
+    assert relevance(f"vote on {text}", WINDOW_START) == "unknown"  # no date, and no year >= the window's
+
+
+def test_long_s_casefolds_to_a_real_month_letter() -> None:
+    assert parse_date_text("5 Auguſt 2026").spans == (DateSpan.day(D(2026, 8, 5)),)
+
+
+def test_the_kelvin_sign_is_not_part_of_any_date() -> None:
+    parsed = parse_date_text("5 MarK 2026")
+    assert parsed.spans == ()
+    assert not parsed.ok
+    assert relevance("vote on 5 MarK", WINDOW_START) == "unknown"
+
+
+def test_the_same_dates_without_the_odd_letters_still_parse() -> None:
+    assert parse_date_text("5 April 2026").spans == (DateSpan.day(D(2026, 4, 5)),)
+    assert relevance("vote on 5 April 2027", WINDOW_START) == "in_or_after_window"

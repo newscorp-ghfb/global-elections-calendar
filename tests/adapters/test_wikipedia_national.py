@@ -561,3 +561,24 @@ def test_an_h2_that_is_not_a_section_heading_is_a_changed_layout() -> None:
     plain = f'<div class="mw-parser-output"><h2 id="January">January</h2>{items}</div>'
     data = json.dumps({"parse": {"title": TITLE, "revid": 7, "text": plain}}).encode()
     assert one_page(data).coverage[0].outcome == "ok"
+
+
+@pytest.mark.parametrize("letter", ["ı", "İ"])
+def test_an_item_with_letters_casefold_does_not_fold_is_recorded_not_raised(letter: str) -> None:
+    data = json.loads(fixture("wikipedia", "national-2026.json"))
+    text: str = data["parse"]["text"]
+    at = text.index("<ul>", text.index('id="November"')) + len("<ul>")  # a new first entry in November
+    data["parse"]["text"] = text[:at] + f"<li>5 Apr{letter}l: <a>Sweden</a>, Parliament</li>" + text[at:]
+    raw = swap(national_2026=body_of(json.dumps(data).encode()))
+    res = Wikipedia().parse(raw, WINDOW, REGISTRIES)  # must not raise
+    assert check(raw, res).ok
+    page = next(c for c in res.coverage if c.key == "national-2026")
+    assert (page.outcome, page.units_seen) == ("ok", 109)
+    added = [u for u in of(res) if u.text.startswith(f"5 Apr{letter}l")]
+    assert [(u.outcome, u.reason) for u in added] == [("unparsed", "date_unparsed")]
+    assert not [c for c in res.claims if c.unit_id == added[0].unit_id]
+    # every other unit is exactly as without the added item
+    others = [u for u in of(res) if u.unit_id != added[0].unit_id]  # (later ids shift by one)
+    assert [(u.text, u.outcome) for u in others] == [(u.text, u.outcome) for u in of(RES)]
+    assert len(others) == 108
+    assert res.coverage[1:] == RES.coverage[1:]

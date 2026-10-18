@@ -192,7 +192,11 @@ def _day(token: str) -> int:
 
 
 def _month(token: str) -> int:
-    return MONTH_NUMBERS[token.rstrip(".").casefold()]
+    # re.IGNORECASE also matches letters (dotless i, ...) whose casefold() is not a month key.
+    number = MONTH_NUMBERS.get(token.rstrip(".").casefold())
+    if number is None:
+        raise ValueError(f"no month in {token!r}")
+    return number
 
 
 def _year(token: str | None, default_year: int | None) -> int:
