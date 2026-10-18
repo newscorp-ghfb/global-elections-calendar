@@ -6,8 +6,9 @@ from urllib.parse import urlsplit
 import pytest
 
 from elections_calendar.fetch import Deadline, FetchResult
-from elections_calendar.ledger import check
+from elections_calendar.ledger import COUNT_RULES, HeaderTableRowsRule, check
 from elections_calendar.model import DateSpan, Reason
+from elections_calendar.sources import osce
 from elections_calendar.sources.base import Adapter, ParseResult, RawPages, Registries
 from elections_calendar.sources.osce import URL, Osce
 from elections_calendar.window import window_for
@@ -392,3 +393,51 @@ def test_requests_and_fetch() -> None:
 
     pages = list(Osce().fetch(WINDOW, Stub(), Deadline.after(60)))
     assert [p.request.key for p in pages] == ["elections"] and urls == [URL]
+
+
+def _bare(row: str, which: str) -> str:
+    """The row with the href removed from the activity or country anchor."""
+    head, sep, tail = row.partition("<td><span class=\"elections-country\">")
+    if which == "country":
+        tail = tail.replace(' href="/odihr/elections/bulgaria"', "", 1)
+    else:
+        head = head.replace(' href="/node/1"', "")
+        tail = tail.replace(' href="/node/1"', "")
+    return head + sep + tail
+
+
+def test_anchor_without_href_is_not_link_rejected() -> None:
+    row = osce_row(activity="Mission", activity_href="/node/1")
+    row = _bare(_bare(row, "country"), "activity")
+    assert "href" not in row and "<a>" in row
+    res = parse(page_of(osce_page([row])))
+    assert (res.units[0].outcome, res.units[0].reason) == ("parsed", None)
+    assert res.claims[0].link == URL
+    mixed = _bare(osce_row(activity="Mission", activity_href="/node/1"), "activity")
+    assert "/node/1" not in mixed
+    res = parse(page_of(osce_page([mixed])))
+    assert res.units[0].outcome == "parsed"
+    assert res.claims[0].link == "https://odihr.osce.org/odihr/elections/bulgaria"
+
+
+def test_ledger_count_rule_matches_adapter_headers() -> None:
+    rule = COUNT_RULES["osce"]
+    assert isinstance(rule, HeaderTableRowsRule)
+    assert rule.headers == frozenset(osce.HEADERS)
+
+
+def test_subdomain_and_port_links() -> None:
+    ok = one(activity="Mission", activity_href="https://www.osce.org/x")
+    assert (ok.units[0].outcome, ok.claims[0].link) == ("parsed", "https://www.osce.org/x")
+    bad = one(country_href="https://odihr.osce.org:8443/x")
+    assert (bad.units[0].outcome, bad.units[0].reason) == ("partial", "link_rejected")
+    assert bad.claims[0].link == URL
+
+
+def test_empty_badge_span_is_ignored() -> None:
+    res = one(badges=("",))
+    assert (res.units[0].outcome, res.units[0].reason, res.units[0].leftover) == (
+        "parsed",
+        None,
+        "",
+    )
