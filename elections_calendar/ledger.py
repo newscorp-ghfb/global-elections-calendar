@@ -107,6 +107,7 @@ COUNT_RULES: Mapping[str, CountRule] = {
     "carter": HeadingTablesRule(
         (("elections monitored by the carter center", "monitored"), ("expert missions", "expert"))
     ),
+    "eeas": LinkTableCellsRule(r"EOM (?P<country>.+) (?P<year>\d{4})"),
     "wikipedia": SectionItemsRule(
         frozenset(
             {

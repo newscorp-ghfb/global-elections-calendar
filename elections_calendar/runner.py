@@ -84,6 +84,7 @@ DEFAULT_ADAPTERS = (
     AdapterSpec("aweb", "elections_calendar.sources.aweb:Aweb"),
     AdapterSpec("ipu", "elections_calendar.sources.ipu:Ipu"),
     AdapterSpec("carter", "elections_calendar.sources.carter:Carter"),
+    AdapterSpec("eeas", "elections_calendar.sources.eeas:Eeas"),
 )
 
 

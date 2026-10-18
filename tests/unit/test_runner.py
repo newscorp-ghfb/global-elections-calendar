@@ -397,6 +397,7 @@ def test_the_default_adapters_import_construct_and_pickle_their_window() -> None
         "aweb",
         "ipu",
         "carter",
+        "eeas",
     ]
     shipped = pickle.loads(pickle.dumps(WINDOW))
     for spec_ in runner.DEFAULT_ADAPTERS:
