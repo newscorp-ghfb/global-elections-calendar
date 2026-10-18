@@ -354,6 +354,23 @@ def test_thead_header_row_needs_every_cell_th() -> None:
     assert (res.units[0].outcome, res.units[0].reason) == ("ignored", "header_row")
 
 
+def test_a_thead_outside_the_table_is_not_its_header() -> None:
+    page = (
+        f"<html><body><h2>{H1}</h2><thead><tr><td><table><tr><th>Country</th>"
+        "<th>Dates</th></tr></table></td></tr></thead></body></html>"
+    )
+    res = parse(page_of(page))
+    assert [(u.outcome, u.reason, u.leftover) for u in res.units] == [
+        ("unparsed", "date_unparsed", "Dates")
+    ]
+
+
+def test_a_repeated_future_token_stays_in_leftover() -> None:
+    res = one("May 2032, May 2032, May 2026")
+    assert shape(res) == ("partial", "implausible_date", "May 2032, May 2032")
+    assert spans(res) == [("May 2026", False)]
+
+
 def test_nested_tables_are_not_sections_tables_or_units() -> None:
     nested = "<table><tr><td>Chile</td><td>May 2026</td></tr></table>"
     page = carter_page([f"<tr><td>{nested}</td><td>June 2026</td></tr>", row("Peru", "May 2026")])
