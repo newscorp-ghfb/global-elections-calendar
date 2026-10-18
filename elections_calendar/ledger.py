@@ -21,6 +21,7 @@ from elections_calendar.model import (
     InputUnit,
     Outcome,
     Reason,
+    ReasonCode,
     Relevance,
 )
 from elections_calendar.sources.base import (
@@ -241,8 +242,8 @@ def _unit_problems(result: ParseResult) -> list[str]:
             indexes.setdefault(c.unit_id, set()).add(c.claim_id.removeprefix(f"{c.unit_id}#"))
     for u in units.values():
         numbers = indexes.get(u.unit_id, set())
-        if u.outcome == "parsed" and not numbers:
-            problems.append(f"parsed unit {u.unit_id} has no claim")
+        if u.outcome in _USABLE and not numbers:
+            problems.append(f"{u.outcome} unit {u.unit_id} has no claim")
         if numbers != {str(i) for i in range(len(numbers))}:
             problems.append(f"claims of {u.unit_id} are not numbered #0 to #{len(numbers) - 1}")
         if u.duplicate_of is not None:
@@ -361,10 +362,10 @@ def _discovery_problems(
     return problems
 
 
-def _reason(code: str, problems: list[str]) -> list[Reason]:
+def _reason(code: ReasonCode, problems: list[str]) -> list[Reason]:
     if not problems:
         return []
-    return [Reason(code, problems[0][:MAX_DETAIL])]  # type: ignore[arg-type]
+    return [Reason(code, problems[0][:MAX_DETAIL])]
 
 
 def check(

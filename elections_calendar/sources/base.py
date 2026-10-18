@@ -8,7 +8,7 @@ types here. ``fetch_pages`` runs requests one at a time, in order (§8).
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Literal, Protocol
+from typing import Final, Literal, Protocol
 
 from elections_calendar.fetch import Deadline, FetchResult
 from elections_calendar.model import (
@@ -16,6 +16,7 @@ from elections_calendar.model import (
     Claim,
     InputUnit,
     Reason,
+    ReasonCode,
     RecordError,
     _check_fields,
 )
@@ -40,6 +41,22 @@ PageOutcome = Literal[
     "fetch_failed",
 ]
 _PAGES_WITH_UNITS = ("ok", "valid_empty")
+# The reason each page outcome without units gives. "unfinished" is "deadline" for now: the
+# runner also leaves requests unfinished after a worker failure (Plan 4 may tell them apart).
+PAGE_REASONS: Final[dict[PageOutcome, ReasonCode]] = {
+    "not_published_yet": "not_published_yet",
+    "required_year_missing": "required_year_missing",
+    "layout_not_recognised": "layout_not_recognised",
+    "unfinished": "deadline",
+    "http_error": "http_error",
+    "timeout": "timeout",
+    "tls_error": "tls_error",
+    "dns_error": "dns_error",
+    "challenge_page": "challenge_page",
+    "api_error": "api_error",
+    "deadline": "deadline",
+    "fetch_failed": "fetch_failed",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,7 +84,9 @@ class RawPage:
 
 @dataclass(frozen=True, slots=True)
 class RawPages:
-    """All pages of one source run; ``unfinished`` were not fetched before the deadline."""
+    """All pages of one source run; ``unfinished`` are the requests whose pages were not
+    received: the worker was cut at a deadline, or it failed before fetching them.
+    """
 
     source: str
     pages: tuple[RawPage, ...]
@@ -108,9 +127,8 @@ def coverage_reasons(coverage: Iterable[PageCoverage]) -> tuple[Reason, ...]:
     for page in coverage:
         if page.outcome in _PAGES_WITH_UNITS:
             continue
-        code = "deadline" if page.outcome == "unfinished" else page.outcome
         detail = f"{page.key}: {page.detail}" if page.detail else page.key
-        reasons.append(Reason(code, detail[:MAX_DETAIL]))  # type: ignore[arg-type]
+        reasons.append(Reason(PAGE_REASONS[page.outcome], detail[:MAX_DETAIL]))
     return tuple(reasons)
 
 
