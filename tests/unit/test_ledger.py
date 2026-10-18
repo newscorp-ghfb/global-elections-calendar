@@ -255,6 +255,11 @@ RECORD_CASES: dict[str, Callable[[], Scene]] = {
         units=[*three_units(), unit("t", "t:v/r1", "unparsed", "odd")]
     ),
     "claims #0 and #2": lambda: Scene(claims=[*three_claims(), claim("s:v/r1", 2)]),
+    "parsed unit without a claim": lambda: Scene(claims=three_claims()[:2]),
+    "partial unit without a claim": lambda: Scene(
+        units=[*three_units()[:2], unit("s", "s:v/r3", "partial", "office_unrecognised")],
+        claims=three_claims()[:2],
+    ),
     "duplicate_of an unparsed unit": lambda: dup_scene("s:v/r2"),
     "duplicate_of a missing unit": lambda: dup_scene("s:v/r9"),
     "ignored reason off the allowlist": off_allowlist,
@@ -269,6 +274,8 @@ RECORD_NEEDLES = {
     "claim saved with another source": "claim s:v/r1#0 has source 't'",
     "unit of another source": "unit t:v/r1 has source 't'",
     "claims #0 and #2": "claims of s:v/r1 are not numbered",
+    "parsed unit without a claim": "parsed unit s:v/r3 has no claim",
+    "partial unit without a claim": "partial unit s:v/r3 has no claim",
     "duplicate_of an unparsed unit": "unit s:v/r3 duplicates s:v/r2",
     "duplicate_of a missing unit": "unit s:v/r3 duplicates s:v/r9",
     "ignored reason off the allowlist": "'made_up', not allowlisted",

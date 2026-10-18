@@ -1,8 +1,9 @@
 """The ElectionGuide adapter (spec §8): three table views of the IFES Election Guide.
 
 Each view (upcoming, past, anticipated) is one ``table#electionsTable``; every body
-row is an input unit and one claim. ElectionGuide lists an election in more than one
-view, so a row that repeats an earlier row of the same event is ignored as a duplicate.
+row is an input unit. A parsed or partial row gives one claim; an unparsed or ignored row
+gives none. ElectionGuide lists an election in more than one view, so a row that repeats
+an earlier row of the same event is ignored as a duplicate.
 """
 
 import re

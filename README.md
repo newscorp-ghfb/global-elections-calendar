@@ -100,6 +100,6 @@ cutoff**: the earlier of its own start plus 4 minutes and the 12-minute scrape d
 parent cuts the worker within its wake latency of the cutoff, and no page published after the
 cut counts; a worker cut at its cutoff is reported as a deadline even if it had just finished.
 The cut worker is terminated, and killed if it is still alive after a 5 s grace
-period. The **return bound** is longer: `run_sources` returns within the latest cutoff plus the grace period plus 2 s, cleanup included, and no
-child outlives it. This bounds fetching only. Parsing runs afterwards and has no time bound
-here (Plan 4).
+period. The **return bound** is longer: `run_sources` returns within the latest cutoff plus the
+grace period plus 2 s, cleanup included, and no child outlives it. This bounds fetching only.
+Parsing runs afterwards and has no time bound here (Plan 4).

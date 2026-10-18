@@ -1,15 +1,18 @@
 """The adapter contract (spec §8, §9.4)."""
 
 from datetime import datetime, timedelta, timezone
+from typing import get_args
 
 import pytest
 
 from elections_calendar.fetch import Deadline, FetchResult
-from elections_calendar.model import Reason, RecordError
+from elections_calendar.model import Reason, ReasonCode, RecordError
 from elections_calendar.offices import InstitutionRegistry
 from elections_calendar.places import PlaceRegistry, SubdivisionIndex
 from elections_calendar.sources.base import (
+    PAGE_REASONS,
     PageCoverage,
+    PageOutcome,
     PageRequest,
     ParseResult,
     RawPage,
@@ -147,3 +150,14 @@ def test_only_a_page_without_units_has_a_detail() -> None:
         with pytest.raises(RecordError):
             PageCoverage("a", None, outcome, "s:a/", 0, detail="why")
     assert PageCoverage("a", None, "timeout", None, 0, detail="why").detail == "why"
+
+
+def test_every_page_outcome_without_units_maps_to_a_reason_code() -> None:
+    without_units = [o for o in get_args(PageOutcome) if o not in ("ok", "valid_empty")]
+    assert sorted(PAGE_REASONS) == sorted(without_units)
+    assert set(PAGE_REASONS.values()) <= set(get_args(ReasonCode))
+    for outcome in without_units:
+        page = PageCoverage("p", None, outcome, None, 0)
+        assert coverage_reasons([page]) == (Reason(PAGE_REASONS[outcome], "p"),)
+    assert PAGE_REASONS["unfinished"] == "deadline"
+    assert all(PAGE_REASONS[o] == o for o in without_units if o != "unfinished")
