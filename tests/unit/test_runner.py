@@ -5,6 +5,8 @@ Workers are real child processes running the adapters in
 """
 
 import multiprocessing
+import multiprocessing.context
+import pickle
 import time
 from collections.abc import Iterator
 from datetime import UTC, datetime
@@ -251,3 +253,158 @@ def test_a_bad_trust_bundle_stops_before_any_worker_starts(tmp_path: Path) -> No
         )
     assert caught.value.variable == "REQUESTS_CA_BUNDLE" and not (tmp_path / "ran").exists()
     assert not (tmp_path / "pages").exists()
+
+
+GOOD = "tests.support.slow_adapters:Sleeper"
+
+
+def late(source: str) -> AdapterSpec:
+    """A source with the one request ``one``."""
+    return AdapterSpec(source, "tests.support.slow_adapters:LatePage", (("seconds", "0"),))
+
+
+def sleeper(record: Path, source: str = "good") -> AdapterSpec:
+    return AdapterSpec(source, GOOD, (("seconds", "0"), ("record", str(record))))
+
+
+def test_a_spec_that_cannot_be_imported_costs_only_its_own_source(
+    tmp_path: Path, ca_env: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ran = tmp_path / "ran"
+    started: list[str] = []
+    real_start = multiprocessing.context.SpawnProcess.start
+
+    def start(self: BaseProcess) -> None:
+        started.append(self.name)
+        real_start(self)
+
+    monkeypatch.setattr(multiprocessing.context.SpawnProcess, "start", start)
+    broken = AdapterSpec("typo", "elections_calendar.sources.electiongiude:ElectionGuide")
+    runs = run_sources([broken, sleeper(ran)], WINDOW, workdir=tmp_path, environ=ca_env).runs
+    assert started == ["source-good"]  # no worker is spawned for a spec that does not load
+    assert [(r.source, r.outcome, r.detail) for r in runs] == [
+        ("typo", "worker_failed", "ModuleNotFoundError"),
+        ("good", "complete", ""),
+    ]
+    assert (runs[0].raw.pages, runs[0].raw.unfinished) == ((), ())
+    assert ran.exists()
+
+
+def test_a_spec_that_cannot_be_constructed_costs_only_its_own_source(
+    tmp_path: Path, ca_env: dict[str, str]
+) -> None:
+    ran = tmp_path / "ran"
+    wrong = AdapterSpec("wrong", GOOD, (("nonsense", "1"),))  # Sleeper takes no such option
+    missing = AdapterSpec("missing", "tests.support.slow_adapters:NoSuchAdapter")
+    runs = run_sources([wrong, missing, sleeper(ran)], WINDOW, workdir=tmp_path, environ=ca_env).runs
+    assert [(r.source, r.outcome, r.detail) for r in runs] == [
+        ("wrong", "worker_failed", "TypeError"),
+        ("missing", "worker_failed", "AttributeError"),
+        ("good", "complete", ""),
+    ]
+    assert ran.exists()
+
+
+def test_a_spec_whose_requests_raise_costs_only_its_own_source(
+    tmp_path: Path, ca_env: dict[str, str]
+) -> None:
+    ran = tmp_path / "ran"
+    bad = AdapterSpec("bad", "tests.support.slow_adapters:BadRequests", (("level", "9"),))
+    runs = run_sources([sleeper(ran), bad], WINDOW, workdir=tmp_path, environ=ca_env).runs
+    assert [(r.source, r.outcome, r.detail) for r in runs] == [
+        ("good", "complete", ""),
+        ("bad", "worker_failed", "ValueError"),
+    ]
+    assert ran.exists()
+
+
+def test_a_source_that_cannot_start_costs_only_its_own_source(
+    tmp_path: Path, ca_env: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_mkdir = Path.mkdir
+    real_start = multiprocessing.context.SpawnProcess.start
+
+    def mkdir(self: Path, *args: Any, **kwargs: Any) -> None:
+        if self.name.endswith("-nodir"):
+            raise PermissionError("no directory for you")
+        real_mkdir(self, *args, **kwargs)
+
+    def start(self: BaseProcess) -> None:
+        if self.name == "source-nostart":
+            raise RuntimeError("cannot spawn")
+        real_start(self)
+
+    monkeypatch.setattr(Path, "mkdir", mkdir)
+    monkeypatch.setattr(multiprocessing.context.SpawnProcess, "start", start)
+    ran = tmp_path / "ran"
+    specs = [late("nodir"), late("nostart"), sleeper(ran)]
+    runs = run_sources(specs, WINDOW, workdir=tmp_path, environ=ca_env).runs
+    assert [(r.source, r.outcome, r.detail) for r in runs] == [
+        ("nodir", "worker_failed", "PermissionError"),
+        ("nostart", "worker_failed", "RuntimeError"),
+        ("good", "complete", ""),
+    ]
+    assert [[q.key for q in r.raw.unfinished] for r in runs] == [["one"], ["one"], []]
+    assert ran.exists() and not (tmp_path / "pages").exists()
+
+
+def test_an_unreadable_page_stays_unfinished_and_fails_the_source(
+    tmp_path: Path, ca_env: dict[str, str]
+) -> None:
+    ran = tmp_path / "ran"
+    corrupt = AdapterSpec("corrupt", "tests.support.slow_adapters:PartlyCorrupt")
+    runs = run_sources([corrupt, sleeper(ran)], WINDOW, workdir=tmp_path, environ=ca_env).runs
+    first, second = runs
+    assert (first.outcome, first.detail) == ("worker_failed", "UnpicklingError")
+    assert ([p.request.key for p in first.raw.pages], [q.key for q in first.raw.unfinished]) == (
+        ["two"],
+        ["one"],
+    )
+    assert second.outcome == "complete" and ran.exists()
+
+
+def test_a_source_whose_directory_cannot_be_read_costs_only_its_own_source(
+    tmp_path: Path, ca_env: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_collect = runner._Scrape._collect
+
+    def collect(self: Any, slot: Any, now: float) -> Any:
+        if slot.spec.source == "unreadable":
+            raise OSError("cannot read")
+        return real_collect(self, slot, now)
+
+    monkeypatch.setattr(runner._Scrape, "_collect", collect)
+    runs = run_sources(
+        [late("unreadable"), sleeper(tmp_path / "y")],
+        WINDOW,
+        workdir=tmp_path,
+        environ=ca_env,
+    ).runs
+    assert [(r.source, r.outcome, r.detail) for r in runs] == [
+        ("unreadable", "worker_failed", "OSError"),
+        ("good", "complete", ""),
+    ]
+    assert (runs[0].raw.pages, [q.key for q in runs[0].raw.unfinished]) == ((), ["one"])
+    assert not (tmp_path / "pages").exists()
+
+
+def test_the_default_adapters_import_construct_and_pickle_their_window() -> None:
+    assert [s.source for s in runner.DEFAULT_ADAPTERS] == ["electionguide", "wikipedia"]
+    shipped = pickle.loads(pickle.dumps(WINDOW))
+    for spec_ in runner.DEFAULT_ADAPTERS:
+        adapter = runner._load(spec_)  # no options
+        assert adapter.source == spec_.source
+        requests = adapter.requests(WINDOW)
+        assert requests and adapter.requests(shipped) == requests
+        assert len({r.key for r in requests}) == len(requests)
+
+
+@pytest.mark.parametrize("source", ["", "Wikipedia", "a b", "a/b", "..", "a.b", "é", "x\n"])
+def test_an_adapter_spec_source_must_be_a_plain_name(source: str) -> None:
+    with pytest.raises(ValueError, match="AdapterSpec.source"):
+        AdapterSpec(source, "m:C")
+
+
+@pytest.mark.parametrize("source", ["a", "electionguide", "my_source-2"])
+def test_a_plain_source_name_is_accepted(source: str) -> None:
+    assert AdapterSpec(source, "m:C").source == source
