@@ -459,3 +459,35 @@ def test_overrides_use_the_exactly_one_active_lower_house_rule(monkeypatch: pyte
     res = synth({"May": "<ul><li>7 May: <a>United States</a>, Georgia, Georgia's 13th congressional district, special election</li></ul>"})
     (c,) = mine(res)[1]
     assert c.institution != "iso:US/house-of-representatives"
+
+
+def test_a_month_turned_into_prose_rejects_that_page_and_only_that_page() -> None:
+    data = json.loads(fixture("wikipedia", "national-2026.json"))
+    text: str = data["parse"]["text"]
+    start = text.index("<ul>", text.index('id="November"'))
+    stop = text.index('<div class="mw-heading mw-heading2"', start)
+    prose = text[start:stop].replace("<ul>", "").replace("</ul>", "").replace("<li>", "<p>")
+    data["parse"]["text"] = text[:start] + prose.replace("</li>", "</p>") + text[stop:]
+    request = next(p.request for p in ALL4.pages if p.request.key == "national-2026")
+    edited = result(json.dumps(data).encode(), url=request.url, content_type=JSON_TYPE)
+    raw = raw_pages(
+        "wikipedia",
+        [(p.request, edited if p.request == request else p.result) for p in ALL4.pages],
+    )
+    res = Wikipedia().parse(raw, WINDOW, REGISTRIES)
+    assert check(raw, res).ok
+    full = Wikipedia().parse(ALL4, WINDOW, REGISTRIES)
+    assert [(c.key, c.outcome) for c in res.coverage] == [
+        ("national-2026", "layout_not_recognised"), ("national-2027", "ok"),
+        ("local-2026", "ok"), ("local-2027", "ok"),
+    ]
+    assert res.coverage[1:] == full.coverage[1:]
+    rest = "wikipedia:national-2026@"
+    assert [u for u in res.units if u.unit_id.startswith(rest)] == []
+    assert [u for u in res.units if not u.unit_id.startswith(rest)] == [
+        u for u in full.units if not u.unit_id.startswith(rest)
+    ]
+    assert list(res.claims) == [c for c in full.claims if not c.unit_id.startswith(rest)]
+    (reason,) = res.reasons
+    assert reason.code == "layout_not_recognised"
+    assert reason.detail == "national-2026: section November: text in <p>"

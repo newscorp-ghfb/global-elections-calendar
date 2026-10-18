@@ -130,3 +130,20 @@ def test_registries_load_the_default_data() -> None:
     assert isinstance(reg.places, PlaceRegistry)
     assert isinstance(reg.institutions, InstitutionRegistry)
     assert isinstance(reg.subdivisions, SubdivisionIndex)
+
+
+def test_a_page_detail_follows_the_page_key_in_its_reason() -> None:
+    page = PageCoverage("p", 2026, "layout_not_recognised", None, 0, detail="section May: text in <p>")
+    assert coverage_reasons([page]) == (
+        Reason("layout_not_recognised", "p: section May: text in <p>"),
+    )
+    long = PageCoverage("p", 2026, "layout_not_recognised", None, 0, detail="x" * 1000)
+    (reason,) = coverage_reasons([long])
+    assert reason.detail == ("p: " + "x" * 1000)[:300]
+
+
+def test_only_a_page_without_units_has_a_detail() -> None:
+    for outcome in ("ok", "valid_empty"):
+        with pytest.raises(RecordError):
+            PageCoverage("a", None, outcome, "s:a/", 0, detail="why")
+    assert PageCoverage("a", None, "timeout", None, 0, detail="why").detail == "why"

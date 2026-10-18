@@ -14,6 +14,11 @@ place. The first token that is an office starts the office text; the tokens befo
 jurisdiction tokens. An item with children and no office token is a container; a leaf
 without one takes its last token as the office. Two adapter overrides apply after
 classification: the Canadian federal by-election and the US congressional district.
+
+The layout check is strict (spec §7): in a counted section, text must sit in an ``li``, a
+maintenance box, a sub-heading or a ``style`` element. Text anywhere else (a ``p``, a div
+card, a wrapper's own text) makes the whole page ``layout_not_recognised``, because such
+an entry would be counted nowhere. A section with no text at all is empty, not changed.
 """
 
 import dataclasses
@@ -24,7 +29,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 
 from bs4 import BeautifulSoup, Tag
-from bs4.element import NavigableString, PreformattedString
+from bs4.element import NavigableString, PageElement, PreformattedString
 
 from elections_calendar.dates import parse_date_text, plausible, relevance
 from elections_calendar.fetch import Deadline
@@ -87,6 +92,7 @@ _MONTH_WORD = re.compile(r"\b(?:" + "|".join(MONTHS) + r")\b", re.IGNORECASE)
 _EXTIW_BRACKETS = re.compile(r"\s*\[\s*\x00\s*\]")
 _SKIPPED_IN_OWN_TEXT = ("ul", "ol", "sup", "style", "link")
 _MAINTENANCE_TABLES = ("ambox", "metadata", "navbox")
+_MAX_KEY = 60  # a section key comes from the page: cap what a reason repeats of it
 _DATE_SEPARATORS = (":", ",")
 _INDIRECT = "Indirect_elections"
 _ARTICLE_TITLE = re.compile(r"^\d{4}\s")
@@ -124,6 +130,7 @@ class _PageParse:
     revid: int | None = None
     units: list[InputUnit] = field(default_factory=list)
     claims: list[Claim] = field(default_factory=list)
+    detail: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,8 +148,16 @@ class _Walk:
 
 @dataclass(frozen=True, slots=True)
 class _Section:
+    """A month (or other) section: ``nodes`` is everything after its heading, ``elements``
+    only the tags among them.
+    """
+
     key: str
-    elements: tuple[Tag, ...]
+    nodes: tuple[PageElement, ...]
+
+    @property
+    def elements(self) -> tuple[Tag, ...]:
+        return tuple(n for n in self.nodes if isinstance(n, Tag))
 
 
 def _is_heading(el: Tag) -> Tag | None:
@@ -158,11 +173,9 @@ def _is_heading(el: Tag) -> Tag | None:
 def _sections(root: Tag) -> list[_Section]:
     """The page's sections in order; every ``h2`` has an id (checked by the caller)."""
     keys: list[str] = []
-    bodies: list[list[Tag]] = []
+    bodies: list[list[PageElement]] = []
     for el in root.children:
-        if not isinstance(el, Tag):
-            continue
-        heading = _is_heading(el)
+        heading = _is_heading(el) if isinstance(el, Tag) else None
         if heading is not None:
             keys.append(str(heading.get("id")))
             bodies.append([])
@@ -178,6 +191,34 @@ def _has_data_table(elements: tuple[Tag, ...]) -> bool:
             if tag.name in ("dl", "table") and not _is_maintenance(tag):
                 return True
     return False
+
+
+def _stray_text(section: _Section) -> str | None:
+    """What describes text of a counted section that is not in an entry, or None.
+
+    Entries are ``li``. Text is also allowed in a maintenance box, in a sub-heading
+    (``div.mw-heading``, which holds an h3-h6) and in a ``style`` element. Anything else
+    (a ``p``, a div card, text between elements) is a changed layout (spec §7): the
+    entry would be counted nowhere.
+    """
+
+    def visit(node: PageElement) -> str | None:
+        if isinstance(node, Tag):
+            if node.name in ("li", "style") or _is_sub_heading(node) or _is_maintenance(node):
+                return None
+            return next((found for child in node.children if (found := visit(child))), None)
+        if isinstance(node, PreformattedString) or not str(node).strip():
+            return None  # a comment, CDATA or whitespace
+        holder = node.parent
+        if holder is None or "mw-parser-output" in (holder.get("class") or []):
+            return "text outside any element"
+        return f"text in <{holder.name}>"
+
+    return next((found for node in section.nodes if (found := visit(node))), None)
+
+
+def _is_sub_heading(tag: Tag) -> bool:
+    return tag.name == "div" and "mw-heading" in (tag.get("class") or [])
 
 
 def _is_maintenance(table: Tag) -> bool:
@@ -381,7 +422,11 @@ class Wikipedia:
                     )
                 )
             else:
-                coverage.append(PageCoverage(request.key, request.year, parsed.outcome, None, 0))
+                coverage.append(
+                    PageCoverage(
+                        request.key, request.year, parsed.outcome, None, 0, detail=parsed.detail
+                    )
+                )
         for request in raw.unfinished:
             coverage.append(PageCoverage(request.key, request.year, "unfinished", None, 0))
         return ParseResult(self.source, tuple(units), tuple(claims), tuple(coverage))
@@ -441,6 +486,11 @@ class Wikipedia:
         counted = [s for s in sections if s.key not in STOP_IDS]
         if any(_has_data_table(s.elements) for s in counted):
             return _PageParse("layout_not_recognised")
+        for section in counted:
+            stray = _stray_text(section)
+            if stray is not None:
+                detail = f"section {section.key[:_MAX_KEY]}: {stray}"
+                return _PageParse("layout_not_recognised", detail=detail)
         page_key = f"{request.key}@rev{revid}"
         link_base = f"https://en.wikipedia.org/wiki/{urllib.parse.quote(title.replace(' ', '_'))}"
         out = _PageParse("valid_empty", revid)

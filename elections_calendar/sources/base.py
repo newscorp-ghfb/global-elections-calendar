@@ -11,7 +11,14 @@ from datetime import UTC, datetime
 from typing import Literal, Protocol
 
 from elections_calendar.fetch import Deadline, FetchResult
-from elections_calendar.model import Claim, InputUnit, Reason, RecordError, _check_fields
+from elections_calendar.model import (
+    MAX_DETAIL,
+    Claim,
+    InputUnit,
+    Reason,
+    RecordError,
+    _check_fields,
+)
 from elections_calendar.offices import InstitutionRegistry
 from elections_calendar.places import PlaceRegistry, SubdivisionIndex
 from elections_calendar.window import Window
@@ -71,6 +78,8 @@ class RawPages:
 class PageCoverage:
     """What one page gave. ``unit_prefix`` (e.g. ``"electionguide:upcoming/"``) is set
     exactly when the outcome is ``ok`` or ``valid_empty``; the ledger owns the discovery rules.
+    ``detail`` says where a page failed (e.g. the section and element of a changed layout);
+    only a page that gave no units may have one.
     """
 
     key: str
@@ -79,9 +88,12 @@ class PageCoverage:
     unit_prefix: str | None
     units_seen: int
     revid: int | None = None
+    detail: str = ""
 
     def __post_init__(self) -> None:
         _check_fields(self)
+        if self.detail and self.outcome in _PAGES_WITH_UNITS:
+            raise RecordError(f"page {self.key!r}: only a page without units has a detail")
         if (self.unit_prefix is not None) != (self.outcome in _PAGES_WITH_UNITS):
             raise RecordError(
                 f"page {self.key!r}: unit_prefix is set exactly for ok and valid_empty pages"
@@ -89,13 +101,16 @@ class PageCoverage:
 
 
 def coverage_reasons(coverage: Iterable[PageCoverage]) -> tuple[Reason, ...]:
-    """One reason (detail = page key) per page that did not give its units."""
+    """One reason per page that did not give its units: the detail is the page key, followed
+    by the page's own detail when it has one (cut to ``MAX_DETAIL``).
+    """
     reasons: list[Reason] = []
     for page in coverage:
         if page.outcome in _PAGES_WITH_UNITS:
             continue
         code = "deadline" if page.outcome == "unfinished" else page.outcome
-        reasons.append(Reason(code, page.key))  # type: ignore[arg-type]
+        detail = f"{page.key}: {page.detail}" if page.detail else page.key
+        reasons.append(Reason(code, detail[:MAX_DETAIL]))  # type: ignore[arg-type]
     return tuple(reasons)
 
 
