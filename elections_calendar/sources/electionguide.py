@@ -25,7 +25,7 @@ from elections_calendar.model import (
     RecordError,
     StatusClaim,
 )
-from elections_calendar.offices import claim_level, classify, is_executive_title
+from elections_calendar.offices import is_executive_title
 from elections_calendar.sources.base import (
     Getter,
     PageCoverage,
@@ -36,6 +36,7 @@ from elections_calendar.sources.base import (
     RawPages,
     Registries,
     fetch_pages,
+    label_scope,
     page_failure,
 )
 from elections_calendar.sources.tables import (
@@ -263,7 +264,8 @@ class ElectionGuide:
                     unit("ignored", "duplicate", duplicate_of=earlier.unit_id)
                     return
 
-        office = classify(label, place.place_id, "nationwide", registries.institutions)
+        scope = label_scope(label, place, registries)
+        office = scope.office
         reason: str | None = None
         if not place.registered:
             reason = "place_unregistered"
@@ -271,6 +273,8 @@ class ElectionGuide:
             reason = "office_unrecognised"
         elif status_unrecognised:
             reason = "status_unrecognised"
+        elif scope.unresolved:
+            reason = "level_unresolved"
         leftover = texts[cols["status"]] if status_unrecognised else ""
         unit("parsed" if reason is None else "partial", reason, leftover=leftover)
         out.claims.append(
@@ -286,9 +290,9 @@ class ElectionGuide:
                 source_event_id=f"electionguide:{event}" if event else None,
                 place_raw=country,
                 place_id=place.place_id,
-                jurisdiction=None,
-                jurisdiction_kind="nationwide",
-                level=claim_level("national", office),
+                jurisdiction=scope.jurisdiction,
+                jurisdiction_kind=scope.jurisdiction_kind,
+                level=scope.level,
                 institution=office.institution,
                 office_class=office.office_class,
                 office_label=label,

@@ -20,6 +20,7 @@ from elections_calendar.sources.base import (
     Registries,
     coverage_reasons,
     fetch_pages,
+    label_scope,
     page_failure,
     parse_pages,
 )
@@ -227,3 +228,52 @@ def test_parse_pages() -> None:
     assert [c.claim_id for c in out.claims] == ["s:a/r1#0"]
     assert out.notes == (Reason("count_change", "n"), Reason("coverage_gap", "g"))
     assert out.source == "s"
+
+
+_REGISTRIES = Registries.load()
+
+
+@pytest.mark.parametrize(
+    ("country", "label", "office_class", "institution", "level", "unresolved"),
+    [
+        ("Bulgaria", "Presidential Election", "head_of_state", "iso:BG/president", "national", False),
+        ("United States", "United States Senate election in Ohio", "upper_house", "iso:US/senate", "national", False),
+        ("United States", "Ohio State Senate election", "upper_house", None, "subnational", False),
+        ("United Kingdom", "Referendum in Scotland", "referendum", None, "subnational", False),
+        ("Moldova", "Election of Governor of Gagauzia", "governor", None, "subnational", False),
+        ("Bosnia and Herzegovina", "Republika Srpska Early Presidential election", "head_of_state", None, "unknown", True),
+        ("Pakistan", "2026 Gilgit Baltistan Assembly Election", "legislature", None, "unknown", True),
+        ("Mexico", "Mexico General Election", "general", None, "national", False),
+        ("Trinidad and Tobago", "Trinidad and Tobago House of Representatives", "lower_house", "iso:TT/house-of-representatives", "national", False),
+    ],
+)
+def test_label_scope_precedence(
+    country: str,
+    label: str,
+    office_class: str,
+    institution: str | None,
+    level: str,
+    unresolved: bool,
+) -> None:
+    place = _REGISTRIES.places.resolve(country)
+    assert place is not None
+    scope = label_scope(label, place, _REGISTRIES)
+    assert (
+        scope.office.office_class,
+        scope.office.institution,
+        scope.level,
+        scope.unresolved,
+    ) == (office_class, institution, level, unresolved)
+
+
+def test_label_scope_of_a_named_subdivision_withholds_the_national_default() -> None:
+    place = _REGISTRIES.places.resolve("Pakistan")
+    assert place is not None
+    scope = label_scope("2026 Gilgit Baltistan Assembly Election", place, _REGISTRIES)
+    assert (scope.jurisdiction_kind, scope.jurisdiction, scope.office.aggregate) == (
+        "subdivision",
+        "Gilgit Baltistan",
+        False,
+    )
+    plain = label_scope("Mexico General Election", _REGISTRIES.places.resolve("Mexico"), _REGISTRIES)  # type: ignore[arg-type]
+    assert (plain.jurisdiction_kind, plain.jurisdiction) == ("nationwide", None)

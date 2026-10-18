@@ -15,13 +15,15 @@ from elections_calendar.model import (
     MAX_DETAIL,
     Claim,
     InputUnit,
+    JurisdictionKind,
+    Level,
     Reason,
     ReasonCode,
     RecordError,
     _check_fields,
 )
-from elections_calendar.offices import InstitutionRegistry
-from elections_calendar.places import PlaceRegistry, SubdivisionIndex
+from elections_calendar.offices import InstitutionRegistry, Office, claim_level, classify
+from elections_calendar.places import Place, PlaceRegistry, SubdivisionIndex, named_subdivisions
 from elections_calendar.window import Window
 
 PageOutcome = Literal[
@@ -164,6 +166,38 @@ class Registries:
     @classmethod
     def load(cls) -> Registries:
         return cls(PlaceRegistry.load(), InstitutionRegistry.load(), SubdivisionIndex.load())
+
+
+@dataclass(frozen=True, slots=True)
+class LabelScope:
+    office: Office
+    level: Level
+    jurisdiction: str | None
+    jurisdiction_kind: JurisdictionKind
+    unresolved: bool
+
+
+def label_scope(
+    label: str, place: Place, registries: Registries, default: Level = "national"
+) -> LabelScope:
+    """What a calendar label says about its jurisdiction (P38).
+
+    A label that names a registered subdivision of the place ("Republika Srpska Early
+    Presidential election") makes that subdivision the jurisdiction and withholds the
+    source's national ``default``; office evidence (offices.py rules) still wins. The scope
+    is ``unresolved`` when the office is recognised but gives no level of its own.
+    """
+    subs = named_subdivisions(label, place, registries.places, registries.subdivisions)
+    office = classify(
+        label, place.place_id, "subdivision" if subs else "nationwide", registries.institutions
+    )
+    return LabelScope(
+        office=office,
+        level=claim_level("unknown" if subs else default, office),
+        jurisdiction=", ".join(subs) or None,
+        jurisdiction_kind="subdivision" if subs else "nationwide",
+        unresolved=bool(subs) and office.recognised and office.level_hint is None,
+    )
 
 
 class Getter(Protocol):

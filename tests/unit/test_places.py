@@ -5,10 +5,11 @@ from pathlib import Path
 import pytest
 import yaml
 
-from elections_calendar.places import PlaceRegistry
+from elections_calendar.places import PlaceRegistry, SubdivisionIndex, named_subdivisions
 from scripts.build_places import HISTORY, MANUAL, OUT, BuildError, build, load_history, render
 
 REGISTRY = PlaceRegistry.load()
+SUBDIVISIONS = SubdivisionIndex.load()
 
 
 @pytest.mark.parametrize(
@@ -195,3 +196,26 @@ def test_a_registered_subdivision_has_one_id_however_its_parent_is_spelled(
     assert place is not None
     assert place.place_id == place_id
     assert place.registered == (not place_id.startswith("unknown:"))
+
+
+@pytest.mark.parametrize(
+    ("country", "text", "expected"),
+    [
+        ("Pakistan", "2026 Gilgit Baltistan Assembly Election", ("Gilgit Baltistan",)),
+        (
+            "Bosnia and Herzegovina",
+            "Republika Srpska Early Presidential election",
+            ("Republika Srpska",),
+        ),
+        ("United Kingdom", "Scotland and Wales local elections", ("Scotland", "Wales")),
+        ("United Kingdom", "Parliamentary Elections (Wales/United Kingdom)", ("Wales",)),
+        ("Mexico", "Mexico General Election", ()),
+        ("Trinidad and Tobago", "Trinidad and Tobago House of Representatives", ()),
+        ("United Kingdom", "Scottish Parliament election", ()),
+        ("Bulgaria", "Presidential Election", ()),
+    ],
+)
+def test_named_subdivisions(country: str, text: str, expected: tuple[str, ...]) -> None:
+    place = REGISTRY.resolve(country)
+    assert place is not None
+    assert named_subdivisions(text, place, REGISTRY, SUBDIVISIONS) == expected
