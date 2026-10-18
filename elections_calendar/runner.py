@@ -39,6 +39,7 @@ from collections import deque
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from multiprocessing.process import BaseProcess
+from multiprocessing.reduction import ForkingPickler
 from pathlib import Path
 from typing import Any, Literal
 
@@ -222,17 +223,19 @@ class _Scrape:
         slot.started_at = now
         try:
             slot.directory.mkdir(parents=True)
+            args = (
+                slot.spec,
+                str(slot.directory),
+                str(self._bundle),
+                slot.cutoff - now,
+                self._window,
+            )
+            # Pickle the payload before the child exists. On Windows, spawn creates the child
+            # first and pickles second, so a payload that fails to pickle orphans a child that
+            # then reads the next worker's pipe handle. Here a failure creates no child.
+            ForkingPickler.dumps((_work, args))
             slot.process = self._context.Process(
-                target=_work,
-                args=(
-                    slot.spec,
-                    str(slot.directory),
-                    str(self._bundle),
-                    slot.cutoff - now,
-                    self._window,
-                ),
-                name=f"source-{slot.spec.source}",
-                daemon=True,
+                target=_work, args=args, name=f"source-{slot.spec.source}", daemon=True
             )
             slot.process.start()
         except Exception as exc:  # this source did not start; the others still run
