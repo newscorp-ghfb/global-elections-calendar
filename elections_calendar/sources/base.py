@@ -6,7 +6,7 @@ types here. ``fetch_pages`` runs requests one at a time, in order (§8).
 """
 
 from collections.abc import Callable, Iterable, Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Final, Literal, Protocol
 
@@ -202,3 +202,56 @@ def page_failure(page: RawPage) -> PageOutcome | None:
         return "http_error"  # a redirect without Location
     return None
 
+
+@dataclass(slots=True)
+class PageParse:
+    """What one page gave, before ``parse_pages`` turns it into coverage."""
+
+    outcome: PageOutcome
+    units: list[InputUnit] = field(default_factory=list)
+    claims: list[Claim] = field(default_factory=list)
+    detail: str = ""
+    year: int | None = None
+    notes: list[Reason] = field(default_factory=list)
+
+
+def parse_pages(
+    source: str, raw: RawPages, parse_page: Callable[[RawPage], PageParse]
+) -> ParseResult:
+    """Run ``parse_page`` on each downloaded page, in order, and assemble the result.
+
+    A failed download keeps its own outcome and is not parsed. A page that is not ``ok`` or
+    ``valid_empty`` gives no units, claims or notes, only its detail (cut to ``MAX_DETAIL``).
+    Unfinished requests come last.
+    """
+    units: list[InputUnit] = []
+    claims: list[Claim] = []
+    notes: list[Reason] = []
+    coverage: list[PageCoverage] = []
+    for page in raw.pages:
+        key = page.request.key
+        failure = page_failure(page)
+        if failure is not None:
+            coverage.append(PageCoverage(key, page.request.year, failure, None, 0))
+            continue
+        try:
+            parsed = parse_page(page)
+        except RecursionError:
+            parsed = PageParse("layout_not_recognised", detail="nested too deep")
+        if parsed.outcome in _PAGES_WITH_UNITS:
+            units += parsed.units
+            claims += parsed.claims
+            notes += parsed.notes
+            prefix = f"{source}:{key}/"
+            coverage.append(
+                PageCoverage(key, parsed.year, parsed.outcome, prefix, len(parsed.units))
+            )
+        else:
+            coverage.append(
+                PageCoverage(
+                    key, parsed.year, parsed.outcome, None, 0, detail=parsed.detail[:MAX_DETAIL]
+                )
+            )
+    for request in raw.unfinished:
+        coverage.append(PageCoverage(request.key, request.year, "unfinished", None, 0))
+    return ParseResult(source, tuple(units), tuple(claims), tuple(coverage), tuple(notes))

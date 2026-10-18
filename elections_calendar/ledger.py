@@ -8,9 +8,10 @@ here, not in the adapters, so an adapter cannot pick its own container (P6).
 """
 
 import json
+import re
 from collections import Counter
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from typing import get_args
 
@@ -58,7 +59,36 @@ class SectionItemsRule:
     box_classes: frozenset[str] = frozenset()  # items in a table or div with one are no units
 
 
-CountRule = TableRowsRule | SectionItemsRule
+@dataclass(frozen=True, slots=True)
+class HeaderTableRowsRule:
+    """Units are the body rows (``r1``, ...) of the one table whose ``thead`` has every one of
+    ``headers`` (casefolded header texts); each must occur exactly once in it.
+    """
+
+    headers: frozenset[str]
+
+
+@dataclass(frozen=True, slots=True)
+class HeadingTablesRule:
+    """Units are the rows of the one table under each ``<h2>`` named in ``sections``, a pair of
+    (casefolded heading text, unit slug): ``<slug>-r1``, ``<slug>-r2``, ... Every ``tr`` counts.
+    """
+
+    sections: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class LinkTableCellsRule:
+    """Units are the cells (``r<i>c<j>``, ``td`` and ``th``) of the one table that holds a link
+    whose whole text matches the pattern ``link_text``.
+    """
+
+    link_text: str
+
+
+CountRule = (
+    TableRowsRule | SectionItemsRule | HeaderTableRowsRule | HeadingTablesRule | LinkTableCellsRule
+)
 
 COUNT_RULES: Mapping[str, CountRule] = {
     "electionguide": TableRowsRule("electionsTable"),
@@ -106,6 +136,173 @@ class _TableRows(HTMLParser):
             self.tables.pop()
         elif tag == "thead" and self.tables:
             self.tables[-1][1] = False
+
+
+def _words(pieces: list[str]) -> str:
+    return " ".join(" ".join(pieces).split())
+
+
+@dataclass(slots=True)
+class _HeadTable:
+    in_head: bool = False
+    th: list[str] | None = None  # data of the open th in the thead
+    heads: list[str] = field(default_factory=list)
+    rows: int = 0
+
+
+class _HeaderTables(HTMLParser):
+    """Every table's own ``thead`` header texts and body row count."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.open: list[_HeadTable] = []
+        self.done: list[_HeadTable] = []
+
+    def _end_th(self, table: _HeadTable) -> None:
+        if table.th is not None:
+            table.heads.append(_words(table.th).casefold())
+            table.th = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "table":
+            self.open.append(_HeadTable())
+            return
+        if not self.open:
+            return
+        table = self.open[-1]
+        if tag in ("th", "td", "tr", "thead", "tbody", "tfoot"):
+            self._end_th(table)
+        if tag == "thead":
+            table.in_head = True
+        elif tag in ("tbody", "tfoot"):
+            table.in_head = False
+        elif tag == "tr" and not table.in_head:
+            table.rows += 1
+        elif tag == "th" and table.in_head:
+            table.th = []
+
+    def handle_endtag(self, tag: str) -> None:
+        if not self.open:
+            return
+        table = self.open[-1]
+        if tag == "table":
+            self._end_th(table)
+            self.done.append(self.open.pop())
+        elif tag in ("th", "tr"):
+            self._end_th(table)
+        elif tag == "thead":
+            self._end_th(table)
+            table.in_head = False
+
+    def handle_data(self, data: str) -> None:
+        if self.open and self.open[-1].th is not None:
+            self.open[-1].th.append(data)
+
+
+class _Regions(HTMLParser):
+    """Per table: the cells in each row and its links; per ``h2``: its text and the top-level
+    tables before the next ``h2``. A row, cell or link belongs to the innermost open table.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.tables: list[list[int]] = []  # per table: cells in each tr
+        self.open: list[int] = []
+        self.h2: list[str] | None = None
+        self.region: int | None = None
+        self.headings: list[tuple[str, list[int]]] = []
+        self.links: list[tuple[int, str]] = []
+        self.a: list[str] | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "h2":
+            self.h2, self.region = [], None
+        elif tag == "table":
+            self.tables.append([])
+            if not self.open and self.region is not None:
+                self.headings[self.region][1].append(len(self.tables) - 1)
+            self.open.append(len(self.tables) - 1)
+        elif not self.open:
+            return
+        elif tag == "tr":
+            self.tables[self.open[-1]].append(0)
+        elif tag in ("td", "th") and self.tables[self.open[-1]]:
+            self.tables[self.open[-1]][-1] += 1
+        elif tag == "a":
+            self.a = []
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "h2" and self.h2 is not None:
+            self.headings.append((_words(self.h2).casefold(), []))
+            self.region, self.h2 = len(self.headings) - 1, None
+        elif tag == "table" and self.open:
+            self.open.pop()
+        elif tag == "a" and self.a is not None:
+            if self.open:
+                self.links.append((self.open[-1], _words(self.a)))
+            self.a = None
+
+    def handle_data(self, data: str) -> None:
+        for buf in (self.h2, self.a):
+            if buf is not None:
+                buf.append(data)
+
+
+def _regions(body: bytes) -> _Regions | None:
+    parser = _Regions()
+    try:
+        parser.feed(body.decode("utf-8", errors="replace"))
+        parser.close()
+    except (ValueError, RecursionError):
+        return None
+    return parser
+
+
+def _header_rows(rule: HeaderTableRowsRule, body: bytes) -> tuple[str, ...] | None:
+    parser = _HeaderTables()
+    try:
+        parser.feed(body.decode("utf-8", errors="replace"))
+        parser.close()
+    except (ValueError, RecursionError):
+        return None
+    hits = [t for t in parser.done if rule.headers <= set(t.heads)]
+    if len(hits) != 1 or any(hits[0].heads.count(h) != 1 for h in rule.headers):
+        return None
+    return tuple(f"r{i}" for i in range(1, hits[0].rows + 1))
+
+
+def _heading_rows(rule: HeadingTablesRule, body: bytes) -> tuple[str, ...] | None:
+    parser = _regions(body)
+    if parser is None:
+        return None
+    found: list[str] = []
+    usable = 0
+    for heading, slug in rule.sections:
+        hits = [tables for text, tables in parser.headings if text == heading]
+        if len(hits) > 1:
+            return None
+        if not hits or not hits[0]:
+            continue
+        if len(hits[0]) > 1:
+            return None
+        usable += 1
+        found += [f"{slug}-r{i}" for i in range(1, len(parser.tables[hits[0][0]]) + 1)]
+    return tuple(found) if usable else None
+
+
+def _link_cells(rule: LinkTableCellsRule, body: bytes) -> tuple[str, ...] | None:
+    parser = _regions(body)
+    if parser is None:
+        return None
+    pattern = re.compile(rule.link_text)
+    hits = sorted({table for table, text in parser.links if pattern.fullmatch(text)})
+    if len(hits) != 1:
+        return None
+    return tuple(
+        f"r{i}c{j}"
+        for i, cells in enumerate(parser.tables[hits[0]], 1)
+        for j in range(1, cells + 1)
+    )
 
 
 @dataclass(slots=True)
@@ -190,6 +387,12 @@ def discover(rule: CountRule, body: bytes) -> tuple[str, ...] | None:
         except (ValueError, RecursionError):
             return None
         return tuple(f"r{i}" for i in range(1, table.rows + 1))
+    if isinstance(rule, HeaderTableRowsRule):
+        return _header_rows(rule, body)
+    if isinstance(rule, HeadingTablesRule):
+        return _heading_rows(rule, body)
+    if isinstance(rule, LinkTableCellsRule):
+        return _link_cells(rule, body)
     text = _follow(body, rule.json_text_path)
     if not isinstance(text, str):
         return None
@@ -204,7 +407,7 @@ def discover(rule: CountRule, body: bytes) -> tuple[str, ...] | None:
 
 def page_revid(rule: CountRule, body: bytes) -> int | None:
     """The page revision at ``revid_path``: a positive ``int``, else ``None``."""
-    if isinstance(rule, TableRowsRule) or rule.revid_path is None:
+    if not isinstance(rule, SectionItemsRule) or rule.revid_path is None:
         return None
     value = _follow(body, rule.revid_path)
     if isinstance(value, int) and not isinstance(value, bool) and value > 0:

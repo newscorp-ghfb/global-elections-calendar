@@ -1,6 +1,7 @@
 """The ledger: unit accounting and the independent discovery check (spec §9.1, §7)."""
 
 import json
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
@@ -9,6 +10,9 @@ import pytest
 from elections_calendar.ledger import (
     COUNT_RULES,
     CountRule,
+    HeaderTableRowsRule,
+    HeadingTablesRule,
+    LinkTableCellsRule,
     SectionItemsRule,
     TableRowsRule,
     check,
@@ -525,3 +529,141 @@ def test_no_rule_skips_the_discovery_checks() -> None:
     # units and counts disagree with the page, but without a rule only the ledger objects
     scene = Scene(units=three_units()[:1], claims=three_claims()[:1], rules={})
     assert codes(scene) == ["ledger_mismatch"]
+
+
+@pytest.mark.parametrize(
+    ("source", "name", "rule", "n", "first", "last"),
+    [
+        ("osce", "elections.html", HeaderTableRowsRule(frozenset({"date", "country", "election", "activity"})), 634, "r1", "r634"),
+        ("ipu", "elections.html", HeaderTableRowsRule(frozenset({"country", "chamber", "principal mode of designation of members", "expected date of next elections"})), 281, "r1", "r281"),
+        ("aweb", "calendar.html", HeaderTableRowsRule(frozenset({"country", "election", "date"})), 32, "r1", "r32"),
+        ("carter", "observed.html", HeadingTablesRule((("elections monitored by the carter center", "monitored"), ("expert missions", "expert"))), 61, "monitored-r1", "expert-r18"),
+        ("eeas", "missions.html", LinkTableCellsRule(r"EOM .+ \d{4}"), 34, "r1c1", "r17c2"),
+    ],
+)  # fmt: skip
+def test_new_rules_count_the_fixtures(
+    source: str, name: str, rule: CountRule, n: int, first: str, last: str
+) -> None:
+    found = discover(rule, fixture(source, name, "2026-10-18"))
+    assert found is not None and (len(found), found[0], found[-1]) == (n, first, last)
+
+
+CARTER = HeadingTablesRule(
+    (("elections monitored by the carter center", "monitored"), ("expert missions", "expert"))
+)
+
+
+def carter_page() -> str:
+    return fixture("carter", "observed.html", "2026-10-18").decode("utf-8")
+
+
+def carter_found(page: str) -> tuple[str, ...] | None:
+    return discover(CARTER, page.encode("utf-8"))
+
+
+def test_heading_tables_on_changed_carter_pages() -> None:
+    page = carter_page()
+    first = page.index("<table")
+    end = page.index("</table>", first) + len("</table>")
+    gone = carter_found(page[:first] + page[end:])  # B-T01: the heading stays, its table goes
+    assert gone is not None and (len(gone), gone[0], gone[-1]) == (18, "expert-r1", "expert-r18")
+    assert not [i for i in gone if i.startswith("monitored-")]
+    heading = "Expert Missions</h2>"
+    assert heading in page
+    assert carter_found(page.replace(heading, heading + "<h2>Expert Missions</h2>", 1)) is None
+    note = "<table><tr><td>Note</td></tr></table>"
+    assert carter_found(page[:first] + note + page[first:]) is None
+    before = carter_found(page.replace("<h2", note + "<h2", 1))
+    assert before is not None and len(before) == 61
+    rows = re.sub(r"<tr>\s*<td([^>]*)>(.*?)</td>", r'<tr><th scope="row"></th>', page, flags=re.S)
+    assert rows != page
+    th = carter_found(rows)
+    assert th is not None and len(th) == 61
+
+
+def test_heading_tables_on_synthetic_pages() -> None:
+    rule = HeadingTablesRule((("a", "a"), ("b", "b")))
+
+    def found(html: str) -> tuple[str, ...] | None:
+        return discover(rule, html.encode())
+
+    two = "<tr><td>x</td></tr>" * 2
+    assert found(f"<h2>A</h2><table>{two}</table><h2>B</h2><p>none</p>") == ("a-r1", "a-r2")
+    # a thead row counts, and a nested table's rows do not
+    head = "<thead><tr><th>H</th></tr></thead>"
+    assert found(f"<h2> A <b>x</b></h2><table>{head}{two}</table>") is None
+    assert found(f"<h2>A</h2><table>{head}{two}</table>") == ("a-r1", "a-r2", "a-r3")
+    nested = "<tr><td><table><tr><td>y</td></tr></table></td></tr>"
+    assert found(f"<h2>A</h2><table>{nested}{two}</table>") == ("a-r1", "a-r2", "a-r3")
+    assert found("<h2>C</h2><table><tr><td>x</td></tr></table>") is None
+    assert found("<table><tr><td>x</td></tr></table><h2>A</h2>") is None
+    assert found("<h2>A</h2><table></table><h2>B</h2><table><tr><td/></tr></table>") == ("b-r1",)
+    assert found(f"<h2>A</h2><table>{two}</table><table>{two}</table>") is None
+    assert found("<h2>A</h2><h2>B</h2><table><tr><td>x</td></tr></table>") == ("b-r1",)
+
+
+def header_page(*tables: str) -> bytes:
+    return "".join(tables).encode()
+
+
+def header_table(heads: str, rows: int, extra: str = "") -> str:
+    ths = "".join(f"<th>{h}</th>" for h in heads.split("|"))
+    body = "<tr><td>x</td></tr>" * rows
+    return f"<table><thead><tr>{ths}</tr></thead><tbody>{body}{extra}</tbody></table>"
+
+
+def test_header_table_rows_on_synthetic_pages() -> None:
+    rule = HeaderTableRowsRule(frozenset({"date", "country"}))
+    ok_table = header_table("Date|Country", 2)
+    assert discover(rule, header_page(ok_table)) == ("r1", "r2")
+    assert discover(rule, header_page(ok_table, ok_table)) is None
+    assert discover(rule, header_page(header_table("Start date|Country", 2))) is None
+    assert discover(rule, b"<p>nothing</p>") is None
+    # U01: a required header twice is no layout
+    assert discover(rule, header_page(header_table("Date|Country|Date", 2))) is None
+    assert discover(rule, header_page(header_table("Date|Country|Country", 2))) is None
+    assert discover(rule, header_page(header_table("Date|Type|Country", 2))) == ("r1", "r2")
+    assert discover(rule, header_page(header_table("Date|Type|Type|Country", 1))) == ("r1",)
+    nested = "<tr><td><table><tr><td>y</td></tr></table></td></tr>"
+    assert discover(rule, header_page(header_table("Date|Country", 2, nested))) == ("r1", "r2", "r3")
+    # a matching header split by markup is still one text
+    split = "<table><thead><tr><th>Da<b>te</b></th><th>Country</th></tr></thead><tr><td/></tr></table>"
+    assert discover(rule, split.encode()) is None
+    spaced = "<table><thead><tr><th>Date <br> </th><th> Country</th></tr></thead><tr><td/></tr></table>"
+    assert discover(rule, spaced.encode()) == ("r1",)
+
+
+def test_link_table_cells_on_synthetic_pages() -> None:
+    rule = LinkTableCellsRule(r"EOM .+ \d{4}")
+    link = '<a href="/x">EOM Peru 2026</a>'
+    table = f"<table><tr><td>{link}</td><th>b</th></tr><tr><td>c</td></tr></table>"
+    assert discover(rule, table.encode()) == ("r1c1", "r1c2", "r2c1")
+    assert discover(rule, (table + table).encode()) is None
+    assert discover(rule, b"<table><tr><td><a>EOM Peru</a></td></tr></table>") is None
+    assert discover(rule, f"<p>{link}</p>".encode()) is None
+    both = f"<table><tr><td>{link}</td></tr></table><table><tr><td><a>other</a></td></tr></table>"
+    assert discover(rule, both.encode()) == ("r1c1",)
+    nested = f"<table><tr><td><table><tr><td>{link}</td></tr></table></td><td>z</td></tr></table>"
+    assert discover(rule, nested.encode()) == ("r1c1",)
+    assert discover(rule, b'<table><tr><td><a>EOM <b>Peru</b> 2026</a></td></tr></table>') == ("r1c1",)
+
+
+def test_a_link_must_match_as_a_whole() -> None:
+    rule = LinkTableCellsRule(r"EOM .+ \d{4}")
+    page = b"<table><tr><td><a>EOM Peru 2026 and more</a></td></tr></table>"
+    assert discover(rule, page) is None
+
+
+def test_new_rules_have_no_revision() -> None:
+    for rule in (
+        HeaderTableRowsRule(frozenset({"a"})),
+        HeadingTablesRule((("a", "a"),)),
+        LinkTableCellsRule("a"),
+    ):
+        assert page_revid(rule, b"<table></table>") is None
+
+
+@pytest.mark.parametrize("reason", ["inactive_chamber", "no_expected_date", "footnote"])
+def test_the_new_ignored_reasons_are_allowlisted(reason: str) -> None:
+    scene = Scene(units=[unit("s", "s:v/r1", "ignored", reason)], claims=[])
+    assert not [p for p in record_problems(scene.build()[1]) if "allowlisted" in p]

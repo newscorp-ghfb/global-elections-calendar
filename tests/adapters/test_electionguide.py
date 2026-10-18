@@ -545,3 +545,13 @@ def test_a_failed_past_view_is_a_page_outcome_not_a_coverage_gap() -> None:
         res = parse(raw_pages("electionguide", pages))
         assert [c.outcome for c in res.coverage] == ["valid_empty", outcome, "valid_empty"]
         assert [r.code for r in res.reasons] == [outcome]
+
+
+@pytest.mark.parametrize("repeated", ["Start Date", "Status", "Country", "End Date", "Election for"])
+def test_a_repeated_header_is_not_a_layout(repeated: str) -> None:
+    headers = [*HEADERS, repeated]
+    page = eg_page(headers, [[*row(), "x"]])
+    res = ElectionGuide().parse(views(upcoming=page), WINDOW, REGISTRIES)
+    assert res.coverage[0].outcome == "layout_not_recognised"
+    assert not [u for u in res.units if u.unit_id.startswith("electionguide:upcoming/")]
+    assert ElectionGuide().parse(views(upcoming=eg_page(HEADERS, [row()])), WINDOW, REGISTRIES).units

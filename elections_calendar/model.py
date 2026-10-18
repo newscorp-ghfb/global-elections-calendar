@@ -43,7 +43,15 @@ OfficeClass = Literal[
 EvidenceKind = Literal["calendar", "expected_renewal", "observation", "umbrella"]
 Outcome = Literal["parsed", "partial", "unparsed", "ignored"]
 IgnoredReason = Literal[
-    "header_row", "year_heading", "empty_cell", "container_item", "appointed_chamber", "duplicate"
+    "header_row",
+    "year_heading",
+    "empty_cell",
+    "container_item",
+    "appointed_chamber",
+    "duplicate",
+    "inactive_chamber",
+    "no_expected_date",
+    "footnote",
 ]
 Relevance = Literal["in_or_after_window", "unknown", "before_window"]
 FetchOutcome = Literal[

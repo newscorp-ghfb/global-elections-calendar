@@ -38,7 +38,12 @@ from elections_calendar.sources.base import (
     fetch_pages,
     page_failure,
 )
-from elections_calendar.text import collapse_ws
+from elections_calendar.sources.tables import (
+    cell_text,
+    complete_html,
+    header_columns,
+    own_rows,
+)
 from elections_calendar.window import Window
 
 VIEWS = ("upcoming", "past", "anticipated")
@@ -49,6 +54,7 @@ _REQUIRED = {
     "start date": "start",
     "end date": "end",
 }
+_READ = (*_REQUIRED, "status")
 _PLAIN_STATUS = ("confirmed", "date not confirmed")
 
 
@@ -72,51 +78,14 @@ class _PageParse:
     kept_starts: list[date] = field(default_factory=list)
 
 
-def _strip_trailer(text: str) -> str:
-    """``text`` without trailing whitespace and trailing HTML comments."""
-    text = text.rstrip()
-    while text.endswith("-->"):
-        start = text.rfind("<!--")
-        if start < 0:
-            break
-        text = text[:start].rstrip()
-    return text
-
-
-def _cell_text(cell: Tag) -> str:
-    return collapse_ws(cell.get_text(" "))
-
-
-def _is_body_row(tr: Tag, table: Tag) -> bool:
-    """Whether the nearest ``table`` above ``tr`` is ``table`` and no ``thead`` lies between."""
-    for parent in tr.parents:
-        if parent is table:
-            return True
-        if parent.name == "thead":
-            return False
-        if parent.name == "table":
-            return False
-    return False
-
-
-def _headers(table: Tag) -> list[str]:
-    heads: list[str] = []
-    for th in table.select("thead th"):
-        nearest = th.find_parent("table")
-        if nearest is table:
-            heads.append(collapse_ws(th.get_text(" ")).casefold())
-    return heads
-
-
-def _columns(heads: list[str]) -> dict[str, int] | None:
-    """Column index by role, or None when a required header is missing."""
-    cols: dict[str, int] = {}
-    for i, head in enumerate(heads):
-        role = _REQUIRED.get(head) or ("status" if head == "status" else None)
-        if role is not None:
-            cols.setdefault(role, i)
-    if not all(role in cols for role in _REQUIRED.values()):
+def _columns(table: Tag) -> dict[str, int] | None:
+    """Column index by role, or None when a required header is missing or repeated (U01)."""
+    found, repeated = header_columns(table, _READ)
+    if repeated or not all(head in found for head in _REQUIRED):
         return None
+    cols = {role: found[head] for head, role in _REQUIRED.items()}
+    if "status" in found:
+        cols["status"] = found["status"]
     return cols
 
 
@@ -181,16 +150,16 @@ class ElectionGuide:
         if failure is not None:
             return _PageParse(failure)
         text = page.result.text()
-        if not _strip_trailer(text).casefold().endswith("</html>"):
+        if not complete_html(text):
             return _PageParse("layout_not_recognised")
         try:
             table = BeautifulSoup(text, "lxml").select_one("table#electionsTable")
             if table is None:
                 return _PageParse("layout_not_recognised")
-            cols = _columns(_headers(table))
+            cols = _columns(table)
             if cols is None:
                 return _PageParse("layout_not_recognised")
-            rows = [tr for tr in table.find_all("tr") if _is_body_row(tr, table)]
+            rows = own_rows(table)
             if not rows and _EVENT.search(text):
                 return _PageParse("layout_not_recognised")
             parsed = _PageParse("ok" if rows else "valid_empty")
@@ -215,7 +184,7 @@ class ElectionGuide:
         kept: dict[str, list[_Kept]],
     ) -> None:
         cells = [td for td in tr.find_all("td", recursive=False) if isinstance(td, Tag)]
-        texts = [_cell_text(td) for td in cells]
+        texts = [cell_text(td) for td in cells]
         unit_text = " | ".join(t for t in texts if t)
         rel = relevance(unit_text, window.start)
 
@@ -254,7 +223,7 @@ class ElectionGuide:
         election = cells[cols["election"]]
         link_tag = election.find("a", href=_EVENT)
         match = _EVENT.search(str(link_tag["href"])) if isinstance(link_tag, Tag) else None
-        label = _cell_text(link_tag) if isinstance(link_tag, Tag) else texts[cols["election"]]
+        label = cell_text(link_tag) if isinstance(link_tag, Tag) else texts[cols["election"]]
         if is_executive_title(label):
             unit("unparsed", "office_not_modelled", leftover=label)
             return
