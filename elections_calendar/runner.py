@@ -83,6 +83,7 @@ DEFAULT_ADAPTERS = (
     AdapterSpec("wikipedia", "elections_calendar.sources.wikipedia:Wikipedia"),
     AdapterSpec("aweb", "elections_calendar.sources.aweb:Aweb"),
     AdapterSpec("ipu", "elections_calendar.sources.ipu:Ipu"),
+    AdapterSpec("carter", "elections_calendar.sources.carter:Carter"),
 )
 
 

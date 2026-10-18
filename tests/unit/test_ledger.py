@@ -575,7 +575,7 @@ def test_heading_tables_on_changed_carter_pages() -> None:
     assert carter_found(page[:first] + note + page[first:]) is None
     before = carter_found(page.replace("<h2", note + "<h2", 1))
     assert before is not None and len(before) == 61
-    rows = re.sub(r"<tr>\s*<td([^>]*)>(.*?)</td>", r'<tr><th scope="row"></th>', page, flags=re.S)
+    rows = re.sub(r"<tr>\s*<td([^>]*)>(.*?)</td>", r'<tr><th scope="row"\1>\2</th>', page, flags=re.S)
     assert rows != page
     th = carter_found(rows)
     assert th is not None and len(th) == 61
