@@ -104,6 +104,9 @@ COUNT_RULES: Mapping[str, CountRule] = {
             }
         )
     ),
+    "carter": HeadingTablesRule(
+        (("elections monitored by the carter center", "monitored"), ("expert missions", "expert"))
+    ),
     "wikipedia": SectionItemsRule(
         frozenset(
             {
