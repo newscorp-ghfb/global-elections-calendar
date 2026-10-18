@@ -281,7 +281,7 @@ out. Each one is pinned by the named tests, in the task that owns the code.
 **Known limits, by design.** The measured values include each of these, and each is visible:
 - **Relevance before September:** units dated January–August of the current year have relevance
   `unknown`, not `before_window`. This is Plan 2a's limit: §6.1 works on years.
-- **Default level:** A-WEB and ElectionGuide default to level `national` for a label that names
+- **Default level:** OSCE, A-WEB and ElectionGuide default to level `national` for a label that names
   no subdivision. This is a documented source assumption, kept as Plan 2a approved it for
   ElectionGuide.
 - **Demonyms:** `named_subdivisions` finds names, not demonyms. "Scottish Parliament election"
@@ -356,7 +356,7 @@ The review findings come in three kinds:
 - **Agreed decision:** a semantic ruling.
 - **Open Plan 3 policy:** deliberately left to Plan 3, with its completion stage.
 
-**Status:** no fix is verified yet. A row becomes *verified* only when the SDD ledger records its
+**Status:** the Plan 2b parts are verified as listed in the Status column; later-plan parts stay open. A row becomes *verified* only when the SDD ledger records its
 task's commit, with the named test passing and its mutation killed. A row with a later-plan part
 (R1–R11) is split: its Plan 2b part becomes verified here, and its later part stays open until
 that plan's own test passes. The column "Review test" maps the first review's acceptance tests
@@ -364,31 +364,31 @@ B-T01 to B-T10. U01–U03, D1 and D2 come from the revision 2 review.
 
 | ID | Kind | Ruling | Task · test | Review test | Status |
 |---|---|---|---|---|---|
-| B01 | Agreed fix | P40: sections are bound to their heading; ambiguity fails; a missing table is a gap; dated text beside a table is a gap | T2 `test_new_rules_on_synthetic_pages`; T7 `test_sections_are_bound_to_their_heading`; T4–T8 `test_dated_text_beside_the_table_is_a_coverage_gap` | B-T01, B-T02 | planned |
-| B02 | Agreed fix | P41: `th` row headers are data; strict header and footnote rules | T2 `test_row_cells`; T7 `test_row_kinds`, `test_row_header_markup_gives_the_same_claims` | B-T03 | planned |
-| U01 | Agreed fix | U01: a header a source reads must appear once, in the adapters and independently in the ledger | T2 `test_header_columns`, `test_new_rules_on_synthetic_pages`, ElectionGuide `test_a_repeated_header_is_not_a_layout`; T4 `test_columns_are_found_by_header_not_position`; T5, T6 `test_broken_pages_get_an_outcome_never_units` | B-T01 | planned |
-| U02 | Agreed fix | P41 revised: `header_row` only in `thead`; `footnote` only by its exact text; yearless rows stay visible | T7 `test_row_kinds`, `test_fixture_ledger_balances` (the real footnote still ignored) | B-T03 | planned |
-| U03 | Agreed fix | P30 revised: a status conflict is terminal and keeps its evidence under any reason | T4 `test_badges` | — | planned |
+| B01 | Agreed fix | P40: sections are bound to their heading; ambiguity fails; a missing table is a gap; dated text beside a table is a gap | T2 `test_heading_tables_on_synthetic_pages`, `test_heading_tables_on_changed_carter_pages`; T7 `test_sections_are_bound_to_their_heading`; T4–T8 `test_dated_text_beside_the_table_is_a_coverage_gap` | B-T01, B-T02 | Plan 2b part verified: `05b7701`, `75a4971` and T4–T8 dated-text tests |
+| B02 | Agreed fix | P41: `th` row headers are data; strict header and footnote rules | T2 `test_row_cells`; T7 `test_row_kinds`, `test_row_header_markup_gives_the_same_claims` | B-T03 | Plan 2b part verified: `05b7701`, `75a4971` |
+| U01 | Agreed fix | U01: a header a source reads must appear once, in the adapters and independently in the ledger | T2 `test_header_columns`, `test_header_table_rows_on_synthetic_pages`, ElectionGuide `test_a_repeated_header_is_not_a_layout`; T4 `test_columns_are_found_by_header_not_position`; T5, T6 `test_broken_pages_get_an_outcome_never_units` | B-T01 | Plan 2b part verified: `05b7701`, `e8e1a92`, `38ffa0a`, `31fd665` |
+| U02 | Agreed fix | P41 revised: `header_row` only in `thead`; `footnote` only by its exact text; yearless rows stay visible | T7 `test_row_kinds`, `test_fixture_ledger_balances` (the real footnote still ignored) | B-T03 | Plan 2b part verified: `75a4971` |
+| U03 | Agreed fix | P30 revised: a status conflict is terminal and keeps its evidence under any reason | T4 `test_badges` | — | Plan 2b part verified: `e8e1a92`, `48cd703` |
 | D1 | Documentation | R3: a reschedule needs evidence of the same cycle; date proximity plus a chamber ID is not enough | R3 | — | done in this revision |
 | D2 | Documentation | Plan 2b parts verified separately from later-plan parts; R5 names say "unknown-meaning" | this section, R5, "After Plan 2b" | — | done in this revision |
-| B03 | Agreed fix | P42: a duplicate needs the same text and link; Carter keeps targeted repeats | T7 `test_token_grammar`; T8 `test_cell_kinds` | B-T04 | planned |
-| B04 | Agreed decision + fix | P43: future tokens are visible; EEAS years are checked before spans | T7 `test_token_grammar`; T8 `test_mission_years_outside_the_model_are_outcomes` | B-T05, B-T07 | planned |
-| B05 | Agreed fix | P44: one `source_link` with the §12.6 rule | T2 `test_source_link`; T4, T5, T7, T8 `test_off_host_links_fall_back` | B-T06 | planned |
-| B06 | Agreed decision (adapter) | P39: observations get `date_meaning="unknown"` | T7/T8 `test_fixture_claims` | — | planned |
+| B03 | Agreed fix | P42: a duplicate needs the same text and link; Carter keeps targeted repeats | T7 `test_token_grammar`; T8 `test_cell_kinds` | B-T04 | Plan 2b part verified: `75a4971`, `0f93552` |
+| B04 | Agreed decision + fix | P43: future tokens are visible; EEAS years are checked before spans | T7 `test_token_grammar`; T8 `test_mission_years_outside_the_model_are_outcomes` | B-T05, B-T07 | Plan 2b part verified: `75a4971`, `0f93552` |
+| B05 | Agreed fix | P44: one `source_link` with the §12.6 rule | T2 `test_source_link`; T4, T5, T7, T8 `test_off_host_links_fall_back` | B-T06 | Plan 2b part verified: `05b7701`, `48cd703`, `16ba4d3`, `75a4971`, `0f93552` |
+| B06 | Agreed decision (adapter) | P39: observations get `date_meaning="unknown"` | T7/T8 `test_fixture_claims` | — | Plan 2b part verified: `75a4971`, `0f93552` (Plan 3 policy row stays open) |
 | B06 | Open Plan 3 policy | Can an observation be the selected date? §10.5 step 1 lists it last. It is never a polling date, and never makes a contest Held/Ongoing | R5 | B-T09 | open, owner Plan 3 |
-| B07 | Agreed decision (user, option 1) | P38: a subdivision becomes the jurisdiction; the default is withheld; existing evidence wins | T3 `test_label_scope_precedence`, `test_named_subdivisions`; T4 `test_one_claim_field_by_field` (r52); T6 `test_claims_field_by_field` (r5) | B-T08 | planned |
+| B07 | Agreed decision (user, option 1) | P38: a subdivision becomes the jurisdiction; the default is withheld; existing evidence wins | T3 `test_label_scope_precedence`, `test_named_subdivisions`; T4 `test_one_claim_field_by_field` (r52); T6 `test_claims_field_by_field` (r5) | B-T08 | Plan 2b part verified: `dbf4a14`, `e8e1a92`, `31fd665` (R7 stays with Plan 3) |
 | B07 | Requirement | An unknown level never bypasses jurisdiction in matching | R7 | — | owner Plan 3 |
-| P22 | Agreed decision, condition | Ignored facts stay in the accounting; a shift into them is visible | R1 | B-T10 | planned + Plan 4 |
-| P23 | Agreed decision, condition | Conservative; a populated table with every row ignored is Plan 4's case | R1 | B-T10 | planned + Plan 4 |
-| P24 | Agreed decision | Date cell only; the full row is kept; empty → `unknown` | T4 `test_date_cell_rules` | — | planned |
-| P25 | Agreed decision, condition | A conservative month inference that keeps the raw day; an expected date is never announced | T5 `test_month_end_dates_are_months`; R4 | — | planned + Plan 3/5 |
-| P26 | Agreed decision | Plausibility bound only | T5 `test_far_renewals` | — | planned |
-| P27 | Agreed decision | Unparsed, visible | T5 `test_designations` | — | planned |
-| P28 | Agreed decision | Weak role before umbrella | R6 | B-T09 | Plan 3 |
-| P29 | Agreed decision, revised | Tokens follow P40, P41, P42 and P43 | T7 | B-T05 | planned |
-| P30 | Agreed decision, revised | Conflicting statuses have their own terminal outcome (U03) | T4 `test_badges` | — | planned |
-| P31 | Agreed decision, condition | Drops are compared within one year; December evidence is kept | T6 `test_coverage_year_is_the_lists_year`; R2 | B-T10 | planned + Plan 4 |
-| P45 | Agreed fix (found while re-measuring) | Subdivision names with a trailing bracket | T1 `test_keys_strip_a_trailing_bracket` | — | planned |
+| P22 | Agreed decision, condition | Ignored facts stay in the accounting; a shift into them is visible | R1 | B-T10 | Plan 2b part verified: `e609e5b` (R1 stays with Plan 4). User extended P22 on 2026-10-18: a status word in an IPU expected date is unparsed and never ignored |
+| P23 | Agreed decision, condition | Conservative; a populated table with every row ignored is Plan 4's case | R1 | B-T10 | Plan 2b part verified: the broken-pages tests in all five adapters (R1 stays with Plan 4) |
+| P24 | Agreed decision | Date cell only; the full row is kept; empty → `unknown` | T4 `test_date_cell_rules` | — | Plan 2b part verified: T4 `test_date_cell_rules` |
+| P25 | Agreed decision, condition | A conservative month inference that keeps the raw day; an expected date is never announced | T5 `test_month_end_dates_are_months`; R4 | — | Plan 2b part verified: `38ffa0a` (R4 stays with Plans 3 and 5) |
+| P26 | Agreed decision | Plausibility bound only | T5 `test_far_renewals` | — | Plan 2b part verified: T5 `test_far_renewals` |
+| P27 | Agreed decision | Unparsed, visible | T5 `test_designations` | — | Plan 2b part verified: T5 `test_designations` |
+| P28 | Agreed decision | Weak role before umbrella | R6 | B-T09 | Plan 3; Plan 2b adapter fields verified: `75a4971`, `0f93552` |
+| P29 | Agreed decision, revised | Tokens follow P40, P41, P42 and P43 | T7 | B-T05 | Plan 2b part verified: `75a4971`, `e609e5b`. User extended P29 on 2026-10-18: a token with a status word is unparsed |
+| P30 | Agreed decision, revised | Conflicting statuses have their own terminal outcome (U03) | T4 `test_badges` | — | Plan 2b part verified: `e8e1a92` |
+| P31 | Agreed decision, condition | Drops are compared within one year; December evidence is kept | T6 `test_coverage_year_is_the_lists_year`; R2 | B-T10 | Plan 2b part verified: `31fd665` (R2 stays with Plan 4) |
+| P45 | Agreed fix (found while re-measuring) | Subdivision names with a trailing bracket | T1 `test_keys_strip_a_trailing_bracket` | — | Plan 2b part verified: `6e70346` |
 
 ## How to execute this plan
 
@@ -1676,7 +1676,7 @@ named acceptance test. A row is closed only when that test is green in the ownin
 
 ## After Plan 2b
 
-- **The branch** has 8 new commits on top of the commit that holds this plan, with all gates
+- **The branch** has the Plan 2b commits listed in the ledger on top of the commit that holds this plan, with all gates
   green. Nothing is pushed or merged.
 - **The Review record** shows the Plan 2b part of every "planned" row as "verified", with its
   commit in the ledger. Each later-plan part (R1–R11, and the B06/B07/P22/P23/P25/P28/P31
