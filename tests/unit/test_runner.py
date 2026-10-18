@@ -408,3 +408,26 @@ def test_an_adapter_spec_source_must_be_a_plain_name(source: str) -> None:
 @pytest.mark.parametrize("source", ["a", "electionguide", "my_source-2"])
 def test_a_plain_source_name_is_accepted(source: str) -> None:
     assert AdapterSpec(source, "m:C").source == source
+
+
+class _Unpicklable(str):
+    def __reduce__(self) -> Any:
+        raise TypeError("this option cannot be pickled")
+
+
+def test_a_worker_payload_that_cannot_be_pickled_creates_no_child(
+    tmp_path: Path, ca_env: dict[str, str]
+) -> None:
+    # On Windows, spawn creates the child before it pickles the payload; a failed pickle then
+    # orphans that child onto the next worker's pipe handle. The payload is pickled first.
+    record = tmp_path / "good-ran"
+    bad = AdapterSpec("bad", "tests.support.slow_adapters:LatePage", (("seconds", _Unpicklable("0")),))
+    good = AdapterSpec("good", GOOD, (("seconds", "1"), ("record", str(record))))
+    runs = run_sources([bad, good], WINDOW, workdir=tmp_path, environ=ca_env).runs
+    assert [(r.source, r.outcome, r.detail) for r in runs] == [
+        ("bad", "worker_failed", "TypeError"),
+        ("good", "complete", ""),
+    ]
+    written = record.read_text(encoding="utf-8")
+    time.sleep(3)  # a stray worker would write (or rewrite) its marker in this time
+    assert record.read_text(encoding="utf-8") == written
