@@ -172,7 +172,7 @@ def test_discovery_of_the_fixtures() -> None:
 def test_count_rules_belong_to_the_ledger() -> None:
     assert COUNT_RULES["electionguide"] == TableRowsRule("electionsTable")
     assert COUNT_RULES["wikipedia"] == SectionItemsRule(
-        STOP_IDS, ("parse", "text"), ("parse", "revid")
+        STOP_IDS, ("parse", "text"), ("parse", "revid"), frozenset({"ambox", "metadata", "navbox"})
     )
 
 
@@ -401,6 +401,13 @@ PAGE_NEEDLES = {
         "page 'v' is unfinished but its page was fetched"
     ),
 }
+
+
+def test_coverage_for_an_unknown_key_is_one_problem() -> None:  # R2-2
+    raw, parsed = Scene(coverage=[ok(), PageCoverage("z", None, "unfinished", None, 0)]).build()
+    assert check(raw, parsed, rules=RULES).problems == (
+        "coverage for 'z', which is no page or unfinished request",
+    )
 
 
 @pytest.mark.parametrize("case", list(PAGE_CASES))

@@ -4,7 +4,8 @@ Inputs: pycountry (ISO 3166-2, first-level subdivisions only) and
 data/subdivisions_manual.yaml (English exonyms pycountry lacks). The output is
 committed and its diff reviewed; nothing reads pycountry at runtime.
 
-Keys per subdivision: its name without a trailing parenthesised part, and, when
+Keys per subdivision: its name without a trailing bracketed part ("Wales [Cymru GB-CYM]")
+and then without a trailing parenthesised part, and, when
 the name holds ", ", the part before the first ", " ("Madrid, Comunidad de" adds
 "madrid"). A key two codes of one country share is left out and listed in the
 header. Manual entries are added after that check and win over generated keys; two manual
@@ -28,6 +29,7 @@ ROOT = Path(__file__).resolve().parent.parent
 MANUAL = ROOT / "data" / "subdivisions_manual.yaml"
 OUT = ROOT / "data" / "subdivisions.yaml"
 
+_TRAILING_BRACKET = re.compile(r"\s*\[[^\]]*\]$")
 _TRAILING_PARENS = re.compile(r"\s*\([^)]*\)$")
 
 
@@ -45,7 +47,7 @@ def first_level_rows() -> list[tuple[str, str, str]]:
 
 
 def _keys(name: str) -> set[str]:
-    base = _TRAILING_PARENS.sub("", name)
+    base = _TRAILING_PARENS.sub("", _TRAILING_BRACKET.sub("", name))
     keys = {norm_name(base)}
     if ", " in base:
         keys.add(norm_name(base.split(", ", 1)[0]))

@@ -16,9 +16,10 @@ without one takes its last token as the office. Two adapter overrides apply afte
 classification: the Canadian federal by-election and the US congressional district.
 
 The layout check is strict (spec §7): in a counted section, text must sit in an ``li``, a
-maintenance box, a sub-heading or a ``style`` element. Text anywhere else (a ``p``, a div
-card, a wrapper's own text) makes the whole page ``layout_not_recognised``, because such
-an entry would be counted nowhere. A section with no text at all is empty, not changed.
+maintenance box (a ``table`` or ``div`` with a box class), a sub-heading or a ``style``
+element. Text anywhere else (a ``p``, a div card, a wrapper's own text) makes the whole page
+``layout_not_recognised``, because such an entry would be counted nowhere.
+A section with no text at all is empty, not changed.
 """
 
 import dataclasses
@@ -184,13 +185,15 @@ def _sections(root: Tag) -> list[_Section]:
     return [_Section(k, tuple(b)) for k, b in zip(keys, bodies, strict=True)]
 
 
-def _has_data_table(elements: tuple[Tag, ...]) -> bool:
-    """Whether a section holds a ``dl`` or a table that is not a maintenance box."""
+def _data_table(elements: tuple[Tag, ...]) -> str | None:
+    """The tag name (``dl`` or ``table``) of the first one in a section that is not in a
+    maintenance box, or None.
+    """
     for el in elements:
         for tag in (el, *el.find_all(["dl", "table"])):
             if tag.name in ("dl", "table") and not _is_maintenance(tag):
-                return True
-    return False
+                return tag.name
+    return None
 
 
 def _stray_text(section: _Section) -> str | None:
@@ -503,8 +506,11 @@ class Wikipedia:
         if not any(s.key.casefold() in _MONTH_BY_NAME for s in sections):
             return _PageParse("layout_not_recognised")
         counted = [s for s in sections if s.key not in STOP_IDS]
-        if any(_has_data_table(s.elements) for s in counted):
-            return _PageParse("layout_not_recognised")
+        for section in counted:
+            table = _data_table(section.elements)
+            if table is not None:
+                detail = f"section {section.key[:_MAX_KEY]}: data table <{table}>"
+                return _PageParse("layout_not_recognised", detail=detail)
         for section in counted:
             stray = _stray_text(section)
             if stray is not None:
@@ -518,7 +524,7 @@ class Wikipedia:
                 li
                 for el in section.elements
                 for li in ([el] if el.name == "li" else []) + list(el.find_all("li"))
-                if isinstance(li, Tag)
+                if isinstance(li, Tag) and not _is_maintenance(li)
             ]
             members = {id(li) for li in items}
             top = [
@@ -592,7 +598,7 @@ class Wikipedia:
         date: _Date,
         where: _Where,
     ) -> tuple[Outcome, str | None, str, _Where, list[Claim]]:
-        """Place, jurisdiction and offices of a dated item.
+        """Place, jurisdiction and offices of an item; also serves items whose date failed.
 
         Returns (outcome, reason, leftover, where, claims).
 

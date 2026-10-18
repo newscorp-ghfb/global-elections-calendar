@@ -86,6 +86,8 @@ class RawPage:
 class RawPages:
     """All pages of one source run; ``unfinished`` are the requests whose pages were not
     received: the worker was cut at a deadline, or it failed before fetching them.
+    A received page that cannot be read also stays unfinished, and its source becomes
+    ``worker_failed``.
     """
 
     source: str

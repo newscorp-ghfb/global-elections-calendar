@@ -357,7 +357,7 @@ def test_a_data_table_in_a_calendar_section_is_not_valid_empty() -> None:
     assert outcome('<div><table class="wikitable"><tr><td>x</td></tr></table></div>') == "layout_not_recognised"
     # a box class on any other element does not make a box
     assert outcome('<span class="ambox"><table><tr><td>x</td></tr></table></span>') == "layout_not_recognised"
-    assert outcome('<p class="metadata"><dl><dt>x</dt></dl></p>') == "layout_not_recognised"
+    assert outcome('<span class="metadata"><dl><dt>x</dt></dl></span>') == "layout_not_recognised"
     for cls in ("ambox", "metadata", "navbox", "mbox-small ambox ambox-content"):
         assert outcome(f'<table class="{cls}"><tr><td>This section is empty.</td></tr></table>') == "valid_empty"
     # a table in a stop section is not a calendar entry
@@ -704,7 +704,6 @@ def test_a_child_of_an_item_with_a_failed_date_still_gets_the_parents_place(
     assert claims == good_claims == [("iso:US", "Georgia", "governor")]
 
 
-
 NESTED = {
     "country and state in the failed item": (
         "<ul><li>{d}: <a>United States</a>, Georgia"
@@ -735,3 +734,21 @@ def test_a_failed_date_parent_passes_its_whole_place_down(case: str, failed: str
 
     assert child_claims("3 November") == expected  # the control: a valid date
     assert child_claims(failed) == expected
+
+
+@pytest.mark.parametrize("box", [
+    '<table class="ambox"><tr><td><ul><li>This section needs additional citations.</li></ul></td></tr></table>',
+    '<div class="navbox"><ul><li>Elections in Sweden</li></ul></div>',
+    '<div class="metadata"><ul><li>5 March: <a>Fiji</a>, Parliament</li></ul></div>',
+])
+def test_list_items_in_a_maintenance_box_are_not_units(box: str) -> None:  # F-16
+    _, res = synth({"January": box + ENTRY})
+    assert (res.coverage[0].outcome, res.coverage[0].units_seen, len(of(res))) == ("ok", 1, 1)
+
+
+def test_a_data_table_names_its_section() -> None:  # N-7
+    res = one_page(wiki_page({"January": "<dl><dt>5 January</dt></dl>"}))
+    assert (res.coverage[0].outcome, res.coverage[0].detail) == (
+        "layout_not_recognised", "section January: data table <dl>")
+    res = one_page(wiki_page({"March": '<table class="wikitable"><tr><td>x</td></tr></table>'}))
+    assert res.coverage[0].detail == "section March: data table <table>"

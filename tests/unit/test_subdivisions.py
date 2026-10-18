@@ -4,7 +4,15 @@ import pytest
 import yaml
 
 from elections_calendar.places import SubdivisionIndex
-from scripts.build_subdivisions import MANUAL, OUT, BuildError, build, first_level_rows, render
+from scripts.build_subdivisions import (
+    MANUAL,
+    OUT,
+    BuildError,
+    _keys,
+    build,
+    first_level_rows,
+    render,
+)
 
 SUBDIVISIONS = SubdivisionIndex.load()
 
@@ -70,3 +78,11 @@ def test_committed_subdivisions_yaml_is_up_to_date() -> None:
     manual = yaml.safe_load(MANUAL.read_text(encoding="utf-8"))
     expected = render(*build(first_level_rows(), manual))
     assert OUT.read_text(encoding="utf-8") == expected, "run python -m scripts.build_subdivisions and commit data/subdivisions.yaml"
+
+
+def test_keys_strip_a_trailing_bracket() -> None:  # P45
+    assert _keys("Wales [Cymru GB-CYM]") == {"wales"}
+    assert _keys("Blekinge län [SE-10]") == {"blekinge lan"}
+    assert _keys("Madrid, Comunidad de") == {"madrid comunidad de", "madrid"}
+    assert SUBDIVISIONS.find("GB", "Wales") == "GB-WLS"
+    assert SUBDIVISIONS.find("SE", "Skåne län") == "SE-M"
