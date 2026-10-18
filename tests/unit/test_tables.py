@@ -10,6 +10,7 @@ from elections_calendar.sources.tables import (
     header_cells,
     header_columns,
     header_tables,
+    one_header_table,
     own_rows,
     row_cells,
     source_link,
@@ -203,3 +204,33 @@ def test_dated_text_beside() -> None:
         assert dated_text_beside(first_table(f"<div>{hidden}{table}</div>")) is None, hidden
     assert dated_text_beside(first_table(f"<div><p>Room 1850 and 21000</p>{table}</div>")) is None
     assert dated_text_beside(first_table(table)) is None
+
+
+def _page(heads: str, rows: str = "<tr><td>x</td></tr>", tables: int = 1) -> str:
+    table = f"<table><thead><tr>{heads}</tr></thead><tbody>{rows}</tbody></table>"
+    return f"<html><body>{table * tables}</body></html>"
+
+
+_HEADS = "".join(f"<th>{h}</th>" for h in ("A", "B"))
+
+
+def test_one_header_table_returns_table_columns_and_rows() -> None:
+    got = one_header_table(_page(_HEADS, "<tr><td>1</td></tr><tr><td>2</td></tr>"), ("a", "b"))
+    assert not isinstance(got, str)
+    table, columns, rows = got
+    assert table.name == "table" and columns == {"a": 0, "b": 1} and len(rows) == 2
+
+
+@pytest.mark.parametrize(
+    ("text", "detail"),
+    [
+        ("<html><body></body>", "page does not end with </html>"),
+        ("<html><body><p>x</p></body></html>", "0 tables with headers a, b"),
+        (_page(_HEADS, tables=2), "2 tables with headers a, b"),
+        (_page("<th>A</th><th>B</th><th>A</th>"), "repeated header: a"),
+        (_page("<th>A</th><th>B</th><th>A</th><th>B</th>"), "repeated header: a, b"),
+        (_page(_HEADS, ""), "the table has no rows"),
+    ],
+)
+def test_one_header_table_failure_details(text: str, detail: str) -> None:
+    assert one_header_table(text, ("a", "b")) == detail

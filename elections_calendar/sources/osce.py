@@ -6,7 +6,7 @@ gives none. Columns are found by header text, never by position.
 
 from collections.abc import Iterator
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import Tag
 
 from elections_calendar.dates import parse_date_text, plausible, relevance
 from elections_calendar.fetch import Deadline
@@ -26,11 +26,8 @@ from elections_calendar.sources.base import (
 )
 from elections_calendar.sources.tables import (
     cell_text,
-    complete_html,
     dated_text_beside,
-    header_columns,
-    header_tables,
-    own_rows,
+    one_header_table,
     row_cells,
     source_link,
 )
@@ -62,25 +59,10 @@ class Osce:
         )
 
     def _parse_page(self, page: RawPage, window: Window, registries: Registries) -> PageParse:
-        text = page.result.text()
-        if not complete_html(text):
-            return PageParse("layout_not_recognised", detail="page does not end with </html>")
-        soup = BeautifulSoup(text, "lxml")
-        tables = header_tables(soup, HEADERS)
-        if len(tables) != 1:
-            return PageParse(
-                "layout_not_recognised",
-                detail=f"{len(tables)} tables with headers {', '.join(HEADERS)}",
-            )
-        table = tables[0]
-        cols, repeated = header_columns(table, HEADERS)
-        if repeated:
-            return PageParse(
-                "layout_not_recognised", detail="repeated header: " + ", ".join(repeated)
-            )
-        rows = own_rows(table)
-        if not rows:
-            return PageParse("layout_not_recognised", detail="the table has no rows")
+        layout = one_header_table(page.result.text(), HEADERS)
+        if isinstance(layout, str):
+            return PageParse("layout_not_recognised", detail=layout)
+        table, cols, rows = layout
         parsed = PageParse("ok")
         beside = dated_text_beside(table)
         if beside is not None:

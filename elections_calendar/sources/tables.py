@@ -5,7 +5,7 @@ they are given, so a table nested in a cell never leaks rows or cells into its h
 """
 
 import re
-from collections.abc import Collection
+from collections.abc import Collection, Sequence
 from urllib.parse import urljoin, urlsplit
 
 from bs4 import BeautifulSoup, Tag
@@ -130,3 +130,26 @@ def dated_text_beside(table: Tag) -> str | None:
         if _YEAR.search(clean):
             return clean[:_BESIDE_MAX]
     return None
+
+
+def one_header_table(
+    text: str, headers: Sequence[str]
+) -> tuple[Tag, dict[str, int], list[Tag]] | str:
+    """The one table with ``headers``, its columns and its body rows; else why the layout fails.
+
+    The failure is the ``layout_not_recognised`` detail: the page is cut, there is not exactly
+    one such table, a header is repeated, or the table has no rows.
+    """
+    if not complete_html(text):
+        return "page does not end with </html>"
+    tables = header_tables(BeautifulSoup(text, "lxml"), headers)
+    if len(tables) != 1:
+        return f"{len(tables)} tables with headers {', '.join(headers)}"
+    table = tables[0]
+    columns, repeated = header_columns(table, headers)
+    if repeated:
+        return "repeated header: " + ", ".join(repeated)
+    rows = own_rows(table)
+    if not rows:
+        return "the table has no rows"
+    return table, columns, rows
