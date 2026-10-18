@@ -4,6 +4,7 @@ import pytest
 from bs4 import BeautifulSoup, Tag
 
 from elections_calendar.sources.tables import (
+    anchor_href,
     cell_text,
     complete_html,
     dated_text_beside,
@@ -234,3 +235,22 @@ def test_one_header_table_returns_table_columns_and_rows() -> None:
 )
 def test_one_header_table_failure_details(text: str, detail: str) -> None:
     assert one_header_table(text, ("a", "b")) == detail
+
+
+@pytest.mark.parametrize(
+    ("html", "expected"),
+    [
+        ("<a>x</a>", None),
+        ('<a href="">x</a>', None),
+        ('<a href="  ">x</a>', None),
+        ('<a href="/x">x</a>', "/x"),
+        ('<a href=" /x ">x</a>', " /x "),
+    ],
+)
+def test_anchor_href(html: str, expected: str | None) -> None:
+    assert anchor_href(soup(html).find("a")) == expected
+
+
+def test_anchor_href_needs_a_tag() -> None:
+    assert anchor_href(None) is None
+    assert anchor_href("/x") is None

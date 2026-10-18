@@ -4,6 +4,7 @@ Workers are real child processes running the adapters in
 ``tests/support/slow_adapters.py``; the only server is the local HTTPS one.
 """
 
+import configparser
 import multiprocessing
 import multiprocessing.context
 import pickle
@@ -389,7 +390,12 @@ def test_a_source_whose_directory_cannot_be_read_costs_only_its_own_source(
 
 
 def test_the_default_adapters_import_construct_and_pickle_their_window() -> None:
-    assert [s.source for s in runner.DEFAULT_ADAPTERS] == ["electionguide", "osce", "wikipedia", "ipu"]
+    assert [s.source for s in runner.DEFAULT_ADAPTERS] == [
+        "electionguide",
+        "osce",
+        "wikipedia",
+        "ipu",
+    ]
     shipped = pickle.loads(pickle.dumps(WINDOW))
     for spec_ in runner.DEFAULT_ADAPTERS:
         adapter = runner._load(spec_)  # no options
@@ -431,3 +437,11 @@ def test_a_worker_payload_that_cannot_be_pickled_creates_no_child(
     written = record.read_text(encoding="utf-8")
     time.sleep(3)  # a stray worker would write (or rewrite) its marker in this time
     assert record.read_text(encoding="utf-8") == written
+
+
+def test_importlinter_adapters_contract_lists_every_default_adapter() -> None:
+    ini = configparser.ConfigParser()
+    ini.read(Path(__file__).parents[2] / "importlinter.ini", encoding="utf8")
+    modules = ini["importlinter:contract:adapters"]["modules"].split()
+    assert modules
+    assert set(modules) == {s.target.split(":")[0] for s in runner.DEFAULT_ADAPTERS}
