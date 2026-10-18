@@ -494,7 +494,8 @@ def test_coverage_gap_when_the_past_list_starts_inside_the_window() -> None:
     res = parse(views(past=eg_page(HEADERS, [row(start=sep, end=sep)])))
     assert Reason("coverage_gap", "past list starts 2026-09-02") in res.reasons
     res = parse(views(past=eg_page(HEADERS, [])))
-    assert res.reasons == ()  # valid_empty is not "ok": no note
+    assert res.reasons == (Reason("coverage_gap", "past list starts empty"),)  # an empty list is the widest gap
+    assert [c.outcome for c in res.coverage] == ["valid_empty"] * 3  # the page itself stays valid_empty
     res = parse(views(past=eg_page(HEADERS, [row(start="soon")])))
     assert Reason("coverage_gap", "past list starts empty") in res.reasons
     old = "2024-11-24 <small>(d)</small>"
@@ -529,3 +530,18 @@ def test_a_label_with_letters_casefold_does_not_fold_is_recorded_not_raised(
     assert (unit.outcome, unit.reason) == ("parsed", None)
     claim = next(c for c in res.claims if c.unit_id == unit.unit_id)
     assert claim.round == round_
+
+
+def test_a_failed_past_view_is_a_page_outcome_not_a_coverage_gap() -> None:
+    past = REQUESTS[1]
+    assert past.key == "past"
+    empty = eg_page(HEADERS, [])
+    for fetched, outcome in (
+        (result(b"", outcome="timeout", status=None, url=past.url), "timeout"),
+        (result(b"", outcome="http_error", status=500, url=past.url), "http_error"),
+        (result(b"<html><body>no table</body></html>", url=past.url), "layout_not_recognised"),
+    ):
+        pages = [(r, fetched if r is past else result(empty, url=r.url)) for r in REQUESTS]
+        res = parse(raw_pages("electionguide", pages))
+        assert [c.outcome for c in res.coverage] == ["valid_empty", outcome, "valid_empty"]
+        assert [r.code for r in res.reasons] == [outcome]
