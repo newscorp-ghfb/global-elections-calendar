@@ -138,7 +138,9 @@ class Osce:
             unit("unparsed", "office_not_modelled", label)
             return
 
-        badges = [cell_text(b) for b in cells[cols["date"]].find_all("span")]
+        badges = [
+            t for b in cells[cols["date"]].find_all("span") if (t := cell_text(b))
+        ]
         mapped = {_STATUS[b.casefold()] for b in badges if b.casefold() in _STATUS}
         unrecognised = any(
             b.casefold() not in _STATUS and b.casefold() not in _PLAIN_BADGES for b in badges
@@ -155,11 +157,12 @@ class Osce:
 
         scope = label_scope(label, place, registries)
         office = scope.office
-        hrefs: list[object] = []
+        hrefs: list[str] = []
         for key in ("activity", "country"):
             anchor = cells[cols[key]].find("a")
-            if isinstance(anchor, Tag):
-                hrefs.append(anchor.get("href"))
+            href = anchor.get("href") if isinstance(anchor, Tag) else None
+            if isinstance(href, str):
+                hrefs.append(href)
         link = next((u for u in (source_link(URL, h, HOSTS) for h in hrefs) if u), None)
 
         reason: str | None = None
