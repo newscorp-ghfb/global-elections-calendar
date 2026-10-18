@@ -85,7 +85,10 @@ DEFAULT_ADAPTERS = (
 
 @dataclass(frozen=True, slots=True)
 class SourceRun:
-    """What one source gave. ``raw.unfinished`` lists the requests whose pages were not received."""
+    """What one source gave. ``raw.unfinished`` lists the requests whose pages were not received.
+
+    A received page that cannot be read stays unfinished, and the source becomes ``worker_failed``.
+    """
 
     source: str
     raw: RawPages
@@ -232,7 +235,7 @@ class _Scrape:
             )
             # Pickle the payload before the child exists. On Windows, spawn creates the child
             # first and pickles second, so a payload that fails to pickle orphans a child that
-            # then reads the next worker's pipe handle. Here a failure creates no child.
+            # can read the next worker's pipe handle. Here a failure creates no child.
             ForkingPickler.dumps((_work, args))
             slot.process = self._context.Process(
                 target=_work, args=args, name=f"source-{slot.spec.source}", daemon=True

@@ -930,11 +930,11 @@ ES:
   castilla la mancha: ES-CM
   castilla y leon: ES-CL
   catalonia: ES-CT
-  catalunya cataluna: ES-CT
+  catalunya: ES-CT
   ceuta: ES-CE
   extremadura: ES-EX
-  galicia galicia: ES-GA
-  illes balears islas baleares: ES-IB
+  galicia: ES-GA
+  illes balears: ES-IB
   la rioja: ES-RI
   madrid: ES-MD
   madrid comunidad de: ES-MD
@@ -1033,7 +1033,7 @@ GB:
   england: GB-ENG
   northern ireland: GB-NIR
   scotland: GB-SCT
-  wales cymru gb cym: GB-WLS
+  wales: GB-WLS
 GD:
   saint andrew: GD-01
   saint david: GD-02
@@ -1824,7 +1824,7 @@ MD:
   anenii noi: MD-AN
   balti: MD-BA
   basarabeasca: MD-BS
-  bender tighina: MD-BD
+  bender: MD-BD
   briceni: MD-BR
   cahul: MD-CA
   calarasi: MD-CL
@@ -2814,27 +2814,27 @@ SD:
   west kordofan: SD-GK
   white nile: SD-NW
 SE:
-  blekinge lan se 10: SE-K
-  dalarnas lan se 20: SE-W
-  gavleborgs lan se 21: SE-X
-  gotlands lan se 09: SE-I
-  hallands lan se 13: SE-N
-  jamtlands lan se 23: SE-Z
-  jonkopings lan se 06: SE-F
-  kalmar lan se 08: SE-H
-  kronobergs lan se 07: SE-G
-  norrbottens lan se 25: SE-BD
-  orebro lan se 18: SE-T
-  ostergotlands lan se 05: SE-E
-  skane lan se 12: SE-M
-  sodermanlands lan se 04: SE-D
-  stockholms lan se 01: SE-AB
-  uppsala lan se 03: SE-C
-  varmlands lan se 17: SE-S
-  vasterbottens lan se 24: SE-AC
-  vasternorrlands lan se 22: SE-Y
-  vastmanlands lan se 19: SE-U
-  vastra gotalands lan se 14: SE-O
+  blekinge lan: SE-K
+  dalarnas lan: SE-W
+  gavleborgs lan: SE-X
+  gotlands lan: SE-I
+  hallands lan: SE-N
+  jamtlands lan: SE-Z
+  jonkopings lan: SE-F
+  kalmar lan: SE-H
+  kronobergs lan: SE-G
+  norrbottens lan: SE-BD
+  orebro lan: SE-T
+  ostergotlands lan: SE-E
+  skane lan: SE-M
+  sodermanlands lan: SE-D
+  stockholms lan: SE-AB
+  uppsala lan: SE-C
+  varmlands lan: SE-S
+  vasterbottens lan: SE-AC
+  vasternorrlands lan: SE-Y
+  vastmanlands lan: SE-U
+  vastra gotalands lan: SE-O
 SG:
   central singapore: SG-01
   north east: SG-02
@@ -3772,7 +3772,7 @@ YE:
   al jawf: YE-JA
   al mahrah: YE-MR
   al mahwit: YE-MW
-  amanat al 'asimah city: YE-SA
+  amanat al 'asimah: YE-SA
   amran: YE-AM
   arkhabil suqutra: YE-SU
   dhamar: YE-DH

@@ -91,6 +91,7 @@ REDACTED = "REDACTED"
 INVALID_API_CODE = "(invalid)"
 _API_CODE = re.compile(r"[A-Za-z0-9_-]{1,64}")
 _URL_IN_TEXT = re.compile(r"https?://[^\s'\"<>]+")
+_PATH_PARAM_IN_TEXT = re.compile(r";[^\s/?#;=]+=[^\s/?#'\"<>]*")
 _QUERY_IN_TEXT = re.compile(r"(?P<lead>[?#])(?P<query>[^\s'\"<>]+)")
 _PAIR_SEPARATOR = re.compile(r"([&;])")
 
@@ -485,7 +486,9 @@ def parse_retry_after(value: str | None, wall_clock: Callable[[], datetime]) -> 
 
 
 def redact_url(url: str) -> str:
-    """Drop user info and the fragment; redact the query (``redact_query``)."""
+    """Drop user info and the fragment; redact the query (``redact_query``) and each path
+    parameter (``;`` and the rest of its path segment become ``;REDACTED``).
+    """
     try:
         parts = urlsplit(url)
         host = parts.hostname or ""
@@ -495,7 +498,8 @@ def redact_url(url: str) -> str:
     if ":" in host:
         host = f"[{host}]"  # IPv6
     query = redact_query(parts.query) if parts.query else ""
-    return urlunsplit((parts.scheme, host + port, parts.path, query, ""))
+    path = re.sub(r";[^/]*", ";" + REDACTED, parts.path)  # path parameters carry session ids
+    return urlunsplit((parts.scheme, host + port, path, query, ""))
 
 
 def redact_query(query: str) -> str:
@@ -524,6 +528,7 @@ def redact_text(text: str, limit: int = 500) -> str:
     Error texts quote URLs without a scheme ("url: /w/api.php?token=...").
     """
     text = _URL_IN_TEXT.sub(lambda m: redact_url(m.group()), text)
+    text = _PATH_PARAM_IN_TEXT.sub(";" + REDACTED, text)
     text = _QUERY_IN_TEXT.sub(lambda m: m["lead"] + redact_query(m["query"]), text)
     return text[:limit]
 

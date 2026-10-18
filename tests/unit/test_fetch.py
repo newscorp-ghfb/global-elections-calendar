@@ -510,6 +510,9 @@ EISA_TABLE = (
         ("https://x.org/p?next=https://y.org/%3Ftoken%3Dabc", "https://x.org/p?REDACTED"),
         ("https://x.org/p?action%3Dparse%26token%3Dabc", "https://x.org/p?REDACTED"),
         ("https://[::1]:8080/x?Session=1", "https://[::1]:8080/x?REDACTED"),
+        ("https://www.aweb.org/eng/bbs/B0000007/list.do;jsessionid=AB12CD?menuNo=300052&option=all",
+         "https://www.aweb.org/eng/bbs/B0000007/list.do;REDACTED?menuNo=300052&option=all"),
+        ("https://x.org/a;v=1/b;sid=2", "https://x.org/a;REDACTED/b;REDACTED"),
         ("https://[::1/x", "<unparseable URL>"),
     ],
 )
@@ -529,6 +532,13 @@ def test_redact_text_handles_full_urls_bare_queries_and_fragments() -> None:
     assert "url: /w/api.php?action=parse&REDACTED (Caused by" in redacted
     assert redacted.endswith("see https://x.org/?REDACTED and /cb#REDACTED and ?REDACTED")
     assert len(redact_text("x" * 2000)) == 500
+
+
+def test_redact_text_redacts_path_parameters() -> None:  # L127d
+    marker = "s3cr3tMARKER"
+    redacted = redact_text(f"url: /eng/list.do;jsessionid={marker}?menuNo=1 (Caused by x; y)")
+    assert marker not in redacted
+    assert redacted.endswith("list.do;REDACTED?menuNo=1 (Caused by x; y)")
 
 
 def test_no_query_secret_reaches_the_result(pki: Pki, fake: FakeTime, server: TestServer) -> None:

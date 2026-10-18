@@ -55,6 +55,7 @@ class SectionItemsRule:
     stop_ids: frozenset[str]
     json_text_path: tuple[str, ...] = ()
     revid_path: tuple[str, ...] | None = None
+    box_classes: frozenset[str] = frozenset()  # items in a table or div with one are no units
 
 
 CountRule = TableRowsRule | SectionItemsRule
@@ -77,6 +78,7 @@ COUNT_RULES: Mapping[str, CountRule] = {
         ),
         ("parse", "text"),
         ("parse", "revid"),
+        frozenset({"ambox", "metadata", "navbox"}),
     ),
 }
 
@@ -115,9 +117,11 @@ class _OpenItem:
 class _SectionItems(HTMLParser):
     """Paths of the ``li`` items under each non-stop ``h2`` section."""
 
-    def __init__(self, stop_ids: frozenset[str]) -> None:
+    def __init__(self, stop_ids: frozenset[str], box_classes: frozenset[str]) -> None:
         super().__init__(convert_charrefs=True)
         self.stop_ids = stop_ids
+        self.box_classes = box_classes
+        self.boxes: list[tuple[str, bool]] = []  # open table/div tags: (tag, in or is a box)
         self.section: str | None = None
         self.top = 0  # top-level items counted in the current section
         self.open: list[_OpenItem] = []
@@ -128,8 +132,15 @@ class _SectionItems(HTMLParser):
             self.section = dict(attrs).get("id") or ""
             self.top = 0
             self.open = []
+            self.boxes = []
+        elif tag in ("table", "div"):
+            classes = (dict(attrs).get("class") or "").split()
+            in_box = (bool(self.boxes) and self.boxes[-1][1]) or any(
+                c in self.box_classes for c in classes
+            )
+            self.boxes.append((tag, in_box))
         elif tag == "li" and self.section is not None:
-            path = self._next_path()
+            path = None if self.boxes and self.boxes[-1][1] else self._next_path()
             self.open.append(_OpenItem(path))
             if path is not None:
                 self.paths.append(path)
@@ -137,6 +148,11 @@ class _SectionItems(HTMLParser):
     def handle_endtag(self, tag: str) -> None:
         if tag == "li" and self.open:
             self.open.pop()
+        elif tag in ("table", "div"):
+            for i in range(len(self.boxes) - 1, -1, -1):
+                if self.boxes[i][0] == tag:
+                    del self.boxes[i:]
+                    break
 
     def _next_path(self) -> str | None:
         if self.section in self.stop_ids:
@@ -177,7 +193,7 @@ def discover(rule: CountRule, body: bytes) -> tuple[str, ...] | None:
     text = _follow(body, rule.json_text_path)
     if not isinstance(text, str):
         return None
-    items = _SectionItems(rule.stop_ids)
+    items = _SectionItems(rule.stop_ids, rule.box_classes)
     try:
         items.feed(text)
         items.close()
@@ -283,7 +299,7 @@ def _page_problems(raw: RawPages, result: ParseResult, rules: Mapping[str, Count
             problems.append(
                 f"page {entry.key!r} is an unfinished request, coverage says {entry.outcome}"
             )
-        if entry.outcome == "unfinished" and entry.key not in unfinished:
+        if entry.outcome == "unfinished" and entry.key not in unfinished and entry.key in pages:
             problems.append(f"page {entry.key!r} is unfinished but its page was fetched")
         if entry.outcome not in _PAGE_OUTCOMES:
             problems += _non_unit_problems(entry, pages.get(entry.key))
