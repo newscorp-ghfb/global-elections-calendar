@@ -92,6 +92,7 @@ CountRule = (
 
 COUNT_RULES: Mapping[str, CountRule] = {
     "electionguide": TableRowsRule("electionsTable"),
+    "osce": HeaderTableRowsRule(frozenset({"date", "country", "election", "activity"})),
     "wikipedia": SectionItemsRule(
         frozenset(
             {
