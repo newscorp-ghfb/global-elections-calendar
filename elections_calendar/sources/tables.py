@@ -112,6 +112,14 @@ def source_link(base: str, href: object, hosts: Collection[str]) -> str | None:
     return url
 
 
+def anchor_href(anchor: object) -> str | None:
+    """The ``href`` of ``anchor`` as written, if it is a tag with a non-blank string href."""
+    if not isinstance(anchor, Tag):
+        return None
+    href = anchor.get("href")
+    return href if isinstance(href, str) and href.strip() else None
+
+
 def dated_text_beside(table: Tag) -> str | None:
     """The first text next to ``table`` (in its parent) that holds a year, cut to 80 characters.
 

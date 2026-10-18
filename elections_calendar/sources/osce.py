@@ -25,6 +25,7 @@ from elections_calendar.sources.base import (
     parse_pages,
 )
 from elections_calendar.sources.tables import (
+    anchor_href,
     cell_text,
     dated_text_beside,
     one_header_table,
@@ -142,8 +143,8 @@ class Osce:
         hrefs: list[str] = []
         for key in ("activity", "country"):
             anchor = cells[cols[key]].find("a")
-            href = anchor.get("href") if isinstance(anchor, Tag) else None
-            if isinstance(href, str):
+            href = anchor_href(anchor)
+            if href is not None:
                 hrefs.append(href)
         link = next((u for u in (source_link(URL, h, HOSTS) for h in hrefs) if u), None)
 

@@ -290,8 +290,10 @@ def test_off_host_links_fall_back() -> None:
     res = one(href="//[")
     assert res.claims[0].link == URL
     assert (res.units[0].outcome, res.units[0].reason) == ("partial", "link_rejected")
-    res = one(href="")
-    assert (res.units[0].outcome, res.units[0].reason) == ("partial", "link_rejected")
+    for blank in ("", "   "):
+        res = one(href=blank)
+        assert (res.units[0].outcome, res.units[0].reason) == ("parsed", None)
+        assert res.claims[0].link == URL and res.claims[0].source_event_id is None
 
 
 def test_source_event_id_comes_from_the_accepted_link() -> None:

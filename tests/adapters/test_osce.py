@@ -420,6 +420,16 @@ def test_anchor_without_href_is_not_link_rejected() -> None:
     assert res.claims[0].link == "https://odihr.osce.org/odihr/elections/bulgaria"
 
 
+def test_blank_hrefs_are_missing_not_rejected() -> None:
+    for blank in ("", "   "):
+        res = one(country_href=blank, activity="Mission", activity_href=blank)
+        assert (res.units[0].outcome, res.units[0].reason) == ("parsed", None)
+        assert res.claims[0].link == URL
+    res = one(country_href="  ", activity="Mission", activity_href="/node/1")
+    assert res.claims[0].link == "https://odihr.osce.org/node/1"
+    assert res.units[0].outcome == "parsed"
+
+
 def test_ledger_count_rule_matches_adapter_headers() -> None:
     rule = COUNT_RULES["osce"]
     assert isinstance(rule, HeaderTableRowsRule)

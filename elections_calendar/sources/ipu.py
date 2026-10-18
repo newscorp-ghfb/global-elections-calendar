@@ -26,6 +26,7 @@ from elections_calendar.sources.base import (
     parse_pages,
 )
 from elections_calendar.sources.tables import (
+    anchor_href,
     cell_text,
     dated_text_beside,
     one_header_table,
@@ -141,8 +142,8 @@ class Ipu:
 
         office = classify(chamber, place.place_id, "nationwide", registries.institutions)
         anchor = cells[cols["chamber"]].find("a")
-        href = anchor.get("href") if isinstance(anchor, Tag) else None
-        accepted = source_link(URL, href, HOSTS) if isinstance(href, str) else None
+        href = anchor_href(anchor)
+        accepted = source_link(URL, href, HOSTS) if href is not None else None
         found = _EVENT.search(accepted) if accepted else None
 
         reason: str | None = None
@@ -150,7 +151,7 @@ class Ipu:
             reason = "place_unregistered"
         elif not office.recognised:
             reason = "office_unrecognised"
-        elif isinstance(href, str) and accepted is None:
+        elif href is not None and accepted is None:
             reason = "link_rejected"
         unit("parsed" if reason is None else "partial", reason)
         out.claims.append(
