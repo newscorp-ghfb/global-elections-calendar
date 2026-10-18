@@ -238,7 +238,10 @@ def extract_round(text: str) -> tuple[int | None, str]:
     if match["n"]:
         number = int(match["n"])
     elif match["w"]:
-        number = _ROUND_WORDS[match["w"].casefold()]
+        word = _ROUND_WORDS.get(match["w"].casefold())
+        if word is None:  # IGNORECASE matched letters (dotless i, ...) that casefold() leaves
+            return None, collapse_ws(text)
+        number = word
     elif match["k"]:
         number = int(match["k"])
     else:

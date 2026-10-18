@@ -419,3 +419,16 @@ def test_a_hyphenated_lieutenant_title_is_not_its_principal() -> None:
     o = classify_office("Lieutenant-Governor", "iso:US", "subdivision", REGISTRY)
     assert (o.office_class, o.recognised) == ("general", False)
     assert is_executive_title("Lieutenant-Governor")
+
+
+@pytest.mark.parametrize("letter", ["ı", "İ"])
+def test_a_round_word_with_letters_only_ignorecase_folds_is_no_round(letter: str) -> None:
+    # "f{letter}rst" matches the round pattern case-insensitively; casefold() does not map it to "first"
+    number, rest = extract_round(f"President (f{letter}rst round)")
+    assert number is None
+    assert "President" in rest
+
+
+def test_the_same_round_words_without_the_odd_letters_still_parse() -> None:
+    assert extract_round("President (first round)") == (1, "President")
+    assert extract_round("President (second round)") == (2, "President")
