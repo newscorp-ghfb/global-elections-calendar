@@ -326,3 +326,11 @@ def test_ledger_count_rule_matches_adapter_headers() -> None:
     rule = COUNT_RULES["aweb"]
     assert isinstance(rule, HeaderTableRowsRule)
     assert rule.headers == frozenset(aweb.HEADERS)
+
+
+def test_ok_parse_with_two_spans_is_date_unparsed() -> None:
+    for text in ("4 and 11 October 2026", "4 October, 11 October 2026", "4, 4 October 2026"):
+        res = one(date=text)
+        (u,) = res.units
+        assert (u.outcome, u.reason, u.leftover) == ("unparsed", "date_unparsed", "")
+        assert res.claims == ()
