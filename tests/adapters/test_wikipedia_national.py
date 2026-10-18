@@ -1,6 +1,6 @@
 import json
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import UTC, date, datetime
 from typing import Any, Literal
 
@@ -643,3 +643,36 @@ def test_an_item_with_letters_casefold_does_not_fold_is_recorded_not_raised(lett
     assert [(u.text, u.outcome) for u in others] == [(u.text, u.outcome) for u in of(RES)]
     assert len(others) == 108
     assert res.coverage[1:] == RES.coverage[1:]
+
+
+Units = Sequence[tuple[str, str | None]]
+Claims = Sequence[tuple[str, str | None, str]]
+
+
+def children_places(parent: str) -> tuple[Units, Claims]:
+    """(outcome, reason) of the units and (place, jurisdiction, office class) of the claims of a
+    parent item with a child "3 November: Georgia, Governor", which is the US state with a US
+    parent and the country when it has no parent place.
+    """
+    body = f"<ul><li>{parent}<ul><li>3 November: <a>Georgia</a>, Governor</li></ul></li></ul>"
+    _, res = synth({"November": body})
+    units = [(u.outcome, u.reason) for u in of(res)]
+    claims = [(c.place_id, c.jurisdiction, c.office_class) for c in mine(res)]
+    return units, claims
+
+
+@pytest.mark.parametrize(
+    ("parent", "reason"),
+    [
+        ("31 November: <a>United States</a>", "date_unparsed"),
+        ("3 November 1900: <a>United States</a>", "implausible_date"),
+    ],
+)
+def test_a_child_of_an_item_with_a_failed_date_still_gets_the_parents_place(
+    parent: str, reason: str
+) -> None:
+    good_units, good_claims = children_places("3 November: <a>United States</a>")
+    units, claims = children_places(parent)
+    assert units == [("unparsed", reason), good_units[1]]
+    assert claims == good_claims == [("iso:US", "Georgia", "governor")]
+

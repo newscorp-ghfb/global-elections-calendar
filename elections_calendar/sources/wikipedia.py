@@ -314,6 +314,29 @@ def _date_prefix(text: str, year: int) -> tuple[str, str, _Date | None]:
     return first_head, text, None
 
 
+def _after_head(text: str, head: str) -> str:
+    """The text after a date head and its separator."""
+    after = text[len(head) :].lstrip() if text.startswith(head) else text
+    return after[1:].strip() if after[:1] in _DATE_SEPARATORS else after
+
+
+def _place_for_children(
+    registries: Registries, rest: str, first_link: str | None, has_kids: bool, where: _Where
+) -> _Where:
+    """What the children of an item with no usable date inherit.
+
+    The item stays unparsed, but its children still need its country: with no place of
+    its own to pass down, its first token is resolved as the country, as for any dated item.
+    """
+    if where.place is not None or not has_kids:
+        return where
+    tokens = _split_top(rest)
+    if not tokens or _ARTICLE_TITLE.match(tokens[0]):
+        return where
+    place_text, place, _ = _country(rest, first_link, registries)
+    return where if place is None or place_text is None else _Where(place, place_text)
+
+
 def _section_date(section: str, year: int) -> _Date:
     month = _MONTH_BY_NAME.get(section.casefold())
     if month is not None:
@@ -535,6 +558,7 @@ class Wikipedia:
             date = own_date
         elif head and _MONTH_WORD.search(head):
             date = _Date(head, (), "unknown", None, None, "date_unparsed")
+            rest = _after_head(text, head)
         elif inherited is not None:
             date = inherited
         else:
@@ -545,8 +569,10 @@ class Wikipedia:
         here = where
         if date.failure is not None:
             outcome, reason = "unparsed", date.failure
+            here = _place_for_children(walk.registries, rest, first_link, bool(kids), where)
         elif not all(plausible(span, walk.window.today) for span in date.spans):
             outcome, reason = "unparsed", "implausible_date"
+            here = _place_for_children(walk.registries, rest, first_link, bool(kids), where)
         else:
             outcome, reason, leftover, here, new_claims = self._item_body(
                 walk, unit_id, rest, first_link, bool(kids), date, where
