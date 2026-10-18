@@ -355,6 +355,9 @@ def test_a_data_table_in_a_calendar_section_is_not_valid_empty() -> None:
     assert outcome(box.format("<dl><dt>x</dt></dl>")) == "valid_empty"
     assert outcome(box.format('<table class="wikitable"><tr><td>x</td></tr></table>')) == "valid_empty"
     assert outcome('<div><table class="wikitable"><tr><td>x</td></tr></table></div>') == "layout_not_recognised"
+    # a box class on any other element does not make a box
+    assert outcome('<span class="ambox"><table><tr><td>x</td></tr></table></span>') == "layout_not_recognised"
+    assert outcome('<p class="metadata"><dl><dt>x</dt></dl></p>') == "layout_not_recognised"
     for cls in ("ambox", "metadata", "navbox", "mbox-small ambox ambox-content"):
         assert outcome(f'<table class="{cls}"><tr><td>This section is empty.</td></tr></table>') == "valid_empty"
     # a table in a stop section is not a calendar entry
@@ -390,6 +393,21 @@ def january(html: str) -> tuple[str, int, str]:
         ("stray words" + ENTRY, "text outside any element"),
         ("<ul>stray words<li>5 January: Sweden, Parliament</li></ul>", "text in <ul>"),
         ("<ul><li>5 January: Sweden, Parliament</li></ul><span>x</span>", "text in <span>"),
+        # a sub-heading div allows text only in its h3-h6 and its edit link
+        ('<div class="mw-heading">6 January: Fiji, Parliament</div>', "text in <div>"),
+        (
+            '<div class="mw-heading mw-heading3"><h3 id="S">Sub</h3>'
+            "<p>6 January: Fiji, Parliament</p></div>",
+            "text in <p>",
+        ),
+        (
+            '<div class="mw-heading mw-heading3"><h3 id="S">Sub</h3>6 January: Fiji, Parliament</div>',
+            "text in <div>",
+        ),
+        # only a table or a div can be a maintenance box
+        ('<p class="metadata">5 January: Sweden, Parliament</p>', "text in <p>"),
+        ('<span class="ambox">5 January: Sweden, Parliament</span>', "text in <span>"),
+        ('<p class="navbox">5 January: Sweden, Parliament</p>' + ENTRY, "text in <p>"),
     ],
 )
 def test_text_in_a_counted_section_outside_an_entry_is_a_changed_layout(html: str, where: str) -> None:
@@ -406,6 +424,15 @@ def test_text_in_a_counted_section_outside_an_entry_is_a_changed_layout(html: st
         ('<table class="ambox"><tr><td>Needs more sources.</td></tr></table>', "valid_empty", 0),
         ('<style data-x="1">.a { color: red }</style><link rel="mw-deduplicated" href="x">', "valid_empty", 0),
         ('<div class="mw-heading mw-heading3"><h3 id="Sub">Subsection</h3></div>' + ENTRY, "ok", 1),
+        (
+            '<div class="mw-heading mw-heading3"><h3 id="S">Sub</h3>'
+            '<span class="mw-editsection"><span>[</span><a href="x">edit</a><span>]</span></span></div>'
+            + ENTRY,
+            "ok",
+            1,
+        ),
+        ('<div class="navbox">Elections in Sweden</div>', "valid_empty", 0),
+        ('<div class="navbox"><table><tr><td>Elections</td></tr></table></div>', "valid_empty", 0),
         ("<!-- a comment -->" + ENTRY, "ok", 1),
     ],
 )
@@ -676,3 +703,35 @@ def test_a_child_of_an_item_with_a_failed_date_still_gets_the_parents_place(
     assert units == [("unparsed", reason), good_units[1]]
     assert claims == good_claims == [("iso:US", "Georgia", "governor")]
 
+
+
+NESTED = {
+    "country and state in the failed item": (
+        "<ul><li>{d}: <a>United States</a>, Georgia"
+        "<ul><li>3 November: Governor</li></ul></li></ul>",
+        [("iso:US", "Georgia", "governor")],
+    ),
+    "state under a country container": (
+        "<ul><li><a>United States</a><ul><li>{d}: Georgia"
+        "<ul><li>3 November: Governor</li></ul></li></ul></li></ul>",
+        [("iso:US", "Georgia", "governor")],
+    ),
+    "jurisdiction under a country container": (
+        "<ul><li><a>Philippines</a><ul><li>{d}: Cebu"
+        "<ul><li>3 November: Mayor</li></ul></li></ul></li></ul>",
+        [("iso:PH", "Cebu", "mayor")],
+    ),
+}
+
+
+@pytest.mark.parametrize("failed", ["31 November", "3 November 1900"])
+@pytest.mark.parametrize("case", list(NESTED))
+def test_a_failed_date_parent_passes_its_whole_place_down(case: str, failed: str) -> None:
+    template, expected = NESTED[case]
+
+    def child_claims(date: str) -> list[tuple[str, str | None, str]]:
+        _, res = synth({"November": template.format(d=date)})
+        return [(c.place_id, c.jurisdiction, c.office_class) for c in mine(res)]
+
+    assert child_claims("3 November") == expected  # the control: a valid date
+    assert child_claims(failed) == expected
