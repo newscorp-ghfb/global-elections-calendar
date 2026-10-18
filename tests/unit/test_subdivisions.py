@@ -22,6 +22,15 @@ def test_subdivisions_resolve_names_sources_use() -> None:
     assert {k: SUBDIVISIONS.find(*k) for k in cases} == cases
 
 
+@pytest.mark.parametrize(
+    ("country", "name", "code"),
+    [("ZA", "Gauteng Province", "ZA-GP"), ("PE", "Cusco Region", "PE-CUS")],
+)
+def test_a_province_or_region_suffix_is_dropped(country: str, name: str, code: str) -> None:
+    assert SUBDIVISIONS.find(country, name) == code
+    assert SUBDIVISIONS.find(country, name.rsplit(" ", 1)[0]) == code  # the bare name is a key
+
+
 def test_subdivision_lookups_that_must_miss() -> None:
     assert SUBDIVISIONS.find("GE", "Georgia") is None  # the country has no such subdivision
     assert SUBDIVISIONS.find(None, "Texas") is None
@@ -46,6 +55,15 @@ def test_build_rejects_an_unknown_manual_code() -> None:
         build(rows, {"XA": {"Delta": "XA-9"}})
     with pytest.raises(BuildError):
         build(rows + [("XB-1", "XB", "Beta")], {"XA": {"Delta": "XB-1"}})
+
+
+def test_build_rejects_two_manual_names_that_normalise_to_one_key() -> None:
+    rows = [("XA-1", "XA", "Alpha"), ("XA-2", "XA", "Beta")]
+    for names in ({"Gamma": "XA-1", "GAMMA": "XA-2"}, {"São": "XA-1", "Sao": "XA-1"}):
+        with pytest.raises(BuildError, match="manual names"):
+            build(rows, {"XA": names})
+    index, _ = build(rows, {"XA": {"Gamma": "XA-1"}, "XB": {}})  # one name is fine
+    assert index["XA"]["gamma"] == "XA-1"
 
 
 def test_committed_subdivisions_yaml_is_up_to_date() -> None:

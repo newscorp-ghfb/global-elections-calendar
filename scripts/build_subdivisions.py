@@ -7,7 +7,8 @@ committed and its diff reviewed; nothing reads pycountry at runtime.
 Keys per subdivision: its name without a trailing parenthesised part, and, when
 the name holds ", ", the part before the first ", " ("Madrid, Comunidad de" adds
 "madrid"). A key two codes of one country share is left out and listed in the
-header. Manual entries are added after that check and win over generated keys.
+header. Manual entries are added after that check and win over generated keys; two manual
+names of one country that normalise to the same key are an error.
 
     .venv\\Scripts\\python.exe -m scripts.build_subdivisions
 """
@@ -70,6 +71,7 @@ def build(
             else:
                 ambiguous.append(f"{country} {key}")
     for country, names in manual.items():
+        written: dict[str, str] = {}
         for name, code in names.items():
             if code not in codes:
                 raise BuildError(f"{code} is not a first-level ISO 3166-2 code")
@@ -78,6 +80,11 @@ def build(
             key = norm_name(name)
             if not key:
                 raise BuildError(f"{country}: empty manual name {name!r}")
+            if key in written:
+                raise BuildError(
+                    f"{country}: manual names {written[key]!r} and {name!r} are both {key!r}"
+                )
+            written[key] = name
             index.setdefault(country, {})[key] = code
     return index, sorted(ambiguous)
 
