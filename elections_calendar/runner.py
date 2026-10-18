@@ -79,6 +79,7 @@ class AdapterSpec:
 
 DEFAULT_ADAPTERS = (
     AdapterSpec("electionguide", "elections_calendar.sources.electionguide:ElectionGuide"),
+    AdapterSpec("osce", "elections_calendar.sources.osce:Osce"),
     AdapterSpec("wikipedia", "elections_calendar.sources.wikipedia:Wikipedia"),
 )
 
