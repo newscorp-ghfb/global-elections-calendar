@@ -555,3 +555,20 @@ def test_a_repeated_header_is_not_a_layout(repeated: str) -> None:
     assert res.coverage[0].outcome == "layout_not_recognised"
     assert not [u for u in res.units if u.unit_id.startswith("electionguide:upcoming/")]
     assert ElectionGuide().parse(views(upcoming=eg_page(HEADERS, [row()])), WINDOW, REGISTRIES).units
+
+
+def test_a_label_naming_a_subdivision_keeps_its_jurisdiction() -> None:
+    unit, claims = one_row(
+        row(country="Bosnia and Herzegovina", label="Republika Srpska Early Presidential election")
+    )
+    assert (unit.outcome, unit.reason) == ("partial", "level_unresolved")
+    (claim,) = claims
+    assert (claim.jurisdiction, claim.jurisdiction_kind, claim.level, claim.institution) == (
+        "Republika Srpska",
+        "subdivision",
+        "unknown",
+        None,
+    )
+    unit, claims = one_row(row(country="Moldova", label="Election of Governor of Gagauzia"))
+    assert unit.outcome == "parsed"
+    assert claims[0].level == "subnational"

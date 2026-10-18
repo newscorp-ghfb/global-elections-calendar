@@ -131,3 +131,38 @@ class SubdivisionIndex:
             if key.endswith(suffix) and key[: -len(suffix)] in keys:
                 return keys[key[: -len(suffix)]]
         return None
+
+
+_LABEL_WORD = re.compile(r"[^\W\d_]+(?:[-'’][^\W\d_]+)*")
+_MAX_RUN = 5
+
+
+def named_subdivisions(
+    text: str, place: Place, places: PlaceRegistry, subdivisions: SubdivisionIndex
+) -> tuple[str, ...]:
+    """The registered subdivisions of ``place`` that a label names, in text order.
+
+    Runs of up to five words that name the place itself are taken first and never count
+    ("Mexico", "Trinidad and Tobago"); then the longest runs that resolve to a subdivision.
+    One run per subdivision code.
+    """
+    words = _LABEL_WORD.findall(text)
+    taken = [False] * len(words)
+    found: dict[str, tuple[int, str]] = {}
+    for own_name in (True, False):
+        for n in range(min(_MAX_RUN, len(words)), 0, -1):
+            for i in range(len(words) - n + 1):
+                if any(taken[i : i + n]):
+                    continue
+                run = " ".join(words[i : i + n])
+                if own_name:
+                    same = places.resolve(run)
+                    hit = same is not None and same.place_id == place.place_id
+                else:
+                    code = subdivisions.find(place.country_code, run)
+                    hit = code is not None
+                    if code is not None:
+                        found.setdefault(code, (i, run))
+                if hit:
+                    taken[i : i + n] = [True] * n
+    return tuple(run for _, run in sorted(found.values()))
