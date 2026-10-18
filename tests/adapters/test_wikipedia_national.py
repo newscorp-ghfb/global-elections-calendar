@@ -358,15 +358,76 @@ def test_a_data_table_in_a_calendar_section_is_not_valid_empty() -> None:
     for cls in ("ambox", "metadata", "navbox", "mbox-small ambox ambox-content"):
         assert outcome(f'<table class="{cls}"><tr><td>This section is empty.</td></tr></table>') == "valid_empty"
     # a table in a stop section is not a calendar entry
-    stop = wiki_page({"January": "<p>none</p>", "References": '<table class="wikitable"><tr><td>x</td></tr></table>'})
+    stop = wiki_page({"January": "", "References": '<table class="wikitable"><tr><td>x</td></tr></table>'})
     assert one_page(stop).coverage[0].outcome == "valid_empty"
 
 
-def test_a_page_with_month_headings_and_no_items_is_valid_empty() -> None:
-    _, res = synth({"January": "<p>none</p>", "February": "<p>none</p>"})
+def test_a_page_with_month_headings_and_empty_sections_is_valid_empty() -> None:
+    box = '<table class="ambox"><tr><td>This section is empty.</td></tr></table>'
+    _, res = synth({"January": "", "February": box})
     assert [(c.outcome, c.units_seen, c.revid) for c in res.coverage][0] == ("valid_empty", 0, 7)
     assert res.coverage[0].unit_prefix == S
     assert not of(res) and res.reasons == ()
+
+
+ENTRY = "<ul><li>5 January: <a>Sweden</a>, Parliament</li></ul>"
+
+
+def january(html: str) -> tuple[str, int, str]:
+    """(outcome, units seen, detail) of a page whose only month section holds ``html``."""
+    page = one_page(wiki_page({"January": html})).coverage[0]
+    return page.outcome, page.units_seen, page.detail
+
+
+@pytest.mark.parametrize(
+    ("html", "where"),
+    [
+        ("<p>5 January: <a>Sweden</a>, Parliament</p>", "text in <p>"),
+        (ENTRY + "<p>6 January: <a>Fiji</a>, Parliament</p>", "text in <p>"),  # a ul and a p entry
+        ("<p>Cuba, Parliament</p>", "text in <p>"),  # no month word, no digit: it would inherit January
+        ('<div class="card">5 January: Sweden, Parliament</div>', "text in <div>"),
+        ("<div>Cuba, Parliament" + ENTRY + "</div>", "text in <div>"),  # a wrapper's own text
+        ("stray words" + ENTRY, "text outside any element"),
+        ("<ul>stray words<li>5 January: Sweden, Parliament</li></ul>", "text in <ul>"),
+        ("<ul><li>5 January: Sweden, Parliament</li></ul><span>x</span>", "text in <span>"),
+    ],
+)
+def test_text_in_a_counted_section_outside_an_entry_is_a_changed_layout(html: str, where: str) -> None:
+    assert january(html) == ("layout_not_recognised", 0, f"section January: {where}")
+
+
+@pytest.mark.parametrize(
+    ("html", "outcome", "units"),
+    [
+        (f"<div>{ENTRY}</div>", "ok", 1),  # a wrapper whose text is all in entries
+        ("<p></p>", "valid_empty", 0),
+        ("<p><br></p>", "valid_empty", 0),
+        ("<p> \n </p><meta><link>", "valid_empty", 0),
+        ('<table class="ambox"><tr><td>Needs more sources.</td></tr></table>', "valid_empty", 0),
+        ('<style data-x="1">.a { color: red }</style><link rel="mw-deduplicated" href="x">', "valid_empty", 0),
+        ('<div class="mw-heading mw-heading3"><h3 id="Sub">Subsection</h3></div>' + ENTRY, "ok", 1),
+        ("<!-- a comment -->" + ENTRY, "ok", 1),
+    ],
+)
+def test_text_that_sits_in_an_allowed_place_is_not_a_changed_layout(
+    html: str, outcome: str, units: int
+) -> None:
+    assert january(html) == (outcome, units, "")
+
+
+def test_a_changed_section_reason_names_the_page_and_the_section() -> None:
+    raw, res = synth({"January": ENTRY, "March": "<p>x</p>"})
+    assert res.reasons == (
+        Reason("layout_not_recognised", "national-2026: section March: text in <p>"),
+    )
+    assert not of(res)  # the whole page is rejected, not just the section
+
+
+def test_a_long_section_key_is_cut_in_the_reason() -> None:
+    _, res = synth({"January": ENTRY, "S" * 500: "<p>x</p>"})
+    (reason,) = res.reasons
+    assert reason.code == "layout_not_recognised"
+    assert len(reason.detail) < 120 and "S" * 61 not in reason.detail
 
 
 def test_section_items_and_ids() -> None:
