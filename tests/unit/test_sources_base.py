@@ -1,5 +1,6 @@
 """The adapter contract (spec §8, §9.4)."""
 
+from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from typing import get_args
 
@@ -19,12 +20,14 @@ from elections_calendar.sources.base import (
     RawPage,
     Registries,
     coverage_reasons,
+    fetch_chain,
     fetch_pages,
     label_scope,
+    missing_pages,
     page_failure,
     parse_pages,
 )
-from tests.support.pages import FETCHED, claim, raw_pages, result, unit
+from tests.support.pages import FETCHED, Served, claim, raw_pages, result, unit
 
 
 class StubGetter:
@@ -277,3 +280,50 @@ def test_label_scope_of_a_named_subdivision_withholds_the_national_default() -> 
     )
     plain = label_scope("Mexico General Election", _REGISTRIES.places.resolve("Mexico"), _REGISTRIES)  # type: ignore[arg-type]
     assert (plain.jurisdiction_kind, plain.jurisdiction) == ("nationwide", None)
+
+
+def chain_requests() -> list[PageRequest]:
+    return [PageRequest(key, f"https://example.test/{key}") for key in ("p0", "p1", "p2")]
+
+
+def more_expected(pages: Sequence[RawPage]) -> list[PageRequest]:
+    """The first page, then the next one after each page whose body is ``more``."""
+    wanted = chain_requests()
+    out = wanted[:1]
+    for page, nxt in zip(pages, wanted[1:], strict=False):
+        if page.result.body != b"more":
+            break
+        out.append(nxt)
+    return out
+
+
+def test_fetch_chain() -> None:
+    urls = [r.url for r in chain_requests()]
+    served = Served({urls[0]: b"more", urls[1]: b"more", urls[2]: b"end"})
+    pages = list(fetch_chain(more_expected, served, Deadline.after(60), now=lambda: FETCHED))
+    assert [p.request.key for p in pages] == ["p0", "p1", "p2"]
+    assert served.asked == urls
+    assert all(p.fetched_at == FETCHED for p in pages)
+    once = Served({urls[0]: b"more"})
+    only_first = list(fetch_chain(lambda pages: chain_requests()[:1], once, Deadline.after(60)))
+    assert [p.request.key for p in only_first] == ["p0"]
+    assert once.asked == urls[:1]
+
+
+def test_fetch_chain_is_lazy() -> None:
+    urls = [r.url for r in chain_requests()]
+    served = Served(dict.fromkeys(urls, b"more"))
+    pages = fetch_chain(more_expected, served, Deadline.after(60))
+    assert served.asked == []
+    next(pages)
+    assert served.asked == urls[:1]
+
+
+def test_missing_pages() -> None:
+    a, b, c = chain_requests()
+    page_a = (a, result(b"x", url=a.url))
+    assert missing_pages([a, b, c], raw_pages("s", [page_a], unfinished=(b,))) == [
+        Reason("pagination_incomplete", "p2 was not fetched")
+    ]
+    full = raw_pages("s", [page_a, (b, result(b"x")), (c, result(b"x"))])
+    assert missing_pages([a, b, c], full) == []

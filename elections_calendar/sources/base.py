@@ -5,7 +5,7 @@ input units and claims (``parse``); the ledger and the runner build on the
 types here. ``fetch_pages`` runs requests one at a time, in order (§8).
 """
 
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Final, Literal, Protocol
@@ -89,7 +89,9 @@ class RawPages:
     """All pages of one source run; ``unfinished`` are the requests whose pages were not
     received: the worker was cut at a deadline, or it failed before fetching them.
     A received page that cannot be read also stays unfinished, and its source becomes
-    ``worker_failed``.
+    ``worker_failed``. ``unfinished`` lists only up-front requests (those of
+    ``requests(window)``): an adapter whose later pages depend on earlier ones reports a later
+    page it expected but did not receive as ``pagination_incomplete`` (``missing_pages``).
     """
 
     source: str
@@ -226,6 +228,41 @@ def fetch_pages(
     for request in requests:
         result = fetcher.get(request.url, deadline=deadline, mediawiki=request.mediawiki)
         yield RawPage(request, result, now())
+
+
+def fetch_chain(
+    expected: Callable[[Sequence[RawPage]], Sequence[PageRequest]],
+    fetcher: Getter,
+    deadline: Deadline,
+    *,
+    now: Callable[[], datetime] = lambda: datetime.now(UTC),
+) -> Iterator[RawPage]:
+    """Fetch lazily, one page at a time, the pages that the pages so far imply.
+
+    Each step takes the first request in ``expected(pages so far)`` whose key has not been
+    fetched, fetches it and yields its page; it stops when there is none.
+    """
+    pages: list[RawPage] = []
+    while True:
+        have = {page.request.key for page in pages}
+        request = next((r for r in expected(pages) if r.key not in have), None)
+        if request is None:
+            return
+        result = fetcher.get(request.url, deadline=deadline, mediawiki=request.mediawiki)
+        page = RawPage(request, result, now())
+        pages.append(page)
+        yield page
+
+
+def missing_pages(expected: Sequence[PageRequest], raw: RawPages) -> list[Reason]:
+    """A ``pagination_incomplete`` reason per expected request that is neither received nor
+    listed as unfinished, in ``expected`` order."""
+    known = {page.request.key for page in raw.pages} | {r.key for r in raw.unfinished}
+    return [
+        Reason("pagination_incomplete", f"{request.key} was not fetched")
+        for request in expected
+        if request.key not in known
+    ]
 
 
 def page_failure(page: RawPage) -> PageOutcome | None:

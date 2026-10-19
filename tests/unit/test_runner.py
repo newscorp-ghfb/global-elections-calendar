@@ -20,9 +20,12 @@ import pytest
 
 from elections_calendar import runner
 from elections_calendar.fetch import TrustBundleError
+from elections_calendar.model import Reason
 from elections_calendar.runner import AdapterSpec, run_sources
+from elections_calendar.sources.base import missing_pages
 from elections_calendar.window import window_for
 from tests.support.http_server import Reply, TestServer
+from tests.support.slow_adapters import Chain
 
 WINDOW = window_for(datetime(2026, 10, 16, 12, 0, tzinfo=UTC))
 
@@ -462,3 +465,28 @@ def test_every_adapter_module_is_registered() -> None:
     linted = set(ini["importlinter:contract:adapters"]["modules"].split())
     assert on_disk == linted
     assert on_disk == {s.target.split(":")[0] for s in runner.DEFAULT_ADAPTERS}
+
+
+def test_a_chained_source_cut_mid_chain(
+    server: TestServer, ca_env: dict[str, str], tmp_path: Path
+) -> None:
+    """Only the first page is named up front, so the runner keeps a chained page it received
+    and has nothing unfinished; the adapter's own ``missing_pages`` reports the one cut off."""
+    a, b = server.route("/a", Reply(body=b"a")), server.route("/b", Reply(body=b"b"))
+    c = server.route("/c", Reply(body=b"c", header_drip=0.5))
+    urls = f"{a},{b},{c}"
+    run = run_sources(
+        [spec("Chain", urls=urls)],
+        WINDOW,
+        workdir=tmp_path,
+        environ=ca_env,
+        source_deadline_s=2,
+        grace_s=2,
+    )
+    (r,) = run.runs
+    assert r.outcome == "deadline"
+    assert [p.request.key for p in r.raw.pages] == ["one", "two"]
+    assert r.raw.unfinished == ()
+    assert missing_pages(Chain(urls).expected(r.raw.pages), r.raw) == [
+        Reason("pagination_incomplete", "three was not fetched")
+    ]

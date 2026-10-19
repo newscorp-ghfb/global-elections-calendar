@@ -12,8 +12,9 @@ SHA_LINE = re.compile(r"\*\*SHA-256 of `([^`]+)`:\*\* ([0-9a-f]{64})")
 def test_every_fixture_file_matches_its_provenance_note() -> None:
     notes = sorted(FIXTURES.glob("*/*/PROVENANCE.md"))
     assert [n.parent.relative_to(FIXTURES).as_posix() for n in notes] == [
-        "aweb/2026-10-18", "carter/2026-10-18", "eeas/2026-10-18", "electionguide/2026-10-16",
-        "ipu/2026-10-16", "ipu/2026-10-18", "osce/2026-10-18", "wikipedia/2026-10-16"]
+        "aweb/2026-10-18", "carter/2026-10-18", "eeas/2026-10-18", "eisa/2026-10-19",
+        "electionguide/2026-10-16", "ipu/2026-10-16", "ipu/2026-10-18", "ndi/2026-10-19",
+        "osce/2026-10-18", "wikipedia/2026-10-16"]
     for note in notes:
         listed = dict(SHA_LINE.findall(note.read_text(encoding="utf-8")))
         files = {p.name for p in note.parent.iterdir() if p.name != "PROVENANCE.md"}

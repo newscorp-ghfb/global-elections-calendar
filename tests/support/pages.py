@@ -1,9 +1,9 @@
 """Build FetchResults and RawPages for adapter tests."""
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from datetime import UTC, date, datetime
 
-from elections_calendar.fetch import FetchResult
+from elections_calendar.fetch import Deadline, FetchResult
 from elections_calendar.model import Claim, DateSpan, FetchOutcome, InputUnit, Outcome, Relevance
 from elections_calendar.sources.base import PageRequest, RawPage, RawPages
 
@@ -32,6 +32,28 @@ def result(
         attempts=1,
         api_code=api_code,
     )
+
+
+class Served:
+    """A ``Getter`` over fixed bodies. A known URL gives ``ok`` with its body, any other a 404.
+
+    One content type serves every URL (only its charset matters); ``asked`` lists the URLs
+    asked for, in order.
+    """
+
+    def __init__(
+        self, bodies: Mapping[str, bytes], content_type: str = "text/html; charset=UTF-8"
+    ) -> None:
+        self._bodies = bodies
+        self._content_type = content_type
+        self.asked: list[str] = []
+
+    def get(self, url: str, *, deadline: Deadline, mediawiki: bool = False) -> FetchResult:
+        self.asked.append(url)
+        body = self._bodies.get(url)
+        if body is None:
+            return result(b"", url=url, outcome="http_error", status=404)
+        return result(body, url=url, content_type=self._content_type)
 
 
 def raw_pages(
