@@ -126,7 +126,7 @@ class Osce:
             for i, cell in enumerate(cells)
             for b in cell.find_all("span")
             if (
-                (div not in b.parents)
+                not any(p is div for p in b.parents)
                 if i == cols["date"]
                 else "badge" in (b.get("class") or [])
             )

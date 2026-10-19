@@ -676,6 +676,11 @@ def test_the_new_ignored_reasons_are_allowlisted(reason: str) -> None:
         ('<tr><th colspan="2">Date</th><th>Country</th></tr>', None),
         ("<tr><th>Date</th><th>Country</th><td>x</td></tr>", None),
         ("<tr><th>Date</th><th>Country</th></tr>", ("r1", "r2", "r3")),
+        (
+            "<tr><th>Date<table><thead><tr><th>a</th></tr><tr><th>b</th></tr></thead></table></th>"
+            "<th>Country</th></tr>",
+            ("r1", "r2", "r3"),
+        ),
     ],
 )
 def test_header_table_rows_reject_irregular_headers(
