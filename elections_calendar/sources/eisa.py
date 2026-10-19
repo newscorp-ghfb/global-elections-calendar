@@ -90,22 +90,19 @@ def _read_calendar(text: str, window: Window) -> tuple[dict[int, str], list[Reas
             continue
         per_heading: list[list[str]] = []
         for heading in matched:
-            found = (
-                [
-                    str(t.get("data-footable_id", "")).strip()
-                    for t in heading.parent.find_all("table", attrs={"data-footable_id": True})
-                ]
+            tables = (
+                heading.parent.find_all("table", attrs={"data-footable_id": True})
                 if heading.parent is not None
                 else []
             )
-            per_heading.append(found)
+            per_heading.append([str(t["data-footable_id"]).strip() for t in tables] or ["(none)"])
         distinct = {i for found in per_heading for i in found}
         if (
             len(distinct) != 1
             or any(len(found) != 1 for found in per_heading)
             or not _TABLE_ID.fullmatch(next(iter(distinct)))
         ):
-            shown = ", ".join(sorted(distinct)) or "(none)"
+            shown = ", ".join(sorted(distinct))
             return f"heading '{title}' has table ids {shown}"
         ids[year] = next(iter(distinct))
     return ids, notes
