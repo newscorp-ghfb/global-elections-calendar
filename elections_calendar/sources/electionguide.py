@@ -82,7 +82,8 @@ class _PageParse:
 
 
 def _columns(table: Tag) -> dict[str, int] | None:
-    """Column index by role, or None when a required header is missing or repeated (U01)."""
+    """Column index by role, or None when a required header is missing or repeated (U01),
+    or the thead is not one plain row of th cells."""
     if header_problem(table) is not None:
         return None
     found, repeated = header_columns(table, _READ)
