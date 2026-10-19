@@ -10,6 +10,7 @@ from elections_calendar.sources.tables import (
     dated_text_beside,
     header_cells,
     header_columns,
+    header_problem,
     header_tables,
     one_header_table,
     own_rows,
@@ -254,3 +255,36 @@ def test_anchor_href(html: str, expected: str | None) -> None:
 def test_anchor_href_needs_a_tag() -> None:
     assert anchor_href(None) is None
     assert anchor_href("/x") is None
+
+
+def _head_table(thead: str) -> Tag:
+    html = f"<table><thead>{thead}</thead><tbody><tr><td>x</td></tr></tbody></table>"
+    table = BeautifulSoup(html, "lxml").find("table")
+    assert isinstance(table, Tag)
+    return table
+
+
+@pytest.mark.parametrize(
+    ("thead", "expected"),
+    [
+        ("<tr><th>Date</th><th>Country</th></tr>", None),
+        ('<tr><th colspan="1">Date</th></tr>', None),
+        ("<tr><th>Date</th></tr><tr><th>Country</th></tr>", "thead has 2 rows"),
+        ("<tr><th>Date</th></tr><tr><td>25 Oct 2026</td></tr>", "thead has 2 rows"),
+        ("<tr><th>Date</th><td>Country</td></tr>", "thead has a data cell"),
+        ('<tr><th colspan="2">Date</th></tr>', "spanned header: date"),
+        ('<tr><th rowspan=" 2 ">Start Date</th></tr>', "spanned header: start date"),
+        (
+            "<tr><th><table><thead><tr><th>a</th></tr><tr><th>b</th></tr></thead></table></th></tr>",
+            None,
+        ),
+    ],
+)
+def test_header_problem(thead: str, expected: str | None) -> None:
+    assert header_problem(_head_table(thead)) == expected
+
+
+def test_header_problem_without_a_thead() -> None:
+    table = BeautifulSoup("<table><tbody><tr><td>x</td></tr></tbody></table>", "lxml").find("table")
+    assert isinstance(table, Tag)
+    assert header_problem(table) == "thead has 0 rows"

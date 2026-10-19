@@ -667,3 +667,21 @@ def test_new_rules_have_no_revision() -> None:
 def test_the_new_ignored_reasons_are_allowlisted(reason: str) -> None:
     scene = Scene(units=[unit("s", "s:v/r1", "ignored", reason)], claims=[])
     assert not [p for p in record_problems(scene.build()[1]) if "allowlisted" in p]
+
+
+@pytest.mark.parametrize(
+    ("thead", "expected"),
+    [
+        ("<tr><th>Date</th><th>Country</th></tr><tr><th>a</th><th>b</th></tr>", None),
+        ('<tr><th colspan="2">Date</th><th>Country</th></tr>', None),
+        ("<tr><th>Date</th><th>Country</th><td>x</td></tr>", None),
+        ("<tr><th>Date</th><th>Country</th></tr>", ("r1", "r2", "r3")),
+    ],
+)
+def test_header_table_rows_reject_irregular_headers(
+    thead: str, expected: tuple[str, ...] | None
+) -> None:
+    body = "<tr><td>a</td><td>b</td></tr>" * 3
+    page = f"<table><thead>{thead}</thead><tbody>{body}</tbody></table>".encode()
+    rule = HeaderTableRowsRule(frozenset({"date", "country"}))
+    assert discover(rule, page) == expected

@@ -614,3 +614,30 @@ def test_a_status_token_beside_a_good_one_makes_the_row_partial() -> None:
     assert shape(res) == ("partial", "date_unparsed", "Cancelled June 2026")
     assert len(res.claims) == 1
     assert res.claims[0].date_text == "May 2026"
+
+
+@pytest.mark.parametrize(
+    ("country", "dates", "extra", "outcome", "reason", "leftover", "claims"),
+    [
+        ("Chile", "May 2026", "with the OAS", "partial", "extra_cells", "with the OAS", 1),
+        ("Chile", "May 2026, Bogus", "note", "partial", "date_unparsed", "Bogus, note", 1),
+        ("Chile", "TBC", "note", "unparsed", "date_unparsed", "TBC, note", 0),
+        ("Chile", "May 2026", " ", "parsed", None, "", 1),
+        ("Atlantis", "May 2026", "note", "partial", "extra_cells", "note", 1),
+    ],
+)
+def test_extra_cells_are_leftover(
+    country: str,
+    dates: str,
+    extra: str,
+    outcome: str,
+    reason: str | None,
+    leftover: str,
+    claims: int,
+) -> None:
+    html = carter_page([row(country, dates).replace("</tr>", f"<td>{extra}</td></tr>")])
+    res = parse(page_of(html))
+    assert shape(res) == (outcome, reason, leftover)
+    assert len(res.claims) == claims
+    if country == "Atlantis":
+        assert res.claims[0].place_id == "unknown:atlantis"

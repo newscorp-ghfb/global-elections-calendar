@@ -199,7 +199,8 @@ class Carter:
                 continue
             seen.add((span, targeted))
             made.append((token, span, targeted))
-        leftover = ", ".join(bad + future)
+        extra = [t for t in texts[2:] if t]
+        leftover = ", ".join(bad + future + extra)
 
         href = anchor_href(cells[0].find("a"))
         accepted = source_link(URL, href, HOSTS) if href is not None else None
@@ -211,6 +212,8 @@ class Carter:
             reason = "date_unparsed"
         elif future:
             reason = "implausible_date"
+        elif extra:
+            reason = "extra_cells"
         elif not place.registered:
             reason = "place_unregistered"
         elif href is not None and accepted is None:

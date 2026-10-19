@@ -486,7 +486,6 @@ def _split_top_level(text: str, separators: tuple[str, ...]) -> list[str]:
     depth = 0
     start = 0
     i = 0
-    lowered = text.casefold()
     while i < len(text):
         char = text[i]
         if char == "(":
@@ -494,7 +493,7 @@ def _split_top_level(text: str, separators: tuple[str, ...]) -> list[str]:
         elif char == ")":
             depth = max(depth - 1, 0)
         elif depth == 0:
-            sep = next((s for s in separators if lowered.startswith(s, i)), None)
+            sep = next((s for s in separators if text[i : i + len(s)].casefold() == s), None)
             if sep is not None:
                 parts.append(text[start:i])
                 i += len(sep)
