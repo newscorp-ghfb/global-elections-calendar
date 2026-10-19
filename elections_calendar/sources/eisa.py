@@ -205,14 +205,16 @@ class Eisa:
         try:
             data = json.loads(page.result.body)
         except (ValueError, RecursionError):
-            return PageParse("layout_not_recognised", detail="the body is not JSON")
+            return PageParse("layout_not_recognised", year=year, detail="the body is not JSON")
         if not isinstance(data, list):
-            return PageParse("layout_not_recognised", detail="the body is not a JSON list")
+            return PageParse(
+                "layout_not_recognised", year=year, detail="the body is not a JSON list"
+            )
         if not data:
-            return PageParse("layout_not_recognised", detail="the table has no rows")
+            return PageParse("layout_not_recognised", year=year, detail="the table has no rows")
         if not any(_fields(e) is not None for e in data):
             return PageParse(
-                "layout_not_recognised", detail="no row has country, election and date"
+                "layout_not_recognised", year=year, detail="no row has country, election and date"
             )
         out = PageParse("ok", year=year)
         inherited: str | None = None

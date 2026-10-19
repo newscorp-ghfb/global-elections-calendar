@@ -94,9 +94,9 @@ DEFAULT_ADAPTERS = (
 class SourceRun:
     """What one source gave. ``raw.unfinished`` lists the requests whose pages were not received.
 
-    A received page that cannot be read stays unfinished, and the source becomes ``worker_failed``.
-    ``unfinished`` lists only up-front requests (those of ``requests(window)``); a chained
-    adapter reports a later page it expected but did not receive as ``pagination_incomplete``.
+    An up-front page that cannot be read stays unfinished, and the source becomes ``worker_failed``.
+    ``unfinished`` lists only up-front requests (those of ``requests(window)``); a chained page
+    that cannot be read is in neither list, and its adapter reports it as ``pagination_incomplete``.
     """
 
     source: str
@@ -322,7 +322,7 @@ class _Scrape:
         for name in names:
             try:
                 pages.append(pickle.loads((directory / name).read_bytes()))
-            except Exception as exc:  # an unreadable page stays unfinished, and the source failed
+            except Exception as exc:  # unreadable: unfinished (up-front) or pagination_incomplete
                 outcome, detail = "worker_failed", type(exc).__name__
         shutil.rmtree(directory, ignore_errors=True)
         got = {page.request.key for page in pages}

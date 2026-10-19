@@ -94,10 +94,11 @@ class RawPage:
 class RawPages:
     """All pages of one source run; ``unfinished`` are the requests whose pages were not
     received: the worker was cut at a deadline, or it failed before fetching them.
-    A received page that cannot be read also stays unfinished, and its source becomes
+    An up-front page that cannot be read also stays unfinished, and its source becomes
     ``worker_failed``. ``unfinished`` lists only up-front requests (those of
     ``requests(window)``): an adapter whose later pages depend on earlier ones reports a later
-    page it expected but did not receive as ``pagination_incomplete`` (``missing_pages``).
+    page it expected but did not receive, or could not read, as ``pagination_incomplete``
+    (``missing_pages``).
     """
 
     source: str

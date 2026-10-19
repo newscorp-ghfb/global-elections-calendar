@@ -785,3 +785,33 @@ def test_recursion_while_reading_is_an_outcome(monkeypatch: pytest.MonkeyPatch) 
     assert parse(raw9, balanced=False).notes == (
         Reason("pagination_incomplete", "p0 was not fetched"),
     )
+
+
+def test_cards_outside_the_card_list_fail_the_page() -> None:
+    # (a) a stray </div> before the second upcoming card of p0 closes the wrapper early: the card
+    # list keeps 1 upcoming card + 10 past cards = 11, p0 holds 20 date-type elements, so the
+    # other 20 - 11 = 9 cards sit outside the lists.
+    text = BODIES[0].decode()
+    opening = '<div  class="partial -election -feed">'
+    starts = [m.start() for m in re.finditer(re.escape(opening), text)]
+    assert len(starts) == 20
+    broken = (text[: starts[1]] + "</div>" + text[starts[1] :]).encode()
+    assert broken != BODIES[0]
+    expect_layout(broken, "9 cards outside the card lists")
+    # (b) three upcoming cards, the first followed by a stray </div>: the list keeps 1 + 1 past
+    # card = 2 of the 3 + 1 = 4 on the page, so 4 - 2 = 2 sit outside.
+    expect_layout(
+        ndi_page([BULGARIA + "</div>", HUNGARY, BULGARIA], PAST), "2 cards outside the card lists"
+    )
+    # (c) one wrapper child holding three cards: card 1 of the upcoming block holds 3.
+    expect_layout(
+        ndi_page(['<div class="views-rows">' + BULGARIA + HUNGARY + BULGARIA + "</div>"], PAST),
+        "upcoming block card 1 holds 3 cards",
+    )
+    # (c2) the same in the past block, second child: the index counts from 1 in that block.
+    expect_layout(
+        ndi_page([BULGARIA], PAST + ['<div class="views-rows">' + HUNGARY + HUNGARY + "</div>"]),
+        "past block card 2 holds 2 cards",
+    )
+    # (d) control: the unchanged page is read in full.
+    assert detail(page0(BODIES[0])) == ("ok", "") and len(page0(BODIES[0]).units) == 20
