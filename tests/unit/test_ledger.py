@@ -9,9 +9,11 @@ import pytest
 
 from elections_calendar.ledger import (
     COUNT_RULES,
+    CardBlocksRule,
     CountRule,
     HeaderTableRowsRule,
     HeadingTablesRule,
+    JsonListRule,
     LinkTableCellsRule,
     SectionItemsRule,
     TableRowsRule,
@@ -690,3 +692,94 @@ def test_header_table_rows_reject_irregular_headers(
     page = f"<table><thead>{thead}</thead><tbody>{body}</tbody></table>".encode()
     rule = HeaderTableRowsRule(frozenset({"date", "country"}))
     assert discover(rule, page) == expected
+
+
+NDI_BLOCKS = CardBlocksRule(
+    (("upcoming-elections", "upcoming"), ("past-elections", "past")), "election-wrapper"
+)
+EISA_RULE = JsonListRule(frozenset({"calendar"}))
+
+
+def card_ids(slug: str, last: int) -> list[str]:
+    return [f"{slug}-c{i}" for i in range(1, last + 1)]
+
+
+def test_card_blocks_and_json_lists_count_the_fixtures() -> None:
+    day = "2026-10-19"
+    expected = {
+        "p0.html": card_ids("upcoming", 10) + card_ids("past", 10),
+        "p1.html": card_ids("upcoming", 8) + card_ids("past", 10),
+        "p2.html": card_ids("past", 10),
+        "p3.html": card_ids("past", 10),
+        "p4.html": card_ids("past", 10),
+    }
+    for name, units in expected.items():
+        assert discover(NDI_BLOCKS, fixture("ndi", name, day)) == tuple(units), name
+    for name, n in (("y2026.json", 22), ("y2025.json", 23)):
+        found = discover(EISA_RULE, fixture("eisa", name, day), name.removesuffix(".json"))
+        assert found == tuple(f"r{i}" for i in range(1, n + 1)), name
+    calendar = fixture("eisa", "calendar.html", day)
+    assert discover(EISA_RULE, calendar, "calendar") == ()
+    assert discover(EISA_RULE, calendar, "y2026") is None
+
+
+CARD = '<div class="partial"><div class="text"><div>x</div></div>text</div>'
+WRAPPED = f'<div class="election-wrapper">{CARD}</div>'
+
+
+def block_page(upcoming: str, past: str = WRAPPED) -> bytes:
+    return (
+        f'<html><body><div id="upcoming-elections"><div class="bound">{upcoming}</div></div>'
+        f'<div id="past-elections"><div class="bound">{past}</div></div></body></html>'
+    ).encode()
+
+
+def test_card_blocks_on_synthetic_pages() -> None:
+    def count(body: bytes) -> tuple[str, ...] | None:
+        return discover(NDI_BLOCKS, body)
+
+    assert count(block_page(WRAPPED + WRAPPED)) is None
+    twice = block_page(WRAPPED).replace(b"</body>", b'<div id="upcoming-elections"></div></body>')
+    assert count(twice) is None
+    assert count(block_page(WRAPPED).replace(b'id="past-elections"', b'id="x"')) is None
+    assert count(block_page("<p>No Results Found</p>")) == ("past-c1",)
+    loose = f'<div class="election-wrapper">{CARD} loose text {CARD}</div>'
+    assert count(block_page(loose)) == ("upcoming-c1", "upcoming-c2", "past-c1")
+    with_br = f'<div class="election-wrapper">{CARD}<br>{CARD}</div>'
+    assert count(block_page(with_br)) == ("upcoming-c1", "upcoming-c2", "upcoming-c3", "past-c1")
+    two_classes = f'<div class="x election-wrapper">{CARD}</div>'
+    assert count(block_page(two_classes)) == ("upcoming-c1", "past-c1")
+
+
+def test_json_lists_on_synthetic_bodies() -> None:
+    def count(body: bytes, key: str = "y2026") -> tuple[str, ...] | None:
+        return discover(EISA_RULE, body, key)
+
+    assert count(b"[]") == ()
+    assert count(b'[1, {"a": 2}]') == ("r1", "r2")
+    assert count(b"{}") is None
+    assert count(b"<html>") is None
+    assert count(b"garbage", "calendar") == ()
+
+
+def test_discovery_uses_the_page_key() -> None:
+    cal = PageRequest("calendar", "https://example.test/c")
+    y26 = PageRequest("y2026", "https://example.test/y")
+    raw = raw_pages("eisa", [(cal, result(b"<html></html>")), (y26, result(b"[{}, {}]"))])
+    coverage = (
+        PageCoverage("calendar", None, "ok", "eisa:calendar/", 0),
+        PageCoverage("y2026", None, "ok", "eisa:y2026/", 2),
+    )
+    rules: dict[str, CountRule] = {"eisa": EISA_RULE}
+
+    def parsed(*ids: str) -> ParseResult:
+        return ParseResult(
+            "eisa",
+            tuple(unit("eisa", uid) for uid in ids),
+            tuple(claim(uid) for uid in ids),
+            coverage,
+        )
+
+    assert check(raw, parsed("eisa:y2026/r1", "eisa:y2026/r2"), rules=rules).ok
+    bad = check(raw, parsed("eisa:y2026/r1", "eisa:y2026/r2", "eisa:calendar/r1"), rules=rules)
+    assert [r.code for r in bad.reasons] == ["discovery_mismatch"]

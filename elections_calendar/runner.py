@@ -93,6 +93,8 @@ class SourceRun:
     """What one source gave. ``raw.unfinished`` lists the requests whose pages were not received.
 
     A received page that cannot be read stays unfinished, and the source becomes ``worker_failed``.
+    ``unfinished`` lists only up-front requests (those of ``requests(window)``); a chained
+    adapter reports a later page it expected but did not receive as ``pagination_incomplete``.
     """
 
     source: str

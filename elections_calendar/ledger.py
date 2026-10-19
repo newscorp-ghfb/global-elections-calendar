@@ -86,8 +86,35 @@ class LinkTableCellsRule:
     link_text: str
 
 
+@dataclass(frozen=True, slots=True)
+class CardBlocksRule:
+    """Units are the cards of the blocks in ``blocks``, a pair of (element id, unit slug): in
+    the element with that id, the direct element children of the ``div`` whose class list
+    holds ``wrapper`` (``<slug>-c1``, ``<slug>-c2``, ...). Every child element counts, a card's
+    own descendants and the text between cards do not. A block id must occur exactly once.
+    """
+
+    blocks: tuple[tuple[str, str], ...]
+    wrapper: str
+
+
+@dataclass(frozen=True, slots=True)
+class JsonListRule:
+    """Units are the items of a JSON list body: ``r1``, ``r2``, ... A page whose key is in
+    ``skip_keys`` has no units, whatever its body.
+    """
+
+    skip_keys: frozenset[str]
+
+
 CountRule = (
-    TableRowsRule | SectionItemsRule | HeaderTableRowsRule | HeadingTablesRule | LinkTableCellsRule
+    TableRowsRule
+    | SectionItemsRule
+    | HeaderTableRowsRule
+    | HeadingTablesRule
+    | LinkTableCellsRule
+    | CardBlocksRule
+    | JsonListRule
 )
 
 COUNT_RULES: Mapping[str, CountRule] = {
@@ -409,8 +436,95 @@ def _follow(body: bytes, path: tuple[str, ...]) -> object | None:
     return node
 
 
-def discover(rule: CountRule, body: bytes) -> tuple[str, ...] | None:
-    """Locators of the page's units in document order; ``None`` if the body is unreadable."""
+_VOID_TAGS = frozenset(
+    {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source"}
+    | {"track", "wbr"}
+)
+
+
+class _CardBlocks(HTMLParser):
+    """Per block slug: how often its id appears, and the child count of each wrapper in it."""
+
+    def __init__(self, rule: CardBlocksRule) -> None:
+        super().__init__(convert_charrefs=True)
+        self.slugs = dict(rule.blocks)
+        self.wrapper = rule.wrapper
+        self.stack: list[str] = []
+        self.block: tuple[str, int] | None = None  # (slug, depth of the block element)
+        self.wrapper_depth: int | None = None
+        self.seen: dict[str, int] = dict.fromkeys(self.slugs.values(), 0)
+        self.wrappers: dict[str, list[int]] = {slug: [] for slug in self.slugs.values()}
+
+    def _child(self, depth: int) -> None:
+        if self.block is not None and self.wrapper_depth == depth - 1:
+            self.wrappers[self.block[0]][-1] += 1
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        values = dict(attrs)
+        depth = len(self.stack)
+        self._child(depth)
+        is_wrapper = tag == "div" and self.wrapper in (values.get("class") or "").split()
+        if self.block is not None and self.wrapper_depth is None and is_wrapper:
+            self.wrapper_depth = depth
+            self.wrappers[self.block[0]].append(0)
+        slug = self.slugs.get(values.get("id") or "")
+        if slug is not None:
+            self.seen[slug] += 1
+            if self.block is None:
+                self.block = (slug, depth)
+        if tag not in _VOID_TAGS:
+            self.stack.append(tag)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._child(len(self.stack))
+        slug = self.slugs.get(dict(attrs).get("id") or "")
+        if slug is not None:
+            self.seen[slug] += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in _VOID_TAGS or tag not in self.stack:
+            return
+        del self.stack[len(self.stack) - 1 - self.stack[::-1].index(tag) :]
+        depth = len(self.stack)
+        if self.wrapper_depth is not None and depth <= self.wrapper_depth:
+            self.wrapper_depth = None
+        if self.block is not None and depth <= self.block[1]:
+            self.block = None
+
+
+def _card_blocks(rule: CardBlocksRule, body: bytes) -> tuple[str, ...] | None:
+    parser = _CardBlocks(rule)
+    try:
+        parser.feed(body.decode("utf-8", errors="replace"))
+        parser.close()
+    except (ValueError, RecursionError):
+        return None
+    units: list[str] = []
+    for _, slug in rule.blocks:
+        found = parser.wrappers[slug]
+        if parser.seen[slug] != 1 or len(found) > 1:
+            return None
+        units += [f"{slug}-c{i}" for i in range(1, (found[0] if found else 0) + 1)]
+    return tuple(units)
+
+
+def _json_list(rule: JsonListRule, body: bytes, key: str) -> tuple[str, ...] | None:
+    if key in rule.skip_keys:
+        return ()
+    try:
+        data = json.loads(body)
+    except (ValueError, RecursionError):
+        return None
+    if not isinstance(data, list):
+        return None
+    return tuple(f"r{i}" for i in range(1, len(data) + 1))
+
+
+def discover(rule: CountRule, body: bytes, key: str = "") -> tuple[str, ...] | None:
+    """Locators of the page's units in document order; ``None`` if the body is unreadable.
+
+    ``key`` is the page key; only ``JsonListRule`` reads it.
+    """
     if isinstance(rule, TableRowsRule):
         table = _TableRows(rule.table_id)
         try:
@@ -425,6 +539,10 @@ def discover(rule: CountRule, body: bytes) -> tuple[str, ...] | None:
         return _heading_rows(rule, body)
     if isinstance(rule, LinkTableCellsRule):
         return _link_cells(rule, body)
+    if isinstance(rule, CardBlocksRule):
+        return _card_blocks(rule, body)
+    if isinstance(rule, JsonListRule):
+        return _json_list(rule, body, key)
     text = _follow(body, rule.json_text_path)
     if not isinstance(text, str):
         return None
@@ -591,7 +709,7 @@ def _discovery_problems(
 ) -> list[str]:
     """Invariants 8 to 11 for one ok or valid_empty page."""
     body = page.result.body
-    found = discover(rule, body)
+    found = discover(rule, body, entry.key)
     if found is None:
         return [f"page {entry.key!r}: the body cannot be read for the counting rule"]
     problems: list[str] = []

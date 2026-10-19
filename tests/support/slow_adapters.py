@@ -9,7 +9,7 @@ import os
 import signal
 import socket
 import time
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, NoReturn
@@ -22,6 +22,7 @@ from elections_calendar.sources.base import (
     RawPage,
     RawPages,
     Registries,
+    fetch_chain,
     fetch_pages,
 )
 from elections_calendar.window import Window
@@ -68,6 +69,24 @@ class Pages(_Base):
 
     def fetch(self, window: Window, fetcher: Getter, deadline: Deadline) -> Iterator[RawPage]:
         return fetch_pages(self._requests, fetcher, deadline)
+
+
+class Chain(_Base):
+    """Each received page implies the next URL; only the first is named up front."""
+
+    def __init__(self, urls: str) -> None:
+        self._all = tuple(
+            PageRequest(KEYS[number], url) for number, url in enumerate(urls.split(","))
+        )
+
+    def requests(self, window: Window) -> tuple[PageRequest, ...]:
+        return self._all[:1]
+
+    def expected(self, pages: Sequence[RawPage]) -> tuple[PageRequest, ...]:
+        return self._all[: len(pages) + 1]
+
+    def fetch(self, window: Window, fetcher: Getter, deadline: Deadline) -> Iterator[RawPage]:
+        return fetch_chain(self.expected, fetcher, deadline)
 
 
 class DripHeaders(Pages):
