@@ -9,7 +9,7 @@ import pytest
 from elections_calendar.fetch import Deadline, FetchResult
 from elections_calendar.model import MAX_DETAIL, Reason, ReasonCode, RecordError
 from elections_calendar.offices import InstitutionRegistry
-from elections_calendar.places import PlaceRegistry, SubdivisionIndex
+from elections_calendar.places import Place, PlaceRegistry, SubdivisionIndex
 from elections_calendar.sources.base import (
     PAGE_REASONS,
     PageCoverage,
@@ -26,6 +26,7 @@ from elections_calendar.sources.base import (
     missing_pages,
     page_failure,
     parse_pages,
+    part_scopes,
 )
 from tests.support.pages import FETCHED, Served, claim, raw_pages, result, unit
 
@@ -327,3 +328,129 @@ def test_missing_pages() -> None:
     ]
     full = raw_pages("s", [page_a, (b, result(b"x")), (c, result(b"x"))])
     assert missing_pages([a, b, c], full) == []
+
+
+def _place(name: str) -> Place:
+    place = _REGISTRIES.places.resolve(name)
+    assert place is not None
+    return place
+
+
+@pytest.mark.parametrize(
+    ("name", "label", "default", "office_text", "expected"),
+    [
+        (
+            "Nigeria", "Osun Governor and State Assembly", "national", "State Assembly",
+            ("legislature", None, False, "subnational", "Osun", "subdivision", False),
+        ),
+        (
+            "Nigeria", "Osun Governor and State Assembly", "national", "Osun Governor",
+            ("governor", None, False, "subnational", "Osun", "subdivision", False),
+        ),
+        (
+            "Philippines", "2026 Philippines (BARMM) BSKE Elections", "subnational", "Regional",
+            ("local_council", None, True, "subnational", "BARMM", "subdivision", False),
+        ),
+        (
+            "Chad", "President and National Assembly", "national", "National Assembly",
+            ("lower_house", "iso:TD/national-assembly", False, "national", None, "nationwide", False),
+        ),
+    ],
+)
+def test_label_scope_office_text(
+    name: str, label: str, default: str, office_text: str, expected: tuple[object, ...]
+) -> None:
+    scope = label_scope(label, _place(name), _REGISTRIES, default, office_text=office_text)  # type: ignore[arg-type]
+    assert (
+        scope.office.office_class,
+        scope.office.institution,
+        scope.office.aggregate,
+        scope.level,
+        scope.jurisdiction,
+        scope.jurisdiction_kind,
+        scope.unresolved,
+    ) == expected
+
+
+@pytest.mark.parametrize(
+    ("name", "label", "office_class"),
+    [
+        ("Nigeria", "Osun Governor", "governor"),
+        ("Philippines", "2026 Philippines (BARMM) Parliamentary Elections", "legislature"),
+        ("Nigeria", "Presidential", "head_of_state"),
+    ],
+)
+def test_label_scope_without_office_text_classifies_the_label(
+    name: str, label: str, office_class: str
+) -> None:
+    place = _place(name)
+    scope = label_scope(label, place, _REGISTRIES, office_text=None)
+    assert scope == label_scope(label, place, _REGISTRIES)
+    assert scope.office.office_class == office_class
+
+
+def test_label_scope_names_barmm() -> None:  # P51
+    scope = label_scope(
+        "2026 Philippines (BARMM) Parliamentary Elections", _place("Philippines"), _REGISTRIES
+    )
+    assert scope.office.office_class == "legislature"
+    assert scope.level == "unknown"
+    assert scope.jurisdiction == "BARMM"
+    assert scope.jurisdiction_kind == "subdivision"
+    assert scope.unresolved is True
+
+
+@pytest.mark.parametrize(
+    ("name", "parts", "expected"),
+    [
+        (
+            "Nigeria", ["Presidential", "Osun Governor"],
+            [("head_of_state", "national", None, "nationwide", False),
+             ("governor", "subnational", "Osun", "subdivision", False)],
+        ),
+        (
+            "Nigeria", ["President", "Osun State Assembly"],
+            [("head_of_state", "national", None, "nationwide", False),
+             ("legislature", "subnational", "Osun State", "subdivision", False)],
+        ),
+        (
+            "Nigeria", ["Osun Governor", "State Assembly"],
+            [("governor", "subnational", "Osun", "subdivision", False),
+             ("legislature", "subnational", "Osun", "subdivision", False)],
+        ),
+        (
+            "Nigeria", ["Osun Governor", "Lagos State Assembly"],
+            [("governor", "subnational", "Osun", "subdivision", False),
+             ("legislature", "subnational", "Lagos State", "subdivision", False)],
+        ),
+        (
+            "Philippines", ["(BARMM) Parliamentary", "Local Elections"],
+            [("legislature", "unknown", "BARMM", "subdivision", True),
+             ("local_council", "subnational", "BARMM", "subdivision", False)],
+        ),
+        (
+            "Philippines", ["Presidential", "Local Elections"],
+            [("head_of_state", "national", None, "nationwide", False),
+             ("local_council", "subnational", None, "nationwide", False)],
+        ),
+    ],
+)
+def test_part_scopes(name: str, parts: list[str], expected: list[tuple[object, ...]]) -> None:  # P63
+    out = part_scopes(parts, _place(name), _REGISTRIES)
+    assert [
+        (s.office.office_class, s.level, s.jurisdiction, s.jurisdiction_kind, s.unresolved)
+        for s in out
+    ] == expected
+
+
+@pytest.mark.parametrize(
+    ("name", "label"),
+    [
+        ("Nigeria", "Osun Governor"),
+        ("Philippines", "2026 Philippines (BARMM) Parliamentary Elections"),
+        ("Nigeria", "Presidential"),
+    ],
+)
+def test_part_scopes_of_one_part_is_label_scope(name: str, label: str) -> None:
+    place = _place(name)
+    assert part_scopes([label], place, _REGISTRIES) == [label_scope(label, place, _REGISTRIES)]

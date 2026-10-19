@@ -20,6 +20,7 @@ from elections_calendar.offices import (
     office_class_of,
     resolve_level,
     split_offices,
+    unnamed_parts,
 )
 from elections_calendar.offices import classify as classify_office
 from elections_calendar.places import PlaceRegistry
@@ -457,3 +458,22 @@ def test_split_top_level_when_casefold_changes_length() -> None:
         "İl Genel Meclisi",
         "Senate",
     ]
+
+
+@pytest.mark.parametrize(
+    ("text", "place_id", "expected"),
+    [
+        ("President and Xyz", "iso:TD", ["Xyz"]),
+        ("Presidential and Xyz Elections", "iso:CL", ["Xyz Elections"]),
+        ("President, Senate and Xyz", "iso:TD", ["Xyz"]),
+        ("President & Xyz", "iso:TD", ["Xyz"]),
+        ("President and National Assembly", "iso:TD", []),
+        ("Regional and local", "iso:TD", []),
+        ("Xyz and Abc", "iso:TD", []),
+        ("President (first and second round)", "iso:TD", []),
+        ("General Elections", "iso:TD", []),
+        ("", "iso:TD", []),
+    ],
+)
+def test_unnamed_parts(text: str, place_id: str, expected: list[str]) -> None:  # P64
+    assert unnamed_parts(text, place_id, REGISTRY) == expected

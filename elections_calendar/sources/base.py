@@ -23,7 +23,13 @@ from elections_calendar.model import (
     _check_fields,
 )
 from elections_calendar.offices import InstitutionRegistry, Office, claim_level, classify
-from elections_calendar.places import Place, PlaceRegistry, SubdivisionIndex, named_subdivisions
+from elections_calendar.places import (
+    _LABEL_WORD,
+    Place,
+    PlaceRegistry,
+    SubdivisionIndex,
+    named_subdivisions,
+)
 from elections_calendar.window import Window
 
 PageOutcome = Literal[
@@ -181,24 +187,68 @@ class LabelScope:
 
 
 def label_scope(
-    label: str, place: Place, registries: Registries, default: Level = "national"
+    label: str,
+    place: Place,
+    registries: Registries,
+    default: Level = "national",
+    *,
+    office_text: str | None = None,
 ) -> LabelScope:
     """What a calendar label says about its jurisdiction (P38).
 
     A label that names a registered subdivision of the place ("Republika Srpska Early
     Presidential election") makes that subdivision the jurisdiction and withholds the
     source's national ``default``; office evidence (offices.py rules) still wins. The scope
-    is ``unresolved`` when the office is recognised but gives no level of its own.
+    is ``unresolved`` when the office is recognised but gives no level of its own. The
+    subdivisions come from ``label``; the office comes from ``office_text`` when given, else
+    from ``label``.
     """
     subs = named_subdivisions(label, place, registries.places, registries.subdivisions)
-    office = classify(
-        label, place.place_id, "subdivision" if subs else "nationwide", registries.institutions
+    return _scope_of(
+        subs, label if office_text is None else office_text, place, registries, default
     )
+
+
+def part_scopes(
+    parts: Sequence[str], place: Place, registries: Registries, default: Level = "national"
+) -> list[LabelScope]:
+    """One scope per part of a split label, in order (P63).
+
+    A part's subdivisions are the ones it names itself; a part that names none takes the
+    leading subdivisions, those the first part opens with ("Osun Governor", "State Assembly"
+    are both Osun's). A part never takes a sibling's own subdivision: with a nationwide first
+    part, a part that names none is nationwide too. Each scope is built as
+    ``label_scope`` builds one, so ``part_scopes([label], ...) == [label_scope(label, ...)]``.
+    """
+
+    def subs_of(text: str) -> tuple[str, ...]:
+        return named_subdivisions(text, place, registries.places, registries.subdivisions)
+
+    first = _LABEL_WORD.findall(parts[0]) if parts else []
+    leading: list[str] = []
+    at = 0
+    for run in subs_of(parts[0]) if parts else ():
+        words = run.split(" ")
+        if first[at : at + len(words)] != words:
+            break
+        leading.append(run)
+        at += len(words)
+    return [
+        _scope_of(subs_of(part) or tuple(leading), part, place, registries, default)
+        for part in parts
+    ]
+
+
+def _scope_of(
+    subs: tuple[str, ...], office_text: str, place: Place, registries: Registries, default: Level
+) -> LabelScope:
+    kind: JurisdictionKind = "subdivision" if subs else "nationwide"
+    office = classify(office_text, place.place_id, kind, registries.institutions)
     return LabelScope(
         office=office,
         level=claim_level("unknown" if subs else default, office),
         jurisdiction=", ".join(subs) or None,
-        jurisdiction_kind="subdivision" if subs else "nationwide",
+        jurisdiction_kind=kind,
         unresolved=bool(subs) and office.recognised and office.level_hint is None,
     )
 

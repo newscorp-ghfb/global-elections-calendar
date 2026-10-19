@@ -435,6 +435,26 @@ def split_offices(text: str, place_id: str, registry: InstitutionRegistry) -> li
     return [_OXFORD.sub("", part) for part in parts]
 
 
+def unnamed_parts(text: str, place_id: str, registry: InstitutionRegistry) -> list[str]:
+    """The parts of a list of offices that name no office, when another part names one (P64).
+
+    The parts are split at top-level commas, then at " and " and " & ", as in
+    ``split_offices``, but without requiring every part to name an office. With two or more
+    parts of which some but not all have an office class, the parts with none are returned in
+    order; otherwise ``[]``.
+    """
+    parts: list[str] = []
+    for chunk in _split_top_level(collapse_ws(text), (",",)):
+        parts.extend(_split_top_level(collapse_ws(chunk), (" and ", " & ")))
+    parts = [p for p in (collapse_ws(x) for x in parts) if p]
+    if len(parts) < 2:
+        return []
+    named = [office_class_of(p, place_id, registry) is not None for p in parts]
+    if any(named) and not all(named):
+        return [p for p, has in zip(parts, named, strict=True) if not has]
+    return []
+
+
 def _split_if_offices(
     text: str, separators: tuple[str, ...], place_id: str, registry: InstitutionRegistry
 ) -> list[str]:

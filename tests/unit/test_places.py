@@ -5,7 +5,12 @@ from pathlib import Path
 import pytest
 import yaml
 
-from elections_calendar.places import PlaceRegistry, SubdivisionIndex, named_subdivisions
+from elections_calendar.places import (
+    PlaceRegistry,
+    SubdivisionIndex,
+    named_places,
+    named_subdivisions,
+)
 from scripts.build_places import HISTORY, MANUAL, OUT, BuildError, build, load_history, render
 
 REGISTRY = PlaceRegistry.load()
@@ -219,3 +224,27 @@ def test_named_subdivisions(country: str, text: str, expected: tuple[str, ...]) 
     place = REGISTRY.resolve(country)
     assert place is not None
     assert named_subdivisions(text, place, REGISTRY, SUBDIVISIONS) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("2026 Bosnia and Herzegovina General Elections", [("Bosnia and Herzegovina", "iso:BA")]),
+        ("2026 Philippines (BARMM) Parliamentary Elections", [("Philippines", "iso:PH")]),
+        ("2027 El Salvador General Election", [("El Salvador", "iso:SV")]),
+        ("2026 Republic of the Congo Presidential Election", [("Republic of the Congo", "iso:CG")]),
+        ("Guinea-Bissau 2026 General Elections", [("Guinea-Bissau", "iso:GW")]),
+        (
+            "2026 Trinidad and Tobago Presidential and Local Elections",
+            [("Trinidad and Tobago", "iso:TT")],
+        ),
+        ("2026 Niger and Nigeria Elections", [("Niger", "iso:NE"), ("Nigeria", "iso:NG")]),
+        ("2026 DRC Congo Elections", [("DRC", "iso:CD"), ("Congo", "iso:CG")]),
+        ("2026 United Kingdom Scotland Parliamentary Election", [("Scotland", "iso:GB-SCT")]),
+        ("2026 Côte d'Ivoire (Ivory Coast) Presidential Election", [("Côte d'Ivoire", "iso:CI")]),
+        ("2026 Narnia General Election", []),
+        ("", []),
+    ],
+)
+def test_named_places(text: str, expected: list[tuple[str, str]]) -> None:
+    assert [(words, place.place_id) for words, place in named_places(text, REGISTRY)] == expected
