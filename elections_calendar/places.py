@@ -166,3 +166,29 @@ def named_subdivisions(
                 if hit:
                     taken[i : i + n] = [True] * n
     return tuple(run for _, run in sorted(found.values()))
+
+
+def named_places(text: str, places: PlaceRegistry) -> list[tuple[str, Place]]:
+    """The registered places a text names, in text order, as (words, place).
+
+    Runs of up to five words are tried longest first, leftmost first within a length; a run
+    is taken when none of its words is taken yet and it resolves to a registered place, so
+    "Republic of the Congo" wins over "Congo". Only the first run per place ID is kept, and a
+    place that is the parent of another kept place is dropped (the child refines it:
+    "United Kingdom Scotland" gives Scotland). Unregistered places are never returned.
+    """
+    words = _LABEL_WORD.findall(text)
+    taken = [False] * len(words)
+    found: dict[str, tuple[int, str, Place]] = {}
+    for n in range(min(_MAX_RUN, len(words)), 0, -1):
+        for i in range(len(words) - n + 1):
+            if any(taken[i : i + n]):
+                continue
+            run = " ".join(words[i : i + n])
+            place = places.resolve(run)
+            if place is not None and place.registered:
+                taken[i : i + n] = [True] * n
+                found.setdefault(place.place_id, (i, run, place))
+    parents = {place.parent for _, _, place in found.values() if place.parent}
+    kept = [v for v in found.values() if v[2].place_id not in parents]
+    return [(run, place) for _, run, place in sorted(kept, key=lambda v: v[0])]

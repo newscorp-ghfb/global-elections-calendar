@@ -45,7 +45,6 @@ def test_subdivision_lookups_that_must_miss() -> None:
     assert SUBDIVISIONS.find("US", "") is None
     assert SUBDIVISIONS.find("US", "Scarborough Southwest") is None
     assert SUBDIVISIONS.find("BG", "Sofia") is None  # ambiguous: BG-22 and BG-23
-    assert SUBDIVISIONS.find("PH", "Bangsamoro") is None
 
 
 def test_build_leaves_out_names_two_subdivisions_share() -> None:
@@ -86,3 +85,8 @@ def test_keys_strip_a_trailing_bracket() -> None:  # P45
     assert _keys("Madrid, Comunidad de") == {"madrid comunidad de", "madrid"}
     assert SUBDIVISIONS.find("GB", "Wales") == "GB-WLS"
     assert SUBDIVISIONS.find("SE", "Skåne län") == "SE-M"
+
+
+def test_barmm_names_the_bangsamoro_region() -> None:  # P51
+    assert SUBDIVISIONS.find("PH", "BARMM") == "PH-14"
+    assert SUBDIVISIONS.find("PH", "Bangsamoro") == "PH-14"
