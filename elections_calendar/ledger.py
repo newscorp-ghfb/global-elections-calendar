@@ -124,6 +124,7 @@ COUNT_RULES: Mapping[str, CountRule] = {
         (("upcoming-elections", "upcoming"), ("past-elections", "past")), "election-wrapper"
     ),
     "aweb": HeaderTableRowsRule(frozenset({"country", "election", "date"})),
+    "eisa": JsonListRule(frozenset({"calendar"})),
     "ipu": HeaderTableRowsRule(
         frozenset(
             {
