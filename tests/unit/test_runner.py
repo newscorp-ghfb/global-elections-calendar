@@ -397,6 +397,7 @@ def test_the_default_adapters_import_construct_and_pickle_their_window() -> None
         "electionguide",
         "osce",
         "wikipedia",
+        "ndi",
         "aweb",
         "ipu",
         "carter",

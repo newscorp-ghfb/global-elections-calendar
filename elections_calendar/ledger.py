@@ -120,6 +120,9 @@ CountRule = (
 COUNT_RULES: Mapping[str, CountRule] = {
     "electionguide": TableRowsRule("electionsTable"),
     "osce": HeaderTableRowsRule(frozenset({"date", "country", "election", "activity"})),
+    "ndi": CardBlocksRule(
+        (("upcoming-elections", "upcoming"), ("past-elections", "past")), "election-wrapper"
+    ),
     "aweb": HeaderTableRowsRule(frozenset({"country", "election", "date"})),
     "ipu": HeaderTableRowsRule(
         frozenset(
