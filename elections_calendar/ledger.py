@@ -164,6 +164,9 @@ class _HeadTable:
     th: list[str] | None = None  # data of the open th in the thead
     heads: list[str] = field(default_factory=list)
     rows: int = 0
+    head_rows: int = 0
+    head_td: bool = False
+    head_span: bool = False
 
 
 class _HeaderTables(HTMLParser):
@@ -192,10 +195,21 @@ class _HeaderTables(HTMLParser):
             table.in_head = True
         elif tag in ("tbody", "tfoot"):
             table.in_head = False
-        elif tag == "tr" and not table.in_head:
-            table.rows += 1
-        elif tag == "th" and table.in_head:
-            table.th = []
+        elif tag == "tr":
+            if table.in_head:
+                table.head_rows += 1
+            else:
+                table.rows += 1
+        if table.in_head and tag in ("th", "td"):
+            if tag == "td":
+                table.head_td = True
+            if any(
+                name in ("colspan", "rowspan") and (value or "").strip() != "1"
+                for name, value in attrs
+            ):
+                table.head_span = True
+            if tag == "th":
+                table.th = []
 
     def handle_endtag(self, tag: str) -> None:
         if not self.open:
@@ -283,6 +297,8 @@ def _header_rows(rule: HeaderTableRowsRule, body: bytes) -> tuple[str, ...] | No
         return None
     hits = [t for t in parser.done if rule.headers <= set(t.heads)]
     if len(hits) != 1 or any(hits[0].heads.count(h) != 1 for h in rule.headers):
+        return None
+    if hits[0].head_rows != 1 or hits[0].head_td or hits[0].head_span:
         return None
     return tuple(f"r{i}" for i in range(1, hits[0].rows + 1))
 

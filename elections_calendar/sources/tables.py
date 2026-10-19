@@ -72,6 +72,23 @@ def header_tables(soup: BeautifulSoup, headers: Collection[str]) -> list[Tag]:
     ]
 
 
+def header_problem(table: Tag) -> str | None:
+    """Why the table's own ``thead`` is not one plain row of ``th`` cells, else ``None``."""
+    body = {id(tr) for tr in own_rows(table)}
+    rows = [tr for tr in own_rows(table, head=True) if id(tr) not in body]
+    if len(rows) != 1:
+        return f"thead has {len(rows)} rows"
+    cells = row_cells(rows[0])
+    if any(c.name != "th" for c in cells):
+        return "thead has a data cell"
+    for c in cells:
+        for attr in ("colspan", "rowspan"):
+            value = c.get(attr)
+            if value is not None and str(value).strip() != "1":
+                return f"spanned header: {cell_text(c).casefold()}"
+    return None
+
+
 def header_columns(
     table: Tag, headers: Collection[str]
 ) -> tuple[dict[str, int], tuple[str, ...]]:
@@ -146,7 +163,7 @@ def one_header_table(
     """The one table with ``headers``, its columns and its body rows; else why the layout fails.
 
     The failure is the ``layout_not_recognised`` detail: the page is cut, there is not exactly
-    one such table, a header is repeated, or the table has no rows.
+    one such table, the header is irregular, a header is repeated, or the table has no rows.
     """
     if not complete_html(text):
         return "page does not end with </html>"
@@ -154,6 +171,9 @@ def one_header_table(
     if len(tables) != 1:
         return f"{len(tables)} tables with headers {', '.join(headers)}"
     table = tables[0]
+    problem = header_problem(table)
+    if problem is not None:
+        return problem
     columns, repeated = header_columns(table, headers)
     if repeated:
         return "repeated header: " + ", ".join(repeated)

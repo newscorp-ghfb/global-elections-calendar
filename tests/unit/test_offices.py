@@ -10,6 +10,7 @@ from elections_calendar.model import JurisdictionKind, Level
 from elections_calendar.offices import (
     Chamber,
     InstitutionRegistry,
+    _split_top_level,
     claim_level,
     extract_round,
     is_by_election,
@@ -448,3 +449,11 @@ def test_a_vice_gubernatorial_title_is_not_a_governor(label: str) -> None:
 def test_a_gubernatorial_title_is_still_a_governor(label: str) -> None:
     assert classify_office(label, "iso:PH", "subdivision", REGISTRY).office_class == "governor"
     assert not is_executive_title(label)
+
+
+def test_split_top_level_when_casefold_changes_length() -> None:
+    assert _split_top_level("Großrat and Senate", (" and ",)) == ["Großrat", "Senate"]
+    assert _split_top_level("İl Genel Meclisi and Senate", (" and ",)) == [
+        "İl Genel Meclisi",
+        "Senate",
+    ]

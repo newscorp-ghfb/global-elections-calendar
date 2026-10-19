@@ -122,7 +122,15 @@ class Osce:
             return
 
         badges = [
-            t for b in cells[cols["date"]].find_all("span") if (t := cell_text(b))
+            t
+            for i, cell in enumerate(cells)
+            for b in cell.find_all("span")
+            if (
+                (div not in b.parents)
+                if i == cols["date"]
+                else "badge" in (b.get("class") or [])
+            )
+            and (t := cell_text(b))
         ]
         mapped = {_STATUS[b.casefold()] for b in badges if b.casefold() in _STATUS}
         unrecognised = any(

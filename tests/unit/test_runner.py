@@ -448,3 +448,17 @@ def test_importlinter_adapters_contract_lists_every_default_adapter() -> None:
     modules = ini["importlinter:contract:adapters"]["modules"].split()
     assert modules
     assert set(modules) == {s.target.split(":")[0] for s in runner.DEFAULT_ADAPTERS}
+
+
+def test_every_adapter_module_is_registered() -> None:
+    root = Path(__file__).parents[2]
+    on_disk = {
+        f"elections_calendar.sources.{p.stem}"
+        for p in (root / "elections_calendar" / "sources").glob("*.py")
+        if p.stem not in {"__init__", "base", "tables"}
+    }
+    ini = configparser.ConfigParser()
+    ini.read(root / "importlinter.ini", encoding="utf8")
+    linted = set(ini["importlinter:contract:adapters"]["modules"].split())
+    assert on_disk == linted
+    assert on_disk == {s.target.split(":")[0] for s in runner.DEFAULT_ADAPTERS}

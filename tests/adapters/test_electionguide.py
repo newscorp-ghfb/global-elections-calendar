@@ -572,3 +572,35 @@ def test_a_label_naming_a_subdivision_keeps_its_jurisdiction() -> None:
     unit, claims = one_row(row(country="Moldova", label="Election of Governor of Gagauzia"))
     assert unit.outcome == "parsed"
     assert claims[0].level == "subnational"
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ("<th>Start Date</th>", '<th colspan="2">Start Date</th>'),
+        ("</tr></thead>", "</tr><tr><th>x</th></tr></thead>"),
+    ],
+)
+def test_an_irregular_header_is_not_a_layout(old: str, new: str) -> None:
+    page = eg_page(HEADERS, [row()])
+    assert ElectionGuide().parse(views(upcoming=page), WINDOW, REGISTRIES).units
+    edited = page.decode().replace(old, new, 1).encode()
+    assert edited != page
+    res = ElectionGuide().parse(views(upcoming=edited), WINDOW, REGISTRIES)
+    cov = next(c for c in res.coverage if c.key == "upcoming")
+    assert cov.outcome == "layout_not_recognised"
+    assert not [u for u in res.units if u.unit_id.startswith("electionguide:upcoming/")]
+
+
+def test_a_th_body_cell_is_a_cell() -> None:
+    page = eg_page(HEADERS, [row()])
+    th = page.decode().replace("<td>Sweden</td>", '<th scope="row">Sweden</th>').encode()
+    assert th != page
+    plain = ElectionGuide().parse(views(upcoming=page), WINDOW, REGISTRIES)
+    res = ElectionGuide().parse(views(upcoming=th), WINDOW, REGISTRIES)
+    (u,) = [u for u in res.units if u.unit_id.startswith("electionguide:upcoming/")]
+    assert (u.outcome, u.text) == (
+        "parsed",
+        "Sweden | Swedish Riksdag | 2026-11-01 (d) | 2026-11-01 (d) | Confirmed | No",
+    )
+    assert res.claims == plain.claims

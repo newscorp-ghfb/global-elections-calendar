@@ -451,3 +451,48 @@ def test_empty_badge_span_is_ignored() -> None:
         None,
         "",
     )
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "detail"),
+    [
+        ("<th>Date</th>", '<th colspan="2">Date</th>', "spanned header: date"),
+        ("</tr></thead>", "</tr><tr><th>Note</th></tr></thead>", "thead has 2 rows"),
+    ],
+)
+def test_irregular_headers_fail_the_page(old: str, new: str, detail: str) -> None:
+    body = osce_page([osce_row()])
+    assert parse(page_of(body)).units
+    edited = body.decode().replace(old, new, 1).encode()
+    assert edited != body
+    res = parse(page_of(edited))
+    (cov,) = res.coverage
+    assert (cov.outcome, cov.detail) == ("layout_not_recognised", detail)
+    assert res.units == () and res.claims == ()
+
+
+def test_badge_scope() -> None:
+    def got(**kw: object) -> tuple[str, str | None, str, str | None, str]:
+        res = one(**kw)
+        (u,) = res.units
+        claim = res.claims[0] if res.claims else None
+        return (
+            u.outcome,
+            u.reason,
+            u.leftover,
+            claim.status_claim if claim else None,
+            claim.office_label if claim else "",
+        )
+
+    out = got(
+        date_cell='<td><div><span>25 Oct</span> 2026</div><span class="badge">Upcoming</span></td>'
+    )
+    assert out[:4] == ("parsed", None, "", None)
+    out = got(label='Presidential Election <span class="badge">Postponed</span>')
+    assert out[:2] == ("parsed", None)
+    assert out[3] == "postponed"
+    assert out[4] == "Presidential Election Postponed"
+    out = got(activity="<span>Report</span>")
+    assert out[:2] == ("parsed", None) and out[3] is None
+    out = got(activity='<span class="badge">Rescheduled</span>')
+    assert out[:3] == ("partial", "status_unrecognised", "Rescheduled")

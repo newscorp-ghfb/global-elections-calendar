@@ -43,7 +43,9 @@ from elections_calendar.sources.tables import (
     cell_text,
     complete_html,
     header_columns,
+    header_problem,
     own_rows,
+    row_cells,
 )
 from elections_calendar.window import Window
 
@@ -81,6 +83,8 @@ class _PageParse:
 
 def _columns(table: Tag) -> dict[str, int] | None:
     """Column index by role, or None when a required header is missing or repeated (U01)."""
+    if header_problem(table) is not None:
+        return None
     found, repeated = header_columns(table, _READ)
     if repeated or not all(head in found for head in _REQUIRED):
         return None
@@ -184,7 +188,7 @@ class ElectionGuide:
         registries: Registries,
         kept: dict[str, list[_Kept]],
     ) -> None:
-        cells = [td for td in tr.find_all("td", recursive=False) if isinstance(td, Tag)]
+        cells = row_cells(tr)
         texts = [cell_text(td) for td in cells]
         unit_text = " | ".join(t for t in texts if t)
         rel = relevance(unit_text, window.start)
