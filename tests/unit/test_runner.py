@@ -399,6 +399,7 @@ def test_the_default_adapters_import_construct_and_pickle_their_window() -> None
         "wikipedia",
         "ndi",
         "aweb",
+        "eisa",
         "ipu",
         "carter",
         "eeas",
