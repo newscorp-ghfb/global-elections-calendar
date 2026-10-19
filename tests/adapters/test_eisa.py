@@ -276,6 +276,14 @@ def test_calendar_headings() -> None:
     assert asked_keys(eisa_cal([(H26, "38978"), (H26, "99999")])) == []
     res, _ = cal_result(eisa_cal([(H26, None)]))
     assert detail(res, "calendar") == ("layout_not_recognised", heading + "(none)")
+    mixed = eisa_cal([(H26, "5"), (H26, None)])
+    res, _ = cal_result(mixed)
+    assert detail(res, "calendar") == ("layout_not_recognised", heading + "(none), 5")
+    assert asked_keys(mixed) == []
+    blank = eisa_cal([(H26, " ")])
+    res, _ = cal_result(blank)
+    assert detail(res, "calendar") == ("layout_not_recognised", heading)
+    assert heading.endswith("ids ") and asked_keys(blank) == []
     res, _ = cal_result(eisa_cal([(H26, "abc")]))
     assert detail(res, "calendar") == ("layout_not_recognised", heading + "abc")
     twice = eisa_cal([(H26, "38978"), (H26, "38978")])
