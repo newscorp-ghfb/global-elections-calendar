@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from bs4 import BeautifulSoup, Tag
+from bs4.element import NavigableString
 
 from elections_calendar.dates import parse_date_text, plausible, relevance
 from elections_calendar.fetch import Deadline
@@ -167,7 +168,7 @@ def _read_card(tag: Tag) -> Card:
     button = tag.select_one("button.add-to-cal")
     terms: list[str] = []
     if date_type is not None:
-        own = "".join(str(child) for child in date_type.children if not isinstance(child, Tag))
+        own = "".join(str(child) for child in date_type.children if type(child) is NavigableString)
         terms = [t for t in (collapse_ws(line) for line in own.splitlines()) if t]
     location = button.get("data-location") if button is not None else None
     date_text = cell_text(date_el) if date_el is not None else ""

@@ -747,3 +747,41 @@ def test_requests_are_the_first_page_only() -> None:
     assert Ndi().requests(WINDOW) == (request(0),)
     assert request(3).url == "https://www.ndi.org/elections-calendar?page=3"
     assert ndi.PAGE_SIZE == 10 and ndi.CAP == 10
+
+
+def test_type_terms_skip_comments() -> None:
+    plain = card("2026 Chile Presidential and Local Elections", D25, "Presidential\n Local")
+    noisy = plain.replace("<span>|</span>", "<!-- x --><span>|</span>").replace(
+        "Presidential\n Local", "Presidential\n <!-- y -->\n Local"
+    )
+    assert noisy != plain and noisy.count("<!--") == 2
+    a, b = one(plain), one(noisy)
+    assert [(u.outcome, u.reason, u.text) for u in units_of(b)] == [
+        (u.outcome, u.reason, u.text) for u in units_of(a)
+    ]
+    assert units_of(b)[0].outcome == "parsed" and "Presidential, Local" in units_of(b)[0].text
+    assert [(c.office_class, c.level) for c in cards_of(b)] == [
+        (c.office_class, c.level) for c in cards_of(a)
+    ]
+    single = one(card("2026 Chile General Election", D25, "General").replace(
+        "<span>|</span>", "<!-- x --><span>|</span>"))
+    assert [(u.outcome, u.reason) for u in units_of(single)] == [("parsed", None)]
+    assert units_of(single)[0].text == "2026 Chile General Election | " + D25 + " | General"
+
+
+def test_recursion_while_reading_is_an_outcome(monkeypatch: pytest.MonkeyPatch) -> None:
+    # No markup depth raises RecursionError here (lxml caps nesting; 50000 levels still read
+    # fine), so the read itself is made to raise.
+    def deep(text: str, n: int) -> list[Any]:
+        raise RecursionError
+
+    monkeypatch.setattr(ndi, "_read_page", deep)
+    raw = raw_of({0: BODIES[0]})
+    res = parse(raw)
+    assert detail(res) == ("layout_not_recognised", "nested too deep")
+    assert res.units == () and res.claims == () and res.notes == ()
+    assert expected(WINDOW, raw.pages) == (request(0),)
+    raw9 = raw_of({9: BODIES[0]})
+    assert parse(raw9, balanced=False).notes == (
+        Reason("pagination_incomplete", "p0 was not fetched"),
+    )
