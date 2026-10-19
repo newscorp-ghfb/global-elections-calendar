@@ -182,11 +182,17 @@ def _read_card(tag: Tag) -> Card:
 
 
 def _read_page(text: str, n: int) -> list[Block] | str:
-    """The blocks of page ``p<n>``, or the first failing check's detail."""
+    """The blocks of page ``p<n>``, or the first failing check's detail.
+
+    The last check compares every ``date-type`` element on the page with those inside the cards
+    of the two card lists: counting the wrapper's children cannot see a card that a stray or
+    missing ``</div>`` moved outside the list, nor several cards wrapped in one child.
+    """
     if not complete_html(text):
         return "page does not end with </html>"
     soup = BeautifulSoup(text, "lxml")
     blocks: list[Block] = []
+    held: list[tuple[str, list[int]]] = []
     for block_id, slug in BLOCKS:
         found = soup.find_all(id=block_id)
         if len(found) != 1:
@@ -214,11 +220,19 @@ def _read_page(text: str, n: int) -> list[Block] | str:
             return f"{slug} block has {len(tags)} cards and no pager"
         if not ((active == n and tags) or (active < n and not tags)):
             return f"{slug} block is page {active} with {len(tags)} cards"
+        held.append((slug, [len(t.find_all(class_="date-type")) for t in tags]))
         block = Block(slug, has_next, [_read_card(t) for t in tags])
         days = [c.day for c in block.cards if c.day is not None]
         if days != sorted(days, reverse=(slug == "past")):
             return f"{slug} block is not in date order"
         blocks.append(block)
+    for slug, counts in held:
+        for i, count in enumerate(counts, 1):
+            if count > 1:
+                return f"{slug} block card {i} holds {count} cards"
+    outside = len(soup.find_all(class_="date-type")) - sum(sum(c) for _, c in held)
+    if outside > 0:
+        return f"{outside} cards outside the card lists"
     return blocks
 
 

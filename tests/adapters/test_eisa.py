@@ -327,6 +327,7 @@ def test_broken_json() -> None:
         res = run({2026: body})
         assert detail(res, "y2026") == ("layout_not_recognised", message), body[:20]
         assert res.units == () and res.claims == ()
+        assert next(c for c in res.coverage if c.key == "y2026").year == 2026, body[:20]
 
 
 def test_row_kinds_and_inheritance() -> None:
@@ -543,7 +544,13 @@ def test_pagination_failures_are_loud() -> None:
 def test_content_never_raises() -> None:
     deep = b"<!DOCTYPE html><html><body>" + b"<div>" * 3000 + b"</body></html>"
     res = parse(raw_pages("eisa", [(PageRequest("calendar", URL), result(deep))]), balanced=False)
-    assert res.coverage[0].outcome in ("layout_not_recognised", "ok")
+    # lxml caps the nesting, so the page reads as a page with no headings: outcome ok, no units,
+    # and one note per window year (2026 is the current year, 2027 is ahead of it).
+    assert (res.coverage[0].outcome, res.coverage[0].detail, res.coverage[0].units_seen) == ("ok", "", 0)
+    assert res.notes == (
+        Reason("required_year_missing", "no heading 'eisa african election calendar 2026'"),
+        Reason("not_published_yet", "no heading 'eisa african election calendar 2027'"),
+    )
     res = run({2026: b'{"a":' * 100000})
     assert detail(res, "y2026") == ("layout_not_recognised", "the body is not JSON")
 
