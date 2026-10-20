@@ -20,6 +20,7 @@ from tests.support.claims import (
     EGP,
     EGU,
     GA,
+    GB,
     GD,
     GD_IPU,
     LEG,
@@ -660,3 +661,90 @@ def test_ids_and_possible_matches() -> None:
     (kid,) = [k.child_id for k in children(res)]
     bad = with_child(res, kid, possible_matches=("ffffffffffff",))
     assert check([e1], bad) == (f"dangling possible match: {kid} -> ffffffffffff",)
+
+
+# ---------------------------------------------------------------- the joining rules (final fix F2)
+
+
+def fold(res: MergeResult, keep: Claim, other: Claim) -> tuple[MergeResult, str]:
+    """``res`` with ``other``'s child folded into ``keep``'s: both joined there (damaged).
+
+    Returns the damaged result and the surviving child id. The other child, and its card
+    when it holds no other child, are removed, so the merge is the only problem.
+    """
+    kid, gone = child_of(res, keep), child_of(res, other)
+    assert kid != gone
+    moved = ChildSource(other, False, "lower_priority")
+    cards = []
+    for card in res.cards:
+        kids = []
+        for k in card.children:
+            if k.child_id == kid:
+                k = replace(k, sources=(*k.sources, moved))
+            if k.child_id != gone:
+                kids.append(k)
+        if kids:
+            cards.append(replace(card, children=tuple(kids)))
+    old = disposition(res, other)
+    dispositions = tuple(d for d in res.dispositions if d != old)
+    dispositions += (replace(old, kind="anchor_member", targets=(kid,)),)
+    return replace(res, cards=tuple(cards), dispositions=dispositions), kid
+
+
+def test_wrong_merge_two_unknown_jurisdictions() -> None:
+    mayor = dict(office_class="mayor", office_label="Mayor", aggregate=False,
+                 kind="candidate_election", jurisdiction_kind="unknown", jurisdiction=None,
+                 institution=None, level="subnational")
+    a = cl(f"{WPl}/November/li[1]/li[1]", PE, mayor)
+    b = cl("ndi:p0/upcoming-c1", PE, mayor)
+    res = result(a, b)
+    assert len(children(res)) == 2  # an unknown jurisdiction never agrees with another
+    assert check([a, b], res) == ()
+    folded, kid = fold(res, a, b)
+    assert kid == "e8c2e0c4e454"
+    assert check([a, b], folded) == (
+        f"wrong merge: {kid}: {b.merge_id} and {a.merge_id}",
+    )
+    # clean: an attached unknown-jurisdiction claim beside a named joined one keeps the relaxation
+    h = cl(f"{EGU}/r1", GB, jurisdiction="Holborn and St Pancras", jurisdiction_kind="named")
+    w = cl(f"{WPl}/November/li[3]", GB, jurisdiction_kind="unknown")
+    res = result(h, w)
+    assert disposition(res, w).kind == "attached"
+    assert check([h, w], res) == ()
+
+
+def test_wrong_merge_aggregate_labels() -> None:
+    court = dict(office_class="general", level="unknown", aggregate=True, kind="aggregate",
+                 institution=None)
+    sc = cl(f"{WPl}/May/li[11]/li[2]", GA, court, office_label="Supreme Court")
+    ca = cl("ndi:p0/upcoming-c13", GA, court, office_label="Court of Appeals")
+    res = result(sc, ca)
+    assert len(children(res)) == 2 and all(k.aggregate for k in children(res))
+    assert check([sc, ca], res) == ()
+    folded, kid = fold(res, sc, ca)
+    assert kid == "fbf26945d0d5"
+    assert check([sc, ca], folded) == (
+        f"wrong merge: {kid}: {ca.merge_id} and {sc.merge_id} have other labels",
+    )
+    same = cl("ndi:p0/upcoming-c14", GA, court, office_label="supreme  court")
+    res = result(sc, same)
+    assert len(children(res)) == 1 and children(res)[0].aggregate
+    assert check([sc, same], res) == ()
+
+
+def test_wrong_merge_attached_date_needs_a_month_disagreement() -> None:
+    e1 = cl(f"{EGU}/r1")
+    w = mk("ndi:p0/upcoming-c1", span=month(2026, 11), date_status="tentative",
+           date_meaning="unknown")
+    res = result(e1, w)
+    (kid,) = [k.child_id for k in children(res)]
+    assert kid == "605682096ffe"
+    other = "wrong merge: 605682096ffe: served/ndi:p0/upcoming-c1#0 has another date"
+    for span, expected in (
+        (day(2026, 11, 20), (other + " that is not a month disagreement",)),
+        (month(2026, 12), ()),
+        (month(2027, 1), (other + " that is not a month disagreement",)),
+    ):
+        nw = replace(w, span=span)
+        damaged = with_child(with_claim(res, w.merge_id, nw), kid, date_conflict=True)
+        assert check([e1, nw], damaged) == expected, span

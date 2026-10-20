@@ -16,12 +16,19 @@ from elections_calendar.merge.identity import (
     identity_compatible,
     joinable,
     same_source_compatible,
+    years_of,
 )
 from elections_calendar.merge.match import umbrella_covers
 from elections_calendar.model import Card, Child, Claim, Disposition, MergeResult
+from elections_calendar.text import norm_name
 
 _JOINED = ("anchor_member", "standalone")
 _CHILD_KINDS = ("anchor_member", "standalone", "attached", "provisional", "umbrella_link")
+
+
+def _unrecognised(c: Claim) -> bool:
+    """An office the parsers do not model (match.py's ``_unrecognised``; R2-02)."""
+    return c.office_class == "general" and c.level == "unknown"
 
 
 def _is_member(rejected_reason: str | None) -> bool:
@@ -180,40 +187,60 @@ def check(claims: Iterable[Claim], result: MergeResult) -> tuple[str, ...]:
             for c in ident
         ):
             found.append(f"wrong merge: {k.child_id} has a legislature umbrella outside a chamber")
+        jc = joined[k.child_id]
+        joined_ids = {c.merge_id for c in jc}
         for a, b in combinations(ident, 2):
             loose = a.merge_id in c7 or b.merge_id in c7
+            # Joined claims cluster under a strict jurisdiction; only a pair with an attached
+            # claim keeps the relaxation (Phase B relaxes an unknown jurisdiction).
+            both_joined = a.merge_id in joined_ids and b.merge_id in joined_ids
             if not (
                 identity_compatible(
                     a,
                     b,
-                    relax_jurisdiction=True,
+                    relax_jurisdiction=not both_joined,
                     ignore_kind=loose,
                     ignore_institution=loose or k.aggregate,
                 )
                 and same_source_compatible(a, b)
             ):
                 found.append(f"wrong merge: {k.child_id}: {a.merge_id} and {b.merge_id}")
-        jc = joined[k.child_id]
         for a, b in combinations(jc, 2):
             if not dates_compatible(a, b):
                 found.append(
                     f"wrong merge: {k.child_id}: {a.merge_id} and {b.merge_id} have other dates"
                 )
+            if (
+                k.aggregate
+                and (_unrecognised(a) or _unrecognised(b))
+                and norm_name(a.office_label) != norm_name(b.office_label)
+            ):
+                found.append(
+                    f"wrong merge: {k.child_id}: {a.merge_id} and {b.merge_id} have other labels"
+                )
         if k.aggregate and len({c.office_class for c in ident}) > 1:
             found.append(f"wrong merge: {k.child_id} has two office classes")
-        if not k.date_conflict:
-            for c in members_of(k):
-                if (
-                    c.evidence_kind != "observation"
-                    and any(
-                        d.kind == "attached" and k.child_id in d.targets
-                        for d in disps.get(c.merge_id, ())
-                    )
-                    and not all(dates_compatible(c, j) for j in jc)
-                ):
+        for c in members_of(k):
+            if (
+                c.evidence_kind != "observation"
+                and any(
+                    d.kind == "attached" and k.child_id in d.targets
+                    for d in disps.get(c.merge_id, ())
+                )
+                and not all(dates_compatible(c, j) for j in jc)
+            ):
+                if not k.date_conflict:
                     found.append(
                         f"wrong merge: {k.child_id}: {c.merge_id} has another date"
                         " and no date_conflict"
+                    )
+                elif not (
+                    c.span.precision == "month" and all(c.span.year in years_of(j.span) for j in jc)
+                ):
+                    # only a month claim of a joined year is a month disagreement (spec 10.3)
+                    found.append(
+                        f"wrong merge: {k.child_id}: {c.merge_id} has another date"
+                        " that is not a month disagreement"
                     )
     out += sorted(found)
 
