@@ -6,7 +6,7 @@ disposition says, nothing was changed, and no child holds a wrong merge or misse
 """
 
 from collections import Counter, defaultdict
-from collections.abc import Sequence
+from collections.abc import Iterable
 from itertools import combinations
 
 from elections_calendar.merge.identity import (
@@ -28,8 +28,11 @@ def _is_member(rejected_reason: str | None) -> bool:
     return rejected_reason != "provisional"
 
 
-def check(claims: Sequence[Claim], result: MergeResult) -> tuple[str, ...]:
-    """Every problem in ``result``, check by check (each check's messages sorted)."""
+def check(claims: Iterable[Claim], result: MergeResult) -> tuple[str, ...]:
+    """Every problem in ``result``, check by check (each check's messages sorted).
+
+    ``claims`` may be any iterable; it is read once (into ``by_id``).
+    """
     by_id = {c.merge_id: c for c in claims}
     cards: tuple[Card, ...] = result.cards
     children: list[Child] = [k for card in cards for k in card.children]

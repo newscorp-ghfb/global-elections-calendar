@@ -8,7 +8,7 @@ imports only from ``model``, ``text``, ``dates``, ``offices``, ``places`` and ``
 from its own modules.
 """
 
-from collections.abc import Sequence
+from collections.abc import Iterable
 from datetime import datetime
 
 from elections_calendar.merge.cards import build
@@ -22,8 +22,12 @@ from elections_calendar.window import window_for
 __all__ = ["MergeError", "merge"]
 
 
-def merge(claims: Sequence[Claim], *, now: datetime, places: PlaceRegistry) -> MergeResult:
-    """Merge claims into cards, then audit the result; any problem raises ``MergeError``."""
+def merge(claims: Iterable[Claim], *, now: datetime, places: PlaceRegistry) -> MergeResult:
+    """Merge claims into cards, then audit the result; any problem raises ``MergeError``.
+
+    Any iterable of claims is accepted; it is read once, into a tuple.
+    """
+    claims = tuple(claims)
     window = window_for(now)
     matching = match(claims, now)
     result = build(matching, window=window, places=places)

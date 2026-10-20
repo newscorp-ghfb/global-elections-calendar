@@ -754,8 +754,12 @@ def _undated(run: _Run) -> list[Undated]:
     return out
 
 
-def match(claims: Sequence[Claim], now: datetime) -> Matching:
-    """Match claims into contests, umbrella links, undated groups and pending items."""
+def match(claims: Iterable[Claim], now: datetime) -> Matching:
+    """Match claims into contests, umbrella links, undated groups and pending items.
+
+    Any iterable of claims is accepted; it is read once, into a tuple.
+    """
+    claims = tuple(claims)
     run = _start(claims, now)
     _phase_a(run)
     _phase_b(run)
