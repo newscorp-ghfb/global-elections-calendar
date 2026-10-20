@@ -95,6 +95,26 @@ def test_duplicate_merge_id_stops_the_merge() -> None:
     assert str(err.value) == "duplicate merge_id: served/osce:elections/r1#0"
 
 
+def test_merge_reads_a_one_shot_iterable_once() -> None:
+    expected = merge(BRAZIL, now=NOW, places=PLACES)
+    assert expected.cards
+    assert merge(iter(BRAZIL), now=NOW, places=PLACES) == expected
+    assert merge((c for c in BRAZIL), now=NOW, places=PLACES) == expected
+
+
+def test_match_reads_a_one_shot_iterable_once() -> None:
+    expected = list_order(match(BRAZIL, NOW))
+    assert expected[0]
+    assert list_order(match(iter(BRAZIL), NOW)) == expected
+
+
+def test_check_reads_a_one_shot_iterable_once() -> None:
+    res = merge(BRAZIL, now=NOW, places=PLACES)
+    assert check(iter(BRAZIL), res) == ()
+    damaged = replace(res, dispositions=res.dispositions[:-1])
+    assert check(iter(BRAZIL), damaged) != ()
+
+
 def test_naive_now_is_rejected() -> None:
     with pytest.raises(ValueError) as err:
         merge([mk("osce:elections/r1")], now=datetime(2026, 10, 19), places=PLACES)
