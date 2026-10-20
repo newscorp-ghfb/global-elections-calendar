@@ -14,6 +14,7 @@ from elections_calendar.dates import relevance
 from elections_calendar.fetch import Deadline
 from elections_calendar.model import Claim, DateSpan, InputUnit, Outcome, Reason
 from elections_calendar.sources.base import (
+    PARSER_VERSION,
     Getter,
     PageParse,
     PageRequest,
@@ -60,6 +61,7 @@ def _mission_tables(soup: BeautifulSoup) -> list[Tag]:
 
 class Eeas:
     source = "eeas"
+    parser_version = PARSER_VERSION
 
     def requests(self, window: Window) -> tuple[PageRequest, ...]:
         return (PageRequest("missions", URL),)

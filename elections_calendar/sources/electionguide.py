@@ -27,6 +27,7 @@ from elections_calendar.model import (
 )
 from elections_calendar.offices import is_executive_title
 from elections_calendar.sources.base import (
+    PARSER_VERSION,
     Getter,
     PageCoverage,
     PageOutcome,
@@ -97,6 +98,7 @@ def _columns(table: Tag) -> dict[str, int] | None:
 
 class ElectionGuide:
     source = "electionguide"
+    parser_version = PARSER_VERSION
 
     def requests(self, window: Window) -> tuple[PageRequest, ...]:
         return tuple(

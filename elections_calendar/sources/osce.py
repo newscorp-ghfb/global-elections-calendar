@@ -13,6 +13,7 @@ from elections_calendar.fetch import Deadline
 from elections_calendar.model import Claim, InputUnit, Outcome, Reason, StatusClaim
 from elections_calendar.offices import is_executive_title
 from elections_calendar.sources.base import (
+    PARSER_VERSION,
     Getter,
     PageParse,
     PageRequest,
@@ -47,6 +48,7 @@ _PLAIN_BADGES = ("upcoming", "past")
 
 class Osce:
     source = "osce"
+    parser_version = PARSER_VERSION
 
     def requests(self, window: Window) -> tuple[PageRequest, ...]:
         return (PageRequest("elections", URL),)

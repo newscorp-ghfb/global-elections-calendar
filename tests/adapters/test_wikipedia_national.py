@@ -253,15 +253,15 @@ def test_year_rollover() -> None:
         page = key.replace("_", "-")
         by_key = {c.key: c for c in res.coverage}
         assert (by_key[page].outcome, by_key[page].unit_prefix, by_key[page].units_seen) == (outcome, None, 0)
-        assert res.reasons == (Reason(outcome, page),)
+        assert res.reasons == (Reason(outcome, page, page=page, year=int(page[-4:])),)
         other = "national-2026" if page == "national-2027" else "national-2027"
         assert by_key[other].outcome == "ok"
         assert not of(res, page)
     other_code = result(b"{}", outcome="api_error", api_code="ratelimited")
     res = Wikipedia().parse(swap(national_2027=other_code), WINDOW, REGISTRIES)
-    assert res.reasons == (Reason("api_error", "national-2027"),)
+    assert res.reasons == (Reason("api_error", "national-2027", page="national-2027", year=2027),)
     res = Wikipedia().parse(swap(national_2027=result(b"", outcome="http_error", status=404)), WINDOW, REGISTRIES)
-    assert res.reasons == (Reason("http_error", "national-2027"),)
+    assert res.reasons == (Reason("http_error", "national-2027", page="national-2027", year=2027),)
 
 
 @pytest.mark.parametrize(
@@ -284,7 +284,7 @@ def test_mediawiki_bodies_that_are_not_an_object_fail_the_layout_check(body: byt
     assert res.coverage[0].unit_prefix is None
     assert not of(res)
     assert res.coverage[1].outcome == "ok" and len(of(res, "national-2027")) == 46
-    assert res.reasons == (Reason("layout_not_recognised", "national-2026"),)
+    assert res.reasons == (Reason("layout_not_recognised", "national-2026", page="national-2026", year=2026),)
 
 
 def _edited(**changes: object) -> bytes:
@@ -445,7 +445,12 @@ def test_text_that_sits_in_an_allowed_place_is_not_a_changed_layout(
 def test_a_changed_section_reason_names_the_page_and_the_section() -> None:
     raw, res = synth({"January": ENTRY, "March": "<p>x</p>"})
     assert res.reasons == (
-        Reason("layout_not_recognised", "national-2026: section March: text in <p>"),
+        Reason(
+            "layout_not_recognised",
+            "national-2026: section March: text in <p>",
+            page="national-2026",
+            year=2026,
+        ),
     )
     assert not of(res)  # the whole page is rejected, not just the section
 

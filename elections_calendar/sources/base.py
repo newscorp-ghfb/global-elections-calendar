@@ -32,6 +32,8 @@ from elections_calendar.places import (
 )
 from elections_calendar.window import Window
 
+PARSER_VERSION: Final = "2.0"
+
 PageOutcome = Literal[
     "ok",
     "valid_empty",
@@ -69,12 +71,26 @@ PAGE_REASONS: Final[dict[PageOutcome, ReasonCode]] = {
 
 @dataclass(frozen=True, slots=True)
 class PageRequest:
-    """One page to fetch; ``key`` names it in unit ids and coverage."""
+    """One page to fetch; ``key`` names it in unit ids and coverage.
+
+    Pages that share a ``scope`` are compared together (§9.3); ``link`` is the page a reader
+    opens (P89).
+    """
 
     key: str
     url: str
     year: int | None = None
     mediawiki: bool = False
+    scope: str | None = None
+    link: str | None = None
+
+    @property
+    def scope_name(self) -> str:
+        return self.key if self.scope is None else self.scope
+
+    @property
+    def page_link(self) -> str:
+        return self.url if self.link is None else self.link
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,7 +158,9 @@ def coverage_reasons(coverage: Iterable[PageCoverage]) -> tuple[Reason, ...]:
         if page.outcome in _PAGES_WITH_UNITS:
             continue
         detail = f"{page.key}: {page.detail}" if page.detail else page.key
-        reasons.append(Reason(PAGE_REASONS[page.outcome], detail[:MAX_DETAIL]))
+        reasons.append(
+            Reason(PAGE_REASONS[page.outcome], detail[:MAX_DETAIL], page=page.key, year=page.year)
+        )
     return tuple(reasons)
 
 
@@ -260,6 +278,7 @@ class Getter(Protocol):
 
 class Adapter(Protocol):
     source: str
+    parser_version: str
 
     def requests(self, window: Window) -> tuple[PageRequest, ...]: ...
 
@@ -310,7 +329,12 @@ def missing_pages(expected: Sequence[PageRequest], raw: RawPages) -> list[Reason
     listed as unfinished, in ``expected`` order."""
     known = {page.request.key for page in raw.pages} | {r.key for r in raw.unfinished}
     return [
-        Reason("pagination_incomplete", f"{request.key} was not fetched")
+        Reason(
+            "pagination_incomplete",
+            f"{request.key} was not fetched",
+            page=request.key,
+            year=request.year,
+        )
         for request in expected
         if request.key not in known
     ]

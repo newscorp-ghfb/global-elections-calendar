@@ -1,7 +1,7 @@
 """The adapter contract (spec §8, §9.4)."""
 
 from collections.abc import Sequence
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from typing import get_args
 
 import pytest
@@ -10,6 +10,7 @@ from elections_calendar.fetch import Deadline, FetchResult
 from elections_calendar.model import MAX_DETAIL, Reason, ReasonCode, RecordError
 from elections_calendar.offices import InstitutionRegistry
 from elections_calendar.places import Place, PlaceRegistry, SubdivisionIndex
+from elections_calendar.runner import DEFAULT_ADAPTERS, _load
 from elections_calendar.sources.base import (
     PAGE_REASONS,
     PageCoverage,
@@ -28,6 +29,7 @@ from elections_calendar.sources.base import (
     parse_pages,
     part_scopes,
 )
+from elections_calendar.window import window_for
 from tests.support.pages import FETCHED, Served, claim, raw_pages, result, unit
 
 
@@ -97,9 +99,9 @@ def test_page_outcomes_give_reasons() -> None:
         PageCoverage("e", None, "valid_empty", "s:e/", 0),
     ]
     assert coverage_reasons(cov) == (
-        Reason("not_published_yet", "b"),
-        Reason("deadline", "c"),
-        Reason("challenge_page", "d"),
+        Reason("not_published_yet", "b", page="b", year=2027),
+        Reason("deadline", "c", page="c", year=2026),
+        Reason("challenge_page", "d", page="d", year=None),
     )
 
 
@@ -125,7 +127,10 @@ def test_layout_ok_and_reasons_of_a_parse_result() -> None:
         (Reason("count_change", "n"),),
     )
     assert not bad.layout_ok
-    assert bad.reasons == (Reason("layout_not_recognised", "a"), Reason("count_change", "n"))
+    assert bad.reasons == (
+        Reason("layout_not_recognised", "a", page="a", year=None),
+        Reason("count_change", "n"),
+    )
 
 
 def test_raw_pages_helper_builds_pages_at_the_fixed_time() -> None:
@@ -145,7 +150,7 @@ def test_registries_load_the_default_data() -> None:
 def test_a_page_detail_follows_the_page_key_in_its_reason() -> None:
     page = PageCoverage("p", 2026, "layout_not_recognised", None, 0, detail="section May: text in <p>")
     assert coverage_reasons([page]) == (
-        Reason("layout_not_recognised", "p: section May: text in <p>"),
+        Reason("layout_not_recognised", "p: section May: text in <p>", page="p", year=2026),
     )
     long = PageCoverage("p", 2026, "layout_not_recognised", None, 0, detail="x" * 1000)
     (reason,) = coverage_reasons([long])
@@ -165,7 +170,7 @@ def test_every_page_outcome_without_units_maps_to_a_reason_code() -> None:
     assert set(PAGE_REASONS.values()) <= set(get_args(ReasonCode))
     for outcome in without_units:
         page = PageCoverage("p", None, outcome, None, 0)
-        assert coverage_reasons([page]) == (Reason(PAGE_REASONS[outcome], "p"),)
+        assert coverage_reasons([page]) == (Reason(PAGE_REASONS[outcome], "p", page="p"),)
     assert PAGE_REASONS["unfinished"] == "deadline"
     assert all(PAGE_REASONS[o] == o for o in without_units if o != "unfinished")
 
@@ -324,7 +329,7 @@ def test_missing_pages() -> None:
     a, b, c = chain_requests()
     page_a = (a, result(b"x", url=a.url))
     assert missing_pages([a, b, c], raw_pages("s", [page_a], unfinished=(b,))) == [
-        Reason("pagination_incomplete", "p2 was not fetched")
+        Reason("pagination_incomplete", "p2 was not fetched", page="p2")
     ]
     full = raw_pages("s", [page_a, (b, result(b"x")), (c, result(b"x"))])
     assert missing_pages([a, b, c], full) == []
@@ -454,3 +459,47 @@ def test_part_scopes(name: str, parts: list[str], expected: list[tuple[object, .
 def test_part_scopes_of_one_part_is_label_scope(name: str, label: str) -> None:
     place = _place(name)
     assert part_scopes([label], place, _REGISTRIES) == [label_scope(label, place, _REGISTRIES)]
+
+
+def test_coverage_reasons_have_page_and_year() -> None:
+    cov = [PageCoverage("national-2027", 2027, "timeout", None, 0)]
+    assert coverage_reasons(cov) == (
+        Reason("timeout", "national-2027", page="national-2027", year=2027),
+    )
+
+
+def test_missing_pages_have_page_and_year() -> None:
+    a = PageRequest("p0", "https://example.test/0", 2026)
+    b = PageRequest("p1", "https://example.test/1")
+    reasons = missing_pages([a, b], raw_pages("s", []))
+    assert reasons == [
+        Reason("pagination_incomplete", "p0 was not fetched", page="p0", year=2026),
+        Reason("pagination_incomplete", "p1 was not fetched", page="p1", year=None),
+    ]
+
+
+def test_page_request_scope_and_link() -> None:
+    from elections_calendar.sources import eisa
+    from elections_calendar.sources.ndi import request
+
+    plain = PageRequest("k", "https://example.test/u")
+    assert (plain.scope_name, plain.page_link) == ("k", "https://example.test/u")
+    assert request(3).scope_name == "pages"
+    wiki = next(
+        r
+        for r in _load(DEFAULT_ADAPTERS[2]).requests(window_for(datetime(2026, 10, 19, tzinfo=UTC)))
+        if r.key == "national-2026"
+    )
+    assert wiki.page_link == "https://en.wikipedia.org/wiki/2026_national_electoral_calendar"
+    assert eisa.year_request(2026, "38978").page_link == eisa.URL
+
+
+def test_every_adapter_declares_its_parser_version() -> None:
+    assert [_load(spec).parser_version for spec in DEFAULT_ADAPTERS] == ["2.0"] * 9
+
+
+def test_eisa_year_notes_have_a_year() -> None:
+    from tests.adapters.test_eisa import RES
+
+    notes = [n for n in RES.notes if n.code == "not_published_yet"]
+    assert [n.year for n in notes] == [2027]

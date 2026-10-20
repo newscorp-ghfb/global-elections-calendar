@@ -56,6 +56,7 @@ from elections_calendar.offices import (
 )
 from elections_calendar.places import Place
 from elections_calendar.sources.base import (
+    PARSER_VERSION,
     Getter,
     PageCoverage,
     PageOutcome,
@@ -407,6 +408,7 @@ def _override(
 
 class Wikipedia:
     source = "wikipedia"
+    parser_version = PARSER_VERSION
     KINDS = KINDS
     STOP_IDS = STOP_IDS
 
@@ -418,6 +420,7 @@ class Wikipedia:
                 "&prop=text%7Crevid&format=json&formatversion=2&maxlag=5",
                 year,
                 mediawiki=True,
+                link=f"https://en.wikipedia.org/wiki/{year}_{kind}_electoral_calendar",
             )
             for kind in KINDS
             for year in window.years

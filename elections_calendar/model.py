@@ -12,12 +12,15 @@ A record that breaks a rule raises ``RecordError``.
 
 import calendar
 import functools
+import hashlib
+import json
 import re
 import types
 import typing
+from collections.abc import Iterable
 from dataclasses import dataclass, fields
 from datetime import UTC, date, datetime
-from typing import Any, Literal, get_args, get_origin
+from typing import Any, Final, Literal, get_args, get_origin
 
 Precision = Literal["day", "month", "year"]
 DateMeaning = Literal["voting_period", "expected_window", "unknown"]
@@ -74,6 +77,47 @@ LAST_YEAR = 2199
 
 class RecordError(ValueError):
     """A record breaks the model's rules, whether built in code or loaded from JSON."""
+
+
+def short_id(parts: Iterable[str]) -> str:
+    """The first 12 hex characters of SHA-1 over the sorted parts joined by newlines."""
+    return hashlib.sha1("\n".join(sorted(parts)).encode("utf-8")).hexdigest()[:12]
+
+
+def canonical_json(value: object) -> bytes:
+    """Compact JSON with sorted keys, UTF-8: the bytes that ids and versions hash."""
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode(
+        "utf-8"
+    )
+
+
+def stored_json(value: object) -> bytes:
+    """Indented JSON with a final newline, UTF-8: the form of committed files."""
+    return (json.dumps(value, ensure_ascii=False, indent=1) + "\n").encode("utf-8")
+
+
+SOURCE_ORDER: Final[tuple[str, ...]] = (
+    "electionguide",
+    "osce",
+    "wikipedia",
+    "ndi",
+    "aweb",
+    "eisa",
+    "ipu",
+    "carter",
+    "eeas",
+)
+SOURCE_NAMES: Final[dict[str, str]] = {
+    "electionguide": "ElectionGuide",
+    "osce": "OSCE/ODIHR",
+    "wikipedia": "Wikipedia",
+    "ndi": "NDI",
+    "aweb": "A-WEB",
+    "eisa": "EISA",
+    "ipu": "IPU",
+    "carter": "Carter Center",
+    "eeas": "EEAS",
+}
 
 
 def month_end(year: int, month: int) -> date:
@@ -323,6 +367,8 @@ ReasonCode = Literal[
     "ledger_mismatch",
     "discovery_mismatch",
     "worker_failed",
+    "merge_failed",
+    "validation_failed",
     # warnings
     "unparsed_relevant",
     "partial_relevant",
@@ -340,28 +386,169 @@ ReasonCode = Literal[
     "provisional_changes",
     "units_disappeared",
 ]
+ReasonLevel = Literal["error", "warning", "info"]
+Stage = Literal["fetch", "parse", "snapshot", "match", "run"]
+
+
+def _table[V](rows: tuple[tuple[V, tuple[ReasonCode, ...]], ...]) -> dict[ReasonCode, V]:
+    return {code: value for value, codes in rows for code in codes}
+
+
+# Spec §9.4 and P89, P104: the level and the stage of each code.
+REASON_LEVEL: Final[dict[ReasonCode, ReasonLevel]] = _table(
+    (
+        (
+            "error",
+            (
+                "fetch_failed",
+                "tls_error",
+                "timeout",
+                "dns_error",
+                "http_error",
+                "challenge_page",
+                "api_error",
+                "deadline",
+                "worker_failed",
+                "layout_not_recognised",
+                "required_year_missing",
+                "pagination_incomplete",
+                "ledger_mismatch",
+                "discovery_mismatch",
+                "unavailable",
+                "merge_failed",
+                "validation_failed",
+            ),
+        ),
+        (
+            "warning",
+            (
+                "unparsed_relevant",
+                "partial_relevant",
+                "coverage_gap",
+                "sudden_drop",
+                "cumulative_drop",
+                "fallback_stale",
+                "no_cross_source_match",
+                "served_mismatch",
+                "attention_truncated",
+                "ack_invalid",
+            ),
+        ),
+        (
+            "info",
+            ("not_published_yet", "count_change", "provisional_changes", "units_disappeared"),
+        ),
+    )
+)
+REASON_STAGE: Final[dict[ReasonCode, Stage]] = _table(
+    (
+        (
+            "fetch",
+            (
+                "fetch_failed",
+                "tls_error",
+                "timeout",
+                "dns_error",
+                "http_error",
+                "challenge_page",
+                "api_error",
+                "deadline",
+                "worker_failed",
+            ),
+        ),
+        (
+            "parse",
+            (
+                "layout_not_recognised",
+                "required_year_missing",
+                "pagination_incomplete",
+                "ledger_mismatch",
+                "discovery_mismatch",
+                "unparsed_relevant",
+                "partial_relevant",
+                "coverage_gap",
+                "not_published_yet",
+            ),
+        ),
+        (
+            "snapshot",
+            (
+                "unavailable",
+                "sudden_drop",
+                "cumulative_drop",
+                "fallback_stale",
+                "count_change",
+                "provisional_changes",
+                "units_disappeared",
+            ),
+        ),
+        ("match", ("no_cross_source_match",)),
+        (
+            "run",
+            (
+                "merge_failed",
+                "validation_failed",
+                "served_mismatch",
+                "attention_truncated",
+                "ack_invalid",
+            ),
+        ),
+    )
+)
+# Spec §9.6: no acknowledgement ever mutes these; every info code is among them.
+NEVER_ACKNOWLEDGEABLE: Final[frozenset[ReasonCode]] = frozenset(
+    (
+        "ledger_mismatch",
+        "discovery_mismatch",
+        "fallback_stale",
+        "served_mismatch",
+        "attention_truncated",
+        "ack_invalid",
+        "merge_failed",
+        "validation_failed",
+        *(code for code, level in REASON_LEVEL.items() if level == "info"),
+    )
+)
 MAX_DETAIL = 300
 
 
 @dataclass(frozen=True, slots=True)
 class Reason:
-    """Why a source or run is not fully healthy (spec §9.4); ``detail`` is short free text."""
+    """Why a source or run is not fully healthy (spec §9.4); ``detail`` is short free text.
+
+    ``page`` is the page key or scope the reason concerns and ``year`` the year it concerns
+    (P89); ``since`` is when a coverage gap began (P91) and is timezone-aware.
+    """
 
     code: ReasonCode
     detail: str = ""
+    page: str | None = None
+    year: int | None = None
+    since: datetime | None = None
 
     def __post_init__(self) -> None:
         _check_fields(self)
         if len(self.detail) > MAX_DETAIL:
             raise RecordError(f"Reason.detail is longer than {MAX_DETAIL} characters")
+        if self.since is not None and self.since.utcoffset() is None:
+            raise RecordError("Reason.since must be timezone-aware")
 
     def to_dict(self) -> dict[str, Any]:
-        return {"code": self.code, "detail": self.detail}
+        return {
+            "code": self.code,
+            "detail": self.detail,
+            "page": self.page,
+            "year": self.year,
+            "since": _utc_iso(self.since),
+        }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Reason:
         _require_record(cls, data)
-        return _construct(cls, data)
+        values = dict(data)
+        if "since" in values:
+            values["since"] = _iso_moment(values["since"])
+        return _construct(cls, values)
 
 
 # --- the merge's output (spec §5.3-§5.5, §10.8) --------------------------------------------------

@@ -15,6 +15,7 @@ from elections_calendar.fetch import Deadline
 from elections_calendar.model import Claim, DateSpan, InputUnit, Outcome, Reason, month_end
 from elections_calendar.offices import claim_level, classify, is_executive_title
 from elections_calendar.sources.base import (
+    PARSER_VERSION,
     Getter,
     PageParse,
     PageRequest,
@@ -50,6 +51,7 @@ _YEARS = 10
 
 class Ipu:
     source = "ipu"
+    parser_version = PARSER_VERSION
 
     def requests(self, window: Window) -> tuple[PageRequest, ...]:
         return (PageRequest("elections", URL),)

@@ -1,14 +1,21 @@
 """Shared vocabulary (spec §5.2, §7, §9.1)."""
 
 import dataclasses
+import json
 from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta, timezone
+from typing import get_args
 
 import pytest
 
 from elections_calendar.model import (
     MAX_ATTENTION_TEXT,
     MAX_TYPE,
+    NEVER_ACKNOWLEDGEABLE,
+    REASON_LEVEL,
+    REASON_STAGE,
+    SOURCE_NAMES,
+    SOURCE_ORDER,
     AttentionItem,
     BibEntry,
     Card,
@@ -20,10 +27,14 @@ from elections_calendar.model import (
     InputUnit,
     MergeResult,
     Reason,
+    ReasonCode,
     RecordError,
     UndatedListing,
     _conforms,
+    canonical_json,
     month_end,
+    short_id,
+    stored_json,
 )
 from elections_calendar.text import collapse_ws, fold, norm_name, slug
 from tests.support.pages import claim as page_claim
@@ -262,6 +273,9 @@ def test_reasons_are_checked_records() -> None:
     assert Reason("coverage_gap", "past list starts 2026-09-02").to_dict() == {
         "code": "coverage_gap",
         "detail": "past list starts 2026-09-02",
+        "page": None,
+        "year": None,
+        "since": None,
     }
     assert Reason.from_dict({"code": "worker_failed", "detail": "exit code 3"}) == Reason(
         "worker_failed", "exit code 3"
@@ -600,3 +614,91 @@ def test_a_card_type_of_the_limit_builds() -> None:
 
 def test_an_umbrella_link_has_many_targets() -> None:
     assert _disposition(kind="umbrella_link", targets=("a", "b")).targets == ("a", "b")
+
+
+LEVELS = {
+    "error": (
+        "fetch_failed tls_error timeout dns_error http_error challenge_page api_error deadline "
+        "worker_failed layout_not_recognised required_year_missing pagination_incomplete "
+        "ledger_mismatch discovery_mismatch unavailable merge_failed validation_failed"
+    ),
+    "warning": (
+        "unparsed_relevant partial_relevant coverage_gap sudden_drop cumulative_drop "
+        "fallback_stale no_cross_source_match served_mismatch attention_truncated ack_invalid"
+    ),
+    "info": "not_published_yet count_change provisional_changes units_disappeared",
+}
+STAGES = {
+    "fetch": (
+        "fetch_failed tls_error timeout dns_error http_error challenge_page api_error deadline "
+        "worker_failed"
+    ),
+    "parse": (
+        "layout_not_recognised required_year_missing pagination_incomplete ledger_mismatch "
+        "discovery_mismatch unparsed_relevant partial_relevant coverage_gap not_published_yet"
+    ),
+    "snapshot": (
+        "unavailable sudden_drop cumulative_drop fallback_stale count_change "
+        "provisional_changes units_disappeared"
+    ),
+    "match": "no_cross_source_match",
+    "run": "merge_failed validation_failed served_mismatch attention_truncated ack_invalid",
+}
+
+
+def test_reason_tables_cover_every_code() -> None:
+    codes = set(get_args(ReasonCode))
+    assert set(REASON_LEVEL) == codes
+    assert set(REASON_STAGE) == codes
+    assert {c: lv for lv, names in LEVELS.items() for c in names.split()} == REASON_LEVEL
+    assert {c: st for st, names in STAGES.items() for c in names.split()} == REASON_STAGE
+    assert set(
+        ["ledger_mismatch", "discovery_mismatch", "fallback_stale", "served_mismatch", "attention_truncated", "ack_invalid", "merge_failed", "validation_failed"]
+    ) | set(LEVELS["info"].split()) == NEVER_ACKNOWLEDGEABLE
+    assert all(c in NEVER_ACKNOWLEDGEABLE for c in codes if REASON_LEVEL[c] == "info")
+    assert "http_error" not in NEVER_ACKNOWLEDGEABLE
+
+
+def test_reason_page_and_year() -> None:
+    plain = Reason("http_error", "upcoming", page="upcoming", year=None)
+    assert Reason.from_dict(plain.to_dict()) == plain
+    assert set(plain.to_dict()) == {"code", "detail", "page", "year", "since"}
+    old = Reason.from_dict({"code": "worker_failed", "detail": "exit code 3"})
+    assert (old.page, old.year, old.since) == (None, None, None)
+    since = datetime(2026, 10, 19, 12, 30, tzinfo=timezone(timedelta(hours=2)))
+    gap = Reason("coverage_gap", "x", page="calendar", year=2027, since=since)
+    assert gap.to_dict()["since"] == "2026-10-19T10:30:00Z"
+    assert Reason.from_dict(gap.to_dict()) == gap
+    with pytest.raises(RecordError, match="Reason.since must be timezone-aware"):
+        Reason("coverage_gap", "x", since=datetime(2026, 10, 19))
+    with pytest.raises(RecordError, match="Reason.since must be timezone-aware"):
+        Reason.from_dict({**gap.to_dict(), "since": "2026-10-19T10:30:00"})
+
+
+def test_canonical_and_stored_json() -> None:
+    assert canonical_json({"b": 1, "a": "é"}) == '{"a":"é","b":1}'.encode()
+    stored = stored_json([1])
+    assert stored.endswith(b"\n")
+    assert json.loads(stored) == [1]
+
+
+def test_source_names() -> None:
+    assert tuple(SOURCE_NAMES) == SOURCE_ORDER
+    assert list(SOURCE_NAMES.values()) == [
+        "ElectionGuide",
+        "OSCE/ODIHR",
+        "Wikipedia",
+        "NDI",
+        "A-WEB",
+        "EISA",
+        "IPU",
+        "Carter Center",
+        "EEAS",
+    ]
+
+
+def test_identity_re_exports() -> None:
+    from elections_calendar.merge import identity
+
+    assert identity.short_id is short_id
+    assert identity.SOURCE_ORDER is SOURCE_ORDER

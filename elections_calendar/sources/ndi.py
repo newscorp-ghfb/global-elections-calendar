@@ -34,6 +34,7 @@ from elections_calendar.offices import (
 )
 from elections_calendar.places import Place, named_places
 from elections_calendar.sources.base import (
+    PARSER_VERSION,
     Getter,
     LabelScope,
     PageParse,
@@ -132,7 +133,7 @@ _LETTER = r"[^\W\d_]"
 
 
 def request(n: int) -> PageRequest:
-    return PageRequest(f"p{n}", f"{URL}?page={n}")
+    return PageRequest(f"p{n}", f"{URL}?page={n}", scope="pages")
 
 
 @dataclass(slots=True)
@@ -311,6 +312,7 @@ class _State:
 
 class Ndi:
     source = "ndi"
+    parser_version = PARSER_VERSION
 
     def requests(self, window: Window) -> tuple[PageRequest, ...]:
         return (request(0),)
