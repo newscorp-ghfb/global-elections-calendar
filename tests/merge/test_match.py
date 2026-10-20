@@ -17,10 +17,41 @@ from elections_calendar.merge.identity import MergeError
 from elections_calendar.merge.match import Contest, Matching, match
 from elections_calendar.model import Claim, RejectedReason
 from tests.support.claims import (
+    BR,
+    BRP,
+    CH,
+    CI,
+    CO,
+    COUNCIL,
+    EGE,
+    EGP,
+    EGU,
+    ES,
+    GA,
+    GB,
+    GD,
+    GD_IPU,
+    IP,
+    KG,
+    LEG,
+    LOWER,
+    MB,
+    NOV,
     NOW,
     OBS,
+    PE,
+    PRES_BR,
     RENEW,
+    RU,
+    SI,
+    SS,
     UMB,
+    UPPER,
+    US,
+    XS,
+    WPl,
+    WPn,
+    cl,
     day,
     days,
     mk,
@@ -29,65 +60,6 @@ from tests.support.claims import (
     year,
 )
 from tests.support.fixture_claims import FIXTURE_NOW, fixture_claim, fixture_claims
-
-WPn = "wikipedia:national-2026@rev1"
-WPl = "wikipedia:local-2026@rev2"
-EGU = "electionguide:upcoming"
-EGP = "electionguide:past"
-
-# The presets (the brief's values, verbatim).
-PE = dict(place_id="iso:PE", place_raw="Peru", institution=None, level="subnational",
-          span=day(2026, 11, 22))
-CH = dict(place_id="iso:CH", place_raw="Switzerland", institution=None, office_class="referendum",
-          span=day(2026, 11, 29))
-GB = dict(place_id="iso:GB", place_raw="United Kingdom", institution="iso:GB/house-of-commons",
-          office_class="lower_house", kind="by_election",
-          office_label="House of Commons by-election", span=day(2026, 11, 26))
-XS = dict(place_id="x:south-ossetia", place_raw="South Ossetia",
-          institution="x:south-ossetia/president", office_class="head_of_state",
-          office_label="President")
-IP = dict(**RENEW, source_event_id="ipu:SE-LC")
-RU = dict(place_id="iso:RU", place_raw="Russia", institution="iso:RU/state-duma",
-          office_class="lower_house", office_label="State Duma")
-BR = dict(place_id="iso:BR", place_raw="Brazil")
-PRES_BR = dict(**BR, institution="iso:BR/president", office_class="head_of_state",
-               office_label="President")
-LEG = dict(institution=None, office_class="legislature", aggregate=True, office_label="Parliament")
-GD = dict(place_id="iso:GD", place_raw="Grenada", span=day(2026, 11, 5))
-GD_IPU = dict(**RENEW, institution="iso:GD/house-of-representatives", office_class="lower_house",
-              office_label="House of Representatives")
-ES = dict(place_id="iso:ES", place_raw="Spain", span=day(2026, 11, 29))
-SS = dict(place_id="iso:SS", place_raw="South Sudan", span=day(2026, 12, 22))
-SI = dict(place_id="iso:SI", place_raw="Slovenia")
-US = dict(place_id="iso:US", place_raw="United States",
-          institution="iso:US/house-of-representatives", office_class="lower_house",
-          kind="by_election", jurisdiction="Louisiana", jurisdiction_kind="subdivision",
-          level="unknown", span=day(2026, 11, 3))
-KG = dict(place_id="iso:KG", place_raw="Kyrgyzstan", institution="iso:KG/president",
-          office_class="head_of_state", office_label="President")
-CI = dict(place_id="iso:CI", place_raw="Côte d'Ivoire", institution="iso:CI/president",
-          office_class="head_of_state", span=day(2026, 10, 25))
-CO = dict(place_id="iso:CO", place_raw="Colombia")
-LOWER = dict(**CO, institution="iso:CO/chamber", office_class="lower_house",
-             office_label="Chamber of Representatives")
-UPPER = dict(**CO, institution="iso:CO/senate", office_class="upper_house", office_label="Senate")
-COUNCIL = dict(institution=None, office_class="local_council", office_label="Municipal councils",
-               level="subnational")
-GA = dict(place_id="iso:US", place_raw="United States", institution=None, level="subnational",
-          jurisdiction="Georgia", jurisdiction_kind="subdivision", span=day(2026, 5, 19))
-MB = dict(span=month(2026, 11), date_meaning="unknown", date_text="November 2026")
-NOV = dict(span=month(2026, 11), date_meaning="unknown")
-BRP = {**PRES_BR, "office_label": "Brazilian Presidency"}
-EGE = dict(source_event_id="electionguide:5259")
-
-
-def cl(unit_id: str, *presets: Mapping[str, Any], n: int = 0, **fields: Any) -> Claim:
-    """``mk`` with presets applied left to right, then the fields (later values win)."""
-    values: dict[str, Any] = {}
-    for preset in presets:
-        values.update(preset)
-    return mk(unit_id, n, **{**values, **fields})
-
 
 # ---------------------------------------------------------------- the notation
 
