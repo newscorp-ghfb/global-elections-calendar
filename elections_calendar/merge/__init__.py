@@ -1,6 +1,33 @@
 """The merge (spec section 10): claims in, contests and cards out.
 
 Modules: ``identity`` (source priority, roles, identity and date compatibility, rule F,
-short ids). ``merge`` itself arrives in Task 6. The package imports only from ``model``,
-``text``, ``dates``, ``offices``, ``places`` and ``window``, and from its own modules.
+short ids), ``select`` (date selection and status), ``match`` (phases A-D, umbrellas,
+aggregates), ``cards`` (children, cards, listings, attention items, dispositions) and
+``conservation`` (the audit). ``merge`` runs them in that order and fails closed. The package
+imports only from ``model``, ``text``, ``dates``, ``offices``, ``places`` and ``window``, and
+from its own modules.
 """
+
+from collections.abc import Sequence
+from datetime import datetime
+
+from elections_calendar.merge.cards import build
+from elections_calendar.merge.conservation import check
+from elections_calendar.merge.identity import MergeError
+from elections_calendar.merge.match import match
+from elections_calendar.model import Claim, MergeResult
+from elections_calendar.places import PlaceRegistry
+from elections_calendar.window import window_for
+
+__all__ = ["MergeError", "merge"]
+
+
+def merge(claims: Sequence[Claim], *, now: datetime, places: PlaceRegistry) -> MergeResult:
+    """Merge claims into cards, then audit the result; any problem raises ``MergeError``."""
+    window = window_for(now)
+    matching = match(claims, now)
+    result = build(matching, window=window, places=places)
+    problems = check(claims, result)
+    if problems:
+        raise MergeError("conservation: " + "; ".join(problems))
+    return result

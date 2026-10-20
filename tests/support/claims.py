@@ -1,11 +1,11 @@
 """Claims for merge tests: ``mk`` builds a valid claim from a unit id and field overrides."""
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from datetime import UTC, date, datetime
 from typing import Any
 
 from elections_calendar.merge.cards import build
-from elections_calendar.merge.match import match
+from elections_calendar.merge.match import Matching, match
 from elections_calendar.model import Claim, DateSpan, MergeResult
 from elections_calendar.places import PlaceRegistry
 from elections_calendar.window import window_for
@@ -148,3 +148,26 @@ def cl(unit_id: str, *presets: Mapping[str, Any], n: int = 0, **fields: Any) -> 
 def result(*claims: Claim, now: datetime = NOW) -> MergeResult:
     """Match and build ``claims`` (Tasks 4 and 5); Task 6's conservation tests import it."""
     return build(match(list(claims), now), window=window_for(now), places=PlaceRegistry.load())
+
+
+def list_order(matching: Matching) -> tuple[Any, ...]:
+    """Every list of a matching in list order, as merge ids (Task 6's order test).
+
+    Each contest gives its child id and the merge ids of its members, attached and
+    provisional claims; then come the links, the undated groups and the pending entries.
+    """
+
+    def ids(claims: Iterable[Claim]) -> tuple[str, ...]:
+        return tuple(c.merge_id for c in claims)
+
+    return (
+        tuple(
+            (k.child_id, ids(k.members), ids(k.attached), ids(k.provisional))
+            for k in matching.contests
+        ),
+        tuple((link.claim.merge_id, tuple(k.child_id for k in link.contests)) for link in matching.links),
+        tuple((ids(u.claims), tuple(k.child_id for k in u.possible)) for u in matching.undated),
+        tuple(
+            (p.claim.merge_id, tuple(k.child_id for k in p.candidates)) for p in matching.pending
+        ),
+    )
