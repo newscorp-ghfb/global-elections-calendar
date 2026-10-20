@@ -210,9 +210,9 @@ def with_first_source_changed(res: MergeResult, claims: list[Claim]) -> list[str
     return [p for p in problems if p == f"changed claim: {claim.merge_id}"]
 
 
-# Random lists of up to nine claims seldom attach a claim or leave a weak claim with several
-# candidates (0 of 400 do), so two explicit examples hold those cases.
-ATTACHING = [  # an anchor, two attached month claims and a provisional claim
+# At seed 20261019 random lists attach a claim only rarely (7 attached claims over the run) and
+# never leave a weak claim with several candidates, so two explicit examples hold those cases.
+ATTACHING = [  # an anchor, two attached claims (a month and a year) and a provisional claim
     (0, 1, 0, 0, None, "iso:SE", "nationwide", False, None),
     (1, 1, 0, 3, None, "iso:SE", "nationwide", False, None),
     (3, 2, 0, 4, None, "iso:SE", "nationwide", False, None),
