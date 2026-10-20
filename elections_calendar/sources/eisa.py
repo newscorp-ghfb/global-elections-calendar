@@ -34,6 +34,7 @@ from elections_calendar.offices import (
     unnamed_parts,
 )
 from elections_calendar.sources.base import (
+    PARSER_VERSION,
     Getter,
     PageParse,
     PageRequest,
@@ -69,7 +70,7 @@ _HEADINGS = ("h1", "h2", "h3", "h4", "h5", "h6")
 
 
 def year_request(year: int, table_id: str) -> PageRequest:
-    return PageRequest(f"y{year}", AJAX.format(table_id=table_id), year)
+    return PageRequest(f"y{year}", AJAX.format(table_id=table_id), year, link=URL)
 
 
 def _read_calendar(text: str, window: Window) -> tuple[dict[int, str], list[Reason]] | str:
@@ -86,7 +87,7 @@ def _read_calendar(text: str, window: Window) -> tuple[dict[int, str], list[Reas
         if not matched:
             late = year > window.today.year
             code: ReasonCode = "not_published_yet" if late else "required_year_missing"
-            notes.append(Reason(code, f"no heading '{title}'"))
+            notes.append(Reason(code, f"no heading '{title}'", year=year))
             continue
         per_heading: list[list[str]] = []
         for heading in matched:
@@ -177,6 +178,7 @@ class _State:
 
 class Eisa:
     source = "eisa"
+    parser_version = PARSER_VERSION
 
     def requests(self, window: Window) -> tuple[PageRequest, ...]:
         return (PageRequest(CALENDAR, URL),)

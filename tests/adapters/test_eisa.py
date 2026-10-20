@@ -32,7 +32,7 @@ SERVED = {
 }
 RAW = RawPages("eisa", tuple(Eisa().fetch(WINDOW, Served(SERVED), Deadline.after(60))), ())
 RES = Eisa().parse(RAW, WINDOW, REGISTRIES)
-NOTE_2027 = Reason("not_published_yet", "no heading 'eisa african election calendar 2027'")
+NOTE_2027 = Reason("not_published_yet", "no heading 'eisa african election calendar 2027'", year=2027)
 H26 = "EISA African Election Calendar 2026"
 
 
@@ -225,7 +225,7 @@ def test_chain_by_window() -> None:
         ("y2026", "ok", 22, 2026),
     ]
     assert res.reasons == (
-        Reason("required_year_missing", "no heading 'eisa african election calendar 2027'"),
+        Reason("required_year_missing", "no heading 'eisa african election calendar 2027'", year=2027),
     )
     assert (len(res.units), len(res.claims)) == (22, 25)
 
@@ -293,8 +293,8 @@ def test_calendar_headings() -> None:
     only25 = eisa_cal([("EISA African Election Calendar 2025", "34700")])
     res, _ = cal_result(only25)
     assert year_notes(res) == [
-        Reason("required_year_missing", "no heading 'eisa african election calendar 2026'"),
-        Reason("not_published_yet", "no heading 'eisa african election calendar 2027'"),
+        Reason("required_year_missing", "no heading 'eisa african election calendar 2026'", year=2026),
+        Reason("not_published_yet", "no heading 'eisa african election calendar 2027'", year=2027),
     ]
     both = eisa_cal([(H26, "38978"), ("EISA African Election Calendar 2027", "40001")])
     res, _ = cal_result(both)
@@ -523,7 +523,7 @@ def test_rounds_and_parts() -> None:
 def test_pagination_failures_are_loud() -> None:
     raw = raw_pages("eisa", [(PageRequest("calendar", URL), result(CALENDAR))])
     res = parse(raw)
-    assert res.reasons == (NOTE_2027, Reason("pagination_incomplete", "y2026 was not fetched"))
+    assert res.reasons == (NOTE_2027, Reason("pagination_incomplete", "y2026 was not fetched", page="y2026", year=2026))
     url = AJAX.format(table_id="38978")
     raw = raw_pages(
         "eisa",
@@ -548,8 +548,8 @@ def test_content_never_raises() -> None:
     # and one note per window year (2026 is the current year, 2027 is ahead of it).
     assert (res.coverage[0].outcome, res.coverage[0].detail, res.coverage[0].units_seen) == ("ok", "", 0)
     assert res.notes == (
-        Reason("required_year_missing", "no heading 'eisa african election calendar 2026'"),
-        Reason("not_published_yet", "no heading 'eisa african election calendar 2027'"),
+        Reason("required_year_missing", "no heading 'eisa african election calendar 2026'", year=2026),
+        Reason("not_published_yet", "no heading 'eisa african election calendar 2027'", year=2027),
     )
     res = run({2026: b'{"a":' * 100000})
     assert detail(res, "y2026") == ("layout_not_recognised", "the body is not JSON")

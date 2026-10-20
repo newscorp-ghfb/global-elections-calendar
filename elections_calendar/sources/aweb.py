@@ -15,6 +15,7 @@ from elections_calendar.fetch import Deadline
 from elections_calendar.model import Claim, InputUnit, Outcome, Reason
 from elections_calendar.offices import is_executive_title
 from elections_calendar.sources.base import (
+    PARSER_VERSION,
     Getter,
     PageParse,
     PageRequest,
@@ -41,6 +42,7 @@ _PRIMARIES = re.compile(r"\bprimar(?:y|ies)\b", re.IGNORECASE)
 
 class Aweb:
     source = "aweb"
+    parser_version = PARSER_VERSION
 
     def requests(self, window: Window) -> tuple[PageRequest, ...]:
         return (PageRequest("calendar", URL),)

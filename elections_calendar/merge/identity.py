@@ -1,11 +1,11 @@
 """Source priority, roles and identity rules of the merge (spec section 10.1, 10.2, 10.5)."""
 
-import hashlib
 import re
-from collections.abc import Iterable
 from typing import Literal
 
+from elections_calendar.model import SOURCE_ORDER as SOURCE_ORDER  # re-exported
 from elections_calendar.model import Claim, DateSpan
+from elections_calendar.model import short_id as short_id  # re-exported
 from elections_calendar.text import norm_name
 
 
@@ -18,17 +18,6 @@ PRIORITY: tuple[str, ...] = (
     "osce",
     "wikipedia:national",
     "wikipedia:local",
-    "ndi",
-    "aweb",
-    "eisa",
-    "ipu",
-    "carter",
-    "eeas",
-)
-SOURCE_ORDER: tuple[str, ...] = (
-    "electionguide",
-    "osce",
-    "wikipedia",
     "ndi",
     "aweb",
     "eisa",
@@ -193,8 +182,3 @@ def gap_days(s: DateSpan, t: DateSpan) -> int:
     if s.end < t.start:
         return (t.start - s.end).days
     return (s.start - t.end).days
-
-
-def short_id(parts: Iterable[str]) -> str:
-    """The first 12 hex characters of SHA-1 over the sorted parts joined by newlines."""
-    return hashlib.sha1("\n".join(sorted(parts)).encode("utf-8")).hexdigest()[:12]

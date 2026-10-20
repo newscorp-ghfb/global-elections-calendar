@@ -285,7 +285,7 @@ def test_chain_with_a_missing_page() -> None:
         ("p2", "ok", 10),
         ("p3", "http_error", 0),
     ]
-    assert res.reasons == (Reason("http_error", "p3"),)
+    assert res.reasons == (Reason("http_error", "p3", page="p3"),)
     assert (len(res.units), len(res.claims)) == (48, 48)
 
 
@@ -332,7 +332,7 @@ def test_pagination_failures_are_loud() -> None:
 
 def test_pagination_incomplete_and_unfinished() -> None:
     res = parse(raw_of({0: BODIES[0]}))
-    assert res.notes == (Reason("pagination_incomplete", "p1 was not fetched"),)
+    assert res.notes == (Reason("pagination_incomplete", "p1 was not fetched", page="p1"),)
     raw = raw_pages(
         "ndi",
         [
@@ -405,7 +405,7 @@ def test_the_chain_stops_at_the_cap() -> None:
     res = parse(raw)
     assert res.notes == (Reason("pagination_incomplete", "stopped at the 10-page cap"),)
     raw9 = raw_of({n: pages[n] for n in range(9)})
-    assert parse(raw9).notes == (Reason("pagination_incomplete", "p9 was not fetched"),)
+    assert parse(raw9).notes == (Reason("pagination_incomplete", "p9 was not fetched", page="p9"),)
 
 
 def test_broken_pages_get_an_outcome_never_units() -> None:
@@ -783,7 +783,7 @@ def test_recursion_while_reading_is_an_outcome(monkeypatch: pytest.MonkeyPatch) 
     assert expected(WINDOW, raw.pages) == (request(0),)
     raw9 = raw_of({9: BODIES[0]})
     assert parse(raw9, balanced=False).notes == (
-        Reason("pagination_incomplete", "p0 was not fetched"),
+        Reason("pagination_incomplete", "p0 was not fetched", page="p0"),
     )
 
 

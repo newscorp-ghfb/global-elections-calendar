@@ -14,6 +14,7 @@ from elections_calendar.dates import parse_date_text, plausible, relevance
 from elections_calendar.fetch import Deadline
 from elections_calendar.model import Claim, DateSpan, InputUnit, Outcome, Reason
 from elections_calendar.sources.base import (
+    PARSER_VERSION,
     Getter,
     PageParse,
     PageRequest,
@@ -87,6 +88,7 @@ def _section_table(h2s: list[Tag], heading: str) -> str | Tag | None:
 
 class Carter:
     source = "carter"
+    parser_version = PARSER_VERSION
 
     def requests(self, window: Window) -> tuple[PageRequest, ...]:
         return (PageRequest("observed", URL),)

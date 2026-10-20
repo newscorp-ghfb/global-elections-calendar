@@ -490,5 +490,5 @@ def test_a_chained_source_cut_mid_chain(
     assert [p.request.key for p in r.raw.pages] == ["one", "two"]
     assert r.raw.unfinished == ()
     assert missing_pages(Chain(urls).expected(r.raw.pages), r.raw) == [
-        Reason("pagination_incomplete", "three was not fetched")
+        Reason("pagination_incomplete", "three was not fetched", page="three")
     ]

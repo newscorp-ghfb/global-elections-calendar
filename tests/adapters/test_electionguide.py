@@ -312,7 +312,7 @@ def test_a_failed_view_does_not_hide_its_events_elsewhere() -> None:
         ("parsed", None): 33,
         ("ignored", "duplicate"): 73,
     }
-    assert Reason("timeout", "upcoming") in res.reasons
+    assert Reason("timeout", "upcoming", page="upcoming") in res.reasons
 
 
 def test_reversed_ranges_are_unparsed() -> None:
