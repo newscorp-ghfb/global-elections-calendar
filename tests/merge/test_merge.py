@@ -1,5 +1,7 @@
 """Task 6: ``merge`` (spec 10.8, 10.9; S3-T5, T8, T16; NM-T06; G03, G08)."""
 
+import importlib
+import inspect
 from dataclasses import replace
 from datetime import datetime
 from itertools import permutations
@@ -264,3 +266,9 @@ def test_property_any_order_and_conservation(tuples: list[Any], rnd: Random) -> 
     shuffled = list(claims)
     rnd.shuffle(shuffled)
     assert merge(shuffled, now=NOW, places=PLACES) == res
+
+
+def test_package_does_not_shadow_its_modules() -> None:
+    for name in ("identity", "select", "match", "cards", "conservation"):
+        importlib.import_module(f"elections_calendar.merge.{name}")
+        assert inspect.ismodule(getattr(merge_package, name)), name

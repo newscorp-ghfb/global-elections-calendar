@@ -1,8 +1,10 @@
 """The conservation audit (spec 10.8, 10.9; P79, R2-04, R2-05).
 
 ``check`` takes the input claims and a ``MergeResult`` and returns the problems it finds, as
-sorted messages per check. An empty tuple means every input is accounted for exactly where its
-disposition says, nothing was changed, and no child holds a wrong merge or misses a partner.
+sorted messages per check. An empty tuple means every input is accounted for exactly once,
+where its disposition says, and nothing was changed; and the children agree with the joining
+rules (identity, labels, dates) and with each other (no missed partner). It does not prove
+the matching right beyond those rules.
 """
 
 from collections import Counter, defaultdict
