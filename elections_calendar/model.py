@@ -12,6 +12,7 @@ A record that breaks a rule raises ``RecordError``.
 
 import calendar
 import functools
+import re
 import types
 import typing
 from dataclasses import dataclass, fields
@@ -363,6 +364,244 @@ class Reason:
         return _construct(cls, data)
 
 
+# --- the merge's output (spec §5.3-§5.5, §10.8) --------------------------------------------------
+
+RejectedReason = Literal[
+    "observation",
+    "year_only",
+    "lower_evidence",
+    "old_date",  # R2-01
+    "not_covering",
+    "less_precise",
+    "less_certain",
+    "stale",
+    "lower_priority",
+    "provisional",
+]
+LegacyStatus = Literal["Upcoming", "Held", "Postponed", "Cancelled", "Disputed", "Unknown"]
+DispositionKind = Literal[
+    "anchor_member",
+    "attached",
+    "provisional",
+    "umbrella_link",
+    "standalone",
+    "undated",
+    "attention",
+]
+AttentionKind = Literal[
+    "unparsed_unit",
+    "partial_unit",
+    "undated_listing",
+    "unresolved_evidence",
+    "provisional_change",
+    "disappeared_unit",
+]
+ProvisionalDate = Literal["moved", "less_precise"]  # P74, D3
+MAX_TYPE = 200
+MAX_ATTENTION_TEXT = 300
+_SHORT_ID = re.compile(r"[0-9a-f]{12}")
+
+
+def _check_short_id(record: Any, name: str) -> None:
+    value = getattr(record, name)
+    if not _SHORT_ID.fullmatch(value):
+        raise RecordError(f"{type(record).__name__}.{name} {value!r} is not 12 hex characters")
+
+
+def _sorted_unique(values: tuple[str, ...]) -> bool:
+    return list(values) == sorted(set(values))
+
+
+def _check_matches(record: Any) -> None:
+    if not _sorted_unique(record.possible_matches):
+        raise RecordError(f"{type(record).__name__}.possible_matches must be sorted and unique")
+
+
+@dataclass(frozen=True, slots=True)
+class ChildSource:
+    """One of a child's claims (spec §5.3); ``rejected_reason`` is None when selected."""
+
+    claim: Claim
+    selected: bool
+    rejected_reason: RejectedReason | None
+
+    def __post_init__(self) -> None:
+        _check_fields(self)
+        if self.selected != (self.rejected_reason is None):
+            raise RecordError("selected and rejected_reason disagree")
+
+
+@dataclass(frozen=True, slots=True)
+class BibEntry:
+    """One bibliography entry (spec §5.4)."""
+
+    source: str
+    link: str
+
+    def __post_init__(self) -> None:
+        _check_fields(self)
+
+
+@dataclass(frozen=True, slots=True)
+class Child:
+    """One contest (spec §5.3)."""
+
+    child_id: str
+    place_id: str
+    country: str
+    country_code: str | None
+    jurisdiction: str | None
+    jurisdiction_kind: JurisdictionKind
+    level: Level
+    institution: str | None
+    office_class: OfficeClass
+    office_label: str
+    kind: Kind
+    round: int | None
+    indirect: bool
+    aggregate: bool  # an aggregate grouping (§10.4), never a specific contest
+    span: DateSpan
+    date_meaning: DateMeaning
+    date_status: DateStatus
+    status: LegacyStatus
+    occurrence_confirmed: bool
+    status_conflict: bool
+    date_conflict: bool
+    unverified: bool
+    ambiguous: bool
+    rescheduled_from: tuple[str, ...]  # D2: old dates, as the sources wrote them
+    provisional_date: ProvisionalDate | None  # D3: how a provisional claim changes the date
+    possible_matches: tuple[str, ...]
+    sources: tuple[ChildSource, ...]
+
+    def __post_init__(self) -> None:
+        _check_fields(self)
+        _check_short_id(self, "child_id")
+        if self.span.precision == "year":
+            raise RecordError("Child: span is never year precision")
+        if sum(s.selected for s in self.sources) != 1:
+            raise RecordError("Child: exactly one source is selected")
+        _check_matches(self)
+        if self.child_id in self.possible_matches:
+            raise RecordError("Child.possible_matches names the child itself")
+        if not _sorted_unique(self.rescheduled_from):
+            raise RecordError("Child.rescheduled_from must be sorted and unique")
+        if self.provisional_date is not None and not any(
+            s.rejected_reason == "provisional" for s in self.sources
+        ):
+            raise RecordError("Child: provisional_date needs a provisional source")
+
+
+@dataclass(frozen=True, slots=True)
+class Card:
+    """One card: the children that share a date (spec §5.4)."""
+
+    group_id: str
+    place_id: str
+    country: str
+    country_code: str | None
+    level: Level
+    span: DateSpan
+    date_meaning: DateMeaning
+    date_status: DateStatus
+    status: LegacyStatus
+    type: str
+    children: tuple[Child, ...]
+    sources: tuple[BibEntry, ...]
+    umbrella_sources: tuple[BibEntry, ...]
+    umbrellas: tuple[Claim, ...]  # the umbrella claims linked to any of this card's children
+
+    def __post_init__(self) -> None:
+        _check_fields(self)
+        _check_short_id(self, "group_id")
+        if self.span.precision == "year":
+            raise RecordError("Card: span is never year precision")
+        if not self.children:
+            raise RecordError("Card: no children")
+        if not 1 <= len(self.type) <= MAX_TYPE:
+            raise RecordError(f"Card.type is 1 to {MAX_TYPE} characters")
+
+
+@dataclass(frozen=True, slots=True)
+class UndatedListing:
+    """A contest known only by its year (spec §5.5)."""
+
+    undated_id: str
+    place_id: str
+    country: str
+    office_label: str
+    year: int
+    claims: tuple[Claim, ...]
+    sources: tuple[BibEntry, ...]
+    possible_matches: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        _check_fields(self)
+        _check_short_id(self, "undated_id")
+        _check_matches(self)
+        if not self.claims or any(
+            c.span.precision != "year" or c.span.year != self.year for c in self.claims
+        ):
+            raise RecordError("UndatedListing: every claim is year-only, of its year")
+
+
+@dataclass(frozen=True, slots=True)
+class AttentionItem:
+    """Something a person should look at (spec §5.5)."""
+
+    item_id: str
+    kind: AttentionKind
+    source: str
+    link: str
+    snapshot_id: str | None
+    relevance: Relevance
+    text: str
+    reason: str
+    possible_matches: tuple[str, ...]
+    merge_ids: tuple[str, ...]
+    undated_id: str | None
+
+    def __post_init__(self) -> None:
+        _check_fields(self)
+        _check_short_id(self, "item_id")
+        if len(self.text) > MAX_ATTENTION_TEXT:
+            raise RecordError(f"AttentionItem.text is over {MAX_ATTENTION_TEXT} characters")
+        if (self.undated_id is not None) != (self.kind == "undated_listing"):
+            raise RecordError("AttentionItem: undated_id goes with kind undated_listing")
+        _check_matches(self)
+        if not self.merge_ids or not _sorted_unique(self.merge_ids):
+            raise RecordError("AttentionItem.merge_ids must be sorted, unique and non-empty")
+
+
+@dataclass(frozen=True, slots=True)
+class Disposition:
+    """Where one claim went (spec §10.8); ``targets`` are child ids, a listing id or an item id."""
+
+    merge_id: str
+    kind: DispositionKind
+    targets: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        _check_fields(self)
+        if not self.targets or not _sorted_unique(self.targets):
+            raise RecordError("Disposition.targets must be sorted, unique and non-empty")
+        if self.kind != "umbrella_link" and len(self.targets) != 1:
+            raise RecordError(f"Disposition: {self.kind} has exactly one target")
+
+
+@dataclass(frozen=True, slots=True)
+class MergeResult:
+    """Everything the merge returns."""
+
+    cards: tuple[Card, ...]
+    undated: tuple[UndatedListing, ...]
+    attention: tuple[AttentionItem, ...]
+    dispositions: tuple[Disposition, ...]
+
+    def __post_init__(self) -> None:
+        _check_fields(self)
+
+
 def _utc_iso(moment: datetime | None) -> str | None:
     if moment is None:
         return None
@@ -435,6 +674,10 @@ def _conforms(value: object, hint: Any) -> bool:
         return value is None
     if hint in (bool, int, str, date):
         return type(value) is hint  # True is not an int, a datetime is not a date
+    if origin is tuple:
+        arms = get_args(hint)
+        if len(arms) == 2 and arms[1] is Ellipsis:  # tuple[X, ...]; other tuple hints fall through
+            return isinstance(value, tuple) and all(_conforms(v, arms[0]) for v in value)
     if isinstance(hint, type):
         return isinstance(value, hint)
     raise TypeError(f"no runtime check for {hint!r}")
