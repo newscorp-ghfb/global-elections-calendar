@@ -164,6 +164,7 @@ def same_source_compatible(a: Claim, b: Claim) -> bool:
 
 
 def years_of(span: DateSpan) -> frozenset[int]:
+    """The calendar years a span touches (a year span gives its one year)."""
     if span.precision == "year":
         return frozenset({span.year})
     assert span.start is not None and span.end is not None
@@ -179,6 +180,7 @@ def dates_compatible(a: Claim, b: Claim) -> bool:
 
 
 def joinable(a: Claim, b: Claim) -> bool:
+    """Whether two claims can be members of one contest: identity, rule F and dates."""
     return identity_compatible(a, b) and same_source_compatible(a, b) and dates_compatible(a, b)
 
 
@@ -194,4 +196,5 @@ def gap_days(s: DateSpan, t: DateSpan) -> int:
 
 
 def short_id(parts: Iterable[str]) -> str:
+    """The first 12 hex characters of SHA-1 over the sorted parts joined by newlines."""
     return hashlib.sha1("\n".join(sorted(parts)).encode("utf-8")).hexdigest()[:12]

@@ -6,6 +6,10 @@ aggregates), ``cards`` (children, cards, listings, attention items, dispositions
 ``conservation`` (the audit). ``merge`` runs them in that order and fails closed. The package
 imports only from ``model``, ``text``, ``dates``, ``offices``, ``places`` and ``window``, and
 from its own modules.
+
+Tests monkeypatch ``elections_calendar.merge.build``, ``elections_calendar.merge.check`` and
+``elections_calendar.merge._match``. ``match`` is bound as ``_match`` so that the package
+attribute ``match`` stays the submodule.
 """
 
 from collections.abc import Iterable
@@ -14,7 +18,7 @@ from datetime import datetime
 from elections_calendar.merge.cards import build
 from elections_calendar.merge.conservation import check
 from elections_calendar.merge.identity import MergeError
-from elections_calendar.merge.match import match
+from elections_calendar.merge.match import match as _match
 from elections_calendar.model import Claim, MergeResult
 from elections_calendar.places import PlaceRegistry
 from elections_calendar.window import window_for
@@ -29,7 +33,7 @@ def merge(claims: Iterable[Claim], *, now: datetime, places: PlaceRegistry) -> M
     """
     claims = tuple(claims)
     window = window_for(now)
-    matching = match(claims, now)
+    matching = _match(claims, now)
     result = build(matching, window=window, places=places)
     problems = check(claims, result)
     if problems:
