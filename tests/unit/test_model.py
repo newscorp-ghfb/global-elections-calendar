@@ -7,14 +7,26 @@ from datetime import UTC, date, datetime, timedelta, timezone
 import pytest
 
 from elections_calendar.model import (
+    MAX_ATTENTION_TEXT,
+    MAX_TYPE,
+    AttentionItem,
+    BibEntry,
+    Card,
+    Child,
+    ChildSource,
     Claim,
     DateSpan,
+    Disposition,
     InputUnit,
+    MergeResult,
     Reason,
     RecordError,
+    UndatedListing,
+    _conforms,
     month_end,
 )
 from elections_calendar.text import collapse_ws, fold, norm_name, slug
+from tests.support.pages import claim as page_claim
 
 
 def test_month_end_handles_leap_years() -> None:
@@ -299,3 +311,292 @@ def test_a_saved_unit_without_duplicate_of_still_loads() -> None:
     saved = InputUnit("s:p/1", "s", "t", "parsed", None, "unknown").to_dict()
     del saved["duplicate_of"]
     assert InputUnit.from_dict(saved).duplicate_of is None
+
+
+# --- the merge's output records ---------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("value", "hint", "expected"),
+    [
+        pytest.param((), tuple[str, ...], True, id="empty"),
+        pytest.param(("a", "b"), tuple[str, ...], True, id="strings"),
+        pytest.param(["a"], tuple[str, ...], False, id="list"),
+        pytest.param(("a", 1), tuple[str, ...], False, id="mixed"),
+        pytest.param((True,), tuple[int, ...], False, id="bool-is-not-int"),
+    ],
+)
+def test_tuple_hints(value: object, hint: object, expected: bool) -> None:
+    assert _conforms(value, hint) is expected
+
+
+def test_a_fixed_length_tuple_hint_has_no_runtime_check() -> None:
+    with pytest.raises(TypeError, match="no runtime check for"):
+        _conforms((1, "a"), tuple[int, str])
+
+
+def _source(selected: bool = True, reason: str | None = None, n: int = 0) -> ChildSource:
+    return ChildSource(
+        claim=page_claim("s:v/r1", n),
+        selected=selected,
+        rejected_reason=reason,  # type: ignore[arg-type]
+    )
+
+
+def _child(**changes: object) -> Child:
+    values: dict[str, object] = {
+        "child_id": "0123456789ab",
+        "place_id": "iso:SE",
+        "country": "Sweden",
+        "country_code": "SE",
+        "jurisdiction": None,
+        "jurisdiction_kind": "nationwide",
+        "level": "national",
+        "institution": None,
+        "office_class": "legislature",
+        "office_label": "Riksdag",
+        "kind": "candidate_election",
+        "round": None,
+        "indirect": False,
+        "aggregate": False,
+        "span": DateSpan.day(date(2026, 9, 13)),
+        "date_meaning": "voting_period",
+        "date_status": "confirmed",
+        "status": "Upcoming",
+        "occurrence_confirmed": False,
+        "status_conflict": False,
+        "date_conflict": False,
+        "unverified": False,
+        "ambiguous": False,
+        "rescheduled_from": ("1 November 2026",),
+        "provisional_date": None,
+        "possible_matches": ("aaaaaaaaaaaa", "bbbbbbbbbbbb"),
+        "sources": (_source(),),
+    }
+    return Child(**{**values, **changes})  # type: ignore[arg-type]
+
+
+def _bib() -> BibEntry:
+    return BibEntry(source="s", link="https://example.test/e")
+
+
+def _card(**changes: object) -> Card:
+    values: dict[str, object] = {
+        "group_id": "0123456789ab",
+        "place_id": "iso:SE",
+        "country": "Sweden",
+        "country_code": "SE",
+        "level": "national",
+        "span": DateSpan.day(date(2026, 9, 13)),
+        "date_meaning": "voting_period",
+        "date_status": "confirmed",
+        "status": "Upcoming",
+        "type": "Parliamentary",
+        "children": (_child(),),
+        "sources": (_bib(),),
+        "umbrella_sources": (),
+        "umbrellas": (page_claim("s:v/u", 1),),
+    }
+    return Card(**{**values, **changes})  # type: ignore[arg-type]
+
+
+def _listing(**changes: object) -> UndatedListing:
+    values: dict[str, object] = {
+        "undated_id": "0123456789ab",
+        "place_id": "iso:SE",
+        "country": "Sweden",
+        "office_label": "Riksdag",
+        "year": 2026,
+        "claims": (dataclasses.replace(page_claim("s:v/r1"), span=DateSpan.of_year(2026)),),
+        "sources": (_bib(),),
+        "possible_matches": ("aaaaaaaaaaaa",),
+    }
+    return UndatedListing(**{**values, **changes})  # type: ignore[arg-type]
+
+
+def _item(**changes: object) -> AttentionItem:
+    values: dict[str, object] = {
+        "item_id": "0123456789ab",
+        "kind": "unparsed_unit",
+        "source": "s",
+        "link": "https://example.test/e",
+        "snapshot_id": None,
+        "relevance": "unknown",
+        "text": "text",
+        "reason": "reason",
+        "possible_matches": (),
+        "merge_ids": ("served/s:v/r1#0",),
+        "undated_id": None,
+    }
+    return AttentionItem(**{**values, **changes})  # type: ignore[arg-type]
+
+
+def _disposition(**changes: object) -> Disposition:
+    values: dict[str, object] = {
+        "merge_id": "served/s:v/r1#0",
+        "kind": "attached",
+        "targets": ("0123456789ab",),
+    }
+    return Disposition(**{**values, **changes})  # type: ignore[arg-type]
+
+
+def test_merge_records_accept_valid_values() -> None:
+    provisional = _child(
+        provisional_date="moved",
+        sources=(_source(), _source(False, "provisional", 1)),
+    )
+    result = MergeResult(
+        cards=(_card(), _card(children=(provisional,))),
+        undated=(_listing(),),
+        attention=(_item(),),
+        dispositions=(_disposition(),),
+    )
+    assert result.cards[1].children[0].provisional_date == "moved"
+    assert _child().rescheduled_from == ("1 November 2026",)
+    assert _item(kind="undated_listing", undated_id="0123456789ab").undated_id
+
+
+_TWO_SELECTED = (_source(), _source(True, None, 1))
+_BAD_ID = "0123456789AB"
+_SORTED_UNIQUE = "{}.{} must be sorted and unique"
+_MERGE_IDS = "AttentionItem.merge_ids must be sorted, unique and non-empty"
+_TARGETS = "Disposition.targets must be sorted, unique and non-empty"
+_LISTING = "UndatedListing: every claim is year-only, of its year"
+_UNDATED_ID = "AttentionItem: undated_id goes with kind undated_listing"
+
+
+@pytest.mark.parametrize(
+    ("build", "message"),
+    [
+        pytest.param(
+            lambda: _source(True, "stale"),
+            "selected and rejected_reason disagree",
+            id="source-selected-with-reason",
+        ),
+        pytest.param(
+            lambda: _source(False, None),
+            "selected and rejected_reason disagree",
+            id="source-rejected-without-reason",
+        ),
+        pytest.param(
+            lambda: _child(child_id=_BAD_ID),
+            "Child.child_id '0123456789AB' is not 12 hex characters",
+            id="child-id",
+        ),
+        pytest.param(
+            lambda: _card(group_id="short"),
+            "Card.group_id 'short' is not 12 hex characters",
+            id="card-id",
+        ),
+        pytest.param(
+            lambda: _listing(undated_id=_BAD_ID),
+            "UndatedListing.undated_id '0123456789AB' is not 12 hex characters",
+            id="listing-id",
+        ),
+        pytest.param(
+            lambda: _item(item_id=_BAD_ID),
+            "AttentionItem.item_id '0123456789AB' is not 12 hex characters",
+            id="item-id",
+        ),
+        pytest.param(
+            lambda: _child(span=DateSpan.of_year(2026)),
+            "Child: span is never year precision",
+            id="child-year-span",
+        ),
+        pytest.param(
+            lambda: _card(span=DateSpan.of_year(2026)),
+            "Card: span is never year precision",
+            id="card-year-span",
+        ),
+        pytest.param(
+            lambda: _child(sources=_TWO_SELECTED),
+            "Child: exactly one source is selected",
+            id="child-two-selected",
+        ),
+        pytest.param(
+            lambda: _child(sources=(_source(False, "stale"),)),
+            "Child: exactly one source is selected",
+            id="child-none-selected",
+        ),
+        pytest.param(
+            lambda: _child(possible_matches=("bbbbbbbbbbbb", "aaaaaaaaaaaa")),
+            _SORTED_UNIQUE.format("Child", "possible_matches"),
+            id="child-matches-unsorted",
+        ),
+        pytest.param(
+            lambda: _listing(possible_matches=("aaaaaaaaaaaa", "aaaaaaaaaaaa")),
+            _SORTED_UNIQUE.format("UndatedListing", "possible_matches"),
+            id="listing-matches-repeat",
+        ),
+        pytest.param(
+            lambda: _item(possible_matches=("b", "a")),
+            _SORTED_UNIQUE.format("AttentionItem", "possible_matches"),
+            id="item-matches-unsorted",
+        ),
+        pytest.param(
+            lambda: _child(possible_matches=("0123456789ab",)),
+            "Child.possible_matches names the child itself",
+            id="child-matches-itself",
+        ),
+        pytest.param(
+            lambda: _child(rescheduled_from=("2 November 2026", "1 November 2026")),
+            _SORTED_UNIQUE.format("Child", "rescheduled_from"),
+            id="child-rescheduled-unsorted",
+        ),
+        pytest.param(
+            lambda: _child(provisional_date="moved"),
+            "Child: provisional_date needs a provisional source",
+            id="child-provisional-date-without-source",
+        ),
+        pytest.param(lambda: _card(children=()), "Card: no children", id="card-no-children"),
+        pytest.param(
+            lambda: _card(type=""), "Card.type is 1 to 200 characters", id="card-type-empty"
+        ),
+        pytest.param(
+            lambda: _card(type="x" * (MAX_TYPE + 1)),
+            "Card.type is 1 to 200 characters",
+            id="card-type-201",
+        ),
+        pytest.param(lambda: _listing(claims=()), _LISTING, id="listing-no-claims"),
+        pytest.param(
+            lambda: _listing(claims=(page_claim("s:v/r1"),)), _LISTING, id="listing-day-claim"
+        ),
+        pytest.param(lambda: _listing(year=2027), _LISTING, id="listing-other-year"),
+        pytest.param(
+            lambda: _item(text="x" * (MAX_ATTENTION_TEXT + 1)),
+            "AttentionItem.text is over 300 characters",
+            id="item-text-301",
+        ),
+        pytest.param(
+            lambda: _item(undated_id="0123456789ab"), _UNDATED_ID, id="item-undated-id-other-kind"
+        ),
+        pytest.param(
+            lambda: _item(kind="undated_listing"), _UNDATED_ID, id="item-listing-without-id"
+        ),
+        pytest.param(lambda: _item(merge_ids=()), _MERGE_IDS, id="item-merge-ids-empty"),
+        pytest.param(lambda: _item(merge_ids=("b", "a")), _MERGE_IDS, id="item-merge-ids-unsorted"),
+        pytest.param(lambda: _disposition(targets=()), _TARGETS, id="disposition-no-targets"),
+        pytest.param(
+            lambda: _disposition(kind="umbrella_link", targets=("b", "a")),
+            _TARGETS,
+            id="disposition-targets-unsorted",
+        ),
+        pytest.param(
+            lambda: _disposition(targets=("a", "b")),
+            "Disposition: attached has exactly one target",
+            id="disposition-two-targets",
+        ),
+    ],
+)
+def test_merge_record_rules(build: Callable[[], object], message: str) -> None:
+    with pytest.raises(RecordError) as caught:
+        build()
+    assert str(caught.value) == message
+
+
+def test_a_card_type_of_the_limit_builds() -> None:
+    assert len(_card(type="x" * MAX_TYPE).type) == 200
+
+
+def test_an_umbrella_link_has_many_targets() -> None:
+    assert _disposition(kind="umbrella_link", targets=("a", "b")).targets == ("a", "b")
