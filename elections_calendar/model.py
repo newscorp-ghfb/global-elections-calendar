@@ -789,6 +789,54 @@ class MergeResult:
         _check_fields(self)
 
 
+# --- snapshot acceptance (spec §5.6, §9.3, §9.6) ---------------------------------------------
+
+Acceptance = Literal["promoted", "quarantined", "fallback", "unavailable"]
+
+
+def _check_aware(record: Any, *names: str) -> None:
+    for name in names:
+        moment = getattr(record, name)
+        if moment is not None and moment.utcoffset() is None:
+            raise RecordError(f"{type(record).__name__}.{name} must be timezone-aware")
+
+
+@dataclass(frozen=True, slots=True)
+class DropAcceptance:
+    """An ``accept_drop`` entry in effect (§9.6): it explains one drop of one scope.
+
+    The candidate must reach both floors, ``units_seen_min`` and ``claims_min`` (P95).
+    """
+
+    source: str
+    reason: Literal["sudden_drop", "cumulative_drop"]
+    page: str  # the scope
+    year: int | None
+    units_seen_min: int
+    claims_min: int
+    until: datetime
+
+    def __post_init__(self) -> None:
+        _check_fields(self)
+        _check_aware(self, "until")
+
+
+@dataclass(frozen=True, slots=True)
+class SnapshotHealth:
+    """Spec §5.6 "Snapshot": what was served and how old it is (never the run's time)."""
+
+    acceptance: Acceptance
+    using_fallback: bool
+    served_snapshot_id: str | None
+    served_fetched_at: datetime | None
+    baseline_units_seen: int | None
+    comparable: bool
+
+    def __post_init__(self) -> None:
+        _check_fields(self)
+        _check_aware(self, "served_fetched_at")
+
+
 def _utc_iso(moment: datetime | None) -> str | None:
     if moment is None:
         return None

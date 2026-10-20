@@ -24,11 +24,13 @@ from elections_calendar.model import (
     Claim,
     DateSpan,
     Disposition,
+    DropAcceptance,
     InputUnit,
     MergeResult,
     Reason,
     ReasonCode,
     RecordError,
+    SnapshotHealth,
     UndatedListing,
     _conforms,
     canonical_json,
@@ -702,3 +704,23 @@ def test_identity_re_exports() -> None:
 
     assert identity.short_id is short_id
     assert identity.SOURCE_ORDER is SOURCE_ORDER
+
+
+def test_drop_acceptance_and_snapshot_health() -> None:
+    until = datetime(2026, 10, 22, 12, tzinfo=UTC)
+    naive = datetime(2026, 10, 22, 12)
+    accept = DropAcceptance("osce", "sudden_drop", "elections", None, 40, 40, until)
+    assert (accept.units_seen_min, accept.claims_min, accept.until) == (40, 40, until)
+    with pytest.raises(RecordError, match=r"^DropAcceptance.until must be timezone-aware$"):
+        DropAcceptance("osce", "sudden_drop", "elections", None, 40, 40, naive)
+    with pytest.raises(RecordError, match=r"^DropAcceptance.reason: "):
+        DropAcceptance("osce", "count_change", "elections", None, 40, 40, until)  # type: ignore[arg-type]
+    health = SnapshotHealth("fallback", True, "a" * 64, until, 100, True)
+    assert health.served_fetched_at == until
+    assert SnapshotHealth("unavailable", False, None, None, None, False).served_fetched_at is None
+    with pytest.raises(
+        RecordError, match=r"^SnapshotHealth.served_fetched_at must be timezone-aware$"
+    ):
+        SnapshotHealth("fallback", True, "a" * 64, naive, 100, True)
+    with pytest.raises(RecordError, match=r"^SnapshotHealth.acceptance: "):
+        SnapshotHealth("served", True, None, None, None, True)  # type: ignore[arg-type]

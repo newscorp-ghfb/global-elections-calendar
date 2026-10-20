@@ -1,26 +1,36 @@
-"""Snapshot records and their loaders (spec §5.10, §9.3; P91, P93, P94).
+"""Snapshot records, their loaders and the acceptance decision (spec §5.10, §9.3; P90-P95, P105).
 
 A snapshot is what one source gave in one run: its pages, units, claims and notes, stored
 unstamped. A baseline is the snapshot a run last accepted, with the history the drop checks
 need. ``load_baseline`` treats a file it cannot trust as corrupt, never as empty (P94).
+``decide`` chooses what a run serves: an invalid or shrunken candidate never replaces a
+baseline, and served claims keep the time their page was fetched (R19).
 """
 
+import dataclasses
 import hashlib
 import json
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Final
 
 from elections_calendar.fetch import FetchResult, redact_text, redact_url
-from elections_calendar.ledger import record_problems
+from elections_calendar.ledger import LedgerReport, record_problems
 from elections_calendar.model import (
+    MAX_ATTENTION_TEXT,
+    MAX_DETAIL,
+    REASON_LEVEL,
+    Acceptance,
     Claim,
+    DropAcceptance,
     FetchOutcome,
     InputUnit,
     Reason,
+    ReasonCode,
     RecordError,
+    SnapshotHealth,
     _check_fields,
     _iso_date,
     _iso_moment,
@@ -29,7 +39,16 @@ from elections_calendar.model import (
 )
 from elections_calendar.offices import DEFAULT_INSTITUTIONS
 from elections_calendar.places import DEFAULT_PLACES, DEFAULT_SUBDIVISIONS
-from elections_calendar.sources.base import PageCoverage, PageOutcome, ParseResult, RawPages
+from elections_calendar.runner import SourceOutcome
+from elections_calendar.sources.base import (
+    PageCoverage,
+    PageOutcome,
+    ParseResult,
+    RawPages,
+    coverage_reasons,
+)
+from elections_calendar.text import collapse_ws, norm_name
+from elections_calendar.window import Window
 
 REGISTRY_FILES: Final = (DEFAULT_PLACES, DEFAULT_INSTITUTIONS, DEFAULT_SUBDIVISIONS)
 STAMPED: Final = ("fetched_at", "fallback", "snapshot_id", "provisional")
@@ -525,17 +544,20 @@ def _parse_baseline(data: Any) -> tuple[Baseline, ParseResult]:
             for g, claims_of in zip(gap_data, gap_claims, strict=True)
         )
         baseline = Baseline(snapshot, history, gone, gaps, checks["ledger"], checks["discovery"])
-        coverage = tuple(
-            PageCoverage(
-                p.key, p.year, p.outcome, p.unit_prefix, p.units_seen, p.revid, p.detail
-            )
-            for p in pages
-        )
+        coverage = _coverage(pages)
     except (TypeError, ValueError) as exc:
         if isinstance(exc, RecordError):
             raise
         raise RecordError(str(exc)) from exc
     return baseline, ParseResult(snapshot.source, units, claims, coverage, notes)
+
+
+def _coverage(pages: Iterable[PageRecord]) -> tuple[PageCoverage, ...]:
+    """The pages as the adapter's coverage entries (what ``coverage_reasons`` reads)."""
+    return tuple(
+        PageCoverage(p.key, p.year, p.outcome, p.unit_prefix, p.units_seen, p.revid, p.detail)
+        for p in pages
+    )
 
 
 def _need_moment(value: Any) -> datetime:
@@ -578,3 +600,558 @@ def load_baseline(path: Path) -> Baseline | None:
     if problems:
         raise corrupt(f"ledger: {'; '.join(problems[:3])}")
     return baseline
+
+
+# --- the acceptance decision (spec §9.3) ---------------------------------------------------
+
+FALLBACK_FRESH: Final = timedelta(days=7)
+HISTORY_DAYS: Final = timedelta(days=30)
+DISAPPEARED_DAYS: Final = timedelta(days=7)
+_WITH_UNITS: Final = ("ok", "valid_empty")
+_SERVES_THE_BASELINE: Final = ("quarantined", "fallback")
+_REGISTRY_INFO: Final = "baseline.json is from another registry version; it is never served"
+# What claim_content leaves out (P105): position, formatting and stamped provenance.
+_NOT_CONTENT: Final = frozenset(
+    ("unit_id", "claim_id", "link", "place_raw", "date_text", *STAMPED)
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ScopeCount:
+    """One scope of a snapshot: units seen, usable claims, pages and the year they share."""
+
+    units: int
+    claims: int
+    pages: int
+    year: int | None
+    all_valid_empty: bool
+
+
+def _scopes(snapshot: Snapshot) -> dict[str, list[PageRecord]]:
+    scopes: dict[str, list[PageRecord]] = {}
+    for page in snapshot.pages:
+        scopes.setdefault(page.scope, []).append(page)
+    return scopes
+
+
+def _prefixes(pages: Iterable[PageRecord]) -> tuple[str, ...]:
+    return tuple(p.unit_prefix for p in pages if p.unit_prefix is not None)
+
+
+def scope_counts(snapshot: Snapshot) -> dict[str, ScopeCount]:
+    """Per scope, in first-page order (P90).
+
+    A scope's claims are those whose ``unit_id`` starts with one of its pages' ``unit_prefix``.
+    Its year is the year all its pages share; when they differ (a mix of None and a year
+    included) it is None, and a None year never explains a drop or restarts a history.
+    """
+    counts: dict[str, ScopeCount] = {}
+    for scope, pages in _scopes(snapshot).items():
+        prefixes = _prefixes(pages)
+        years = {p.year for p in pages}
+        counts[scope] = ScopeCount(
+            units=sum(p.units_seen for p in pages),
+            claims=sum(c.unit_id.startswith(prefixes) for c in snapshot.claims),
+            pages=len(pages),
+            year=years.pop() if len(years) == 1 else None,
+            all_valid_empty=all(p.outcome == "valid_empty" for p in pages),
+        )
+    return counts
+
+
+def _year_change(old: ScopeCount | None, new: ScopeCount) -> tuple[int, int] | None:
+    """``(old year, new year)`` when the scope is in both, both years are set and they differ."""
+    if old is None or old.year is None or new.year is None or old.year == new.year:
+        return None
+    return old.year, new.year
+
+
+def claim_content(claim: Claim) -> tuple[object, ...]:
+    """What makes two claims equal (P105): every field in its declared order except the
+    claim's position (``unit_id``, ``claim_id``), its formatting (``link``, ``place_raw``,
+    ``date_text``) and its stamped provenance. ``jurisdiction`` and ``office_label`` are
+    compared through ``norm_name``, ``previous_date_text`` through ``collapse_ws``.
+    """
+    content: list[object] = []
+    for f in dataclasses.fields(claim):
+        if f.name in _NOT_CONTENT:
+            continue
+        value = getattr(claim, f.name)
+        if f.name in ("jurisdiction", "office_label"):
+            value = norm_name(value or "")
+        elif f.name == "previous_date_text" and value is not None:
+            value = collapse_ws(value)
+        content.append(value)
+    return tuple(content)
+
+
+def unchanged(claim: Claim, others: Sequence[Claim]) -> bool:
+    """Some claim of ``others`` has the same ``claim_content``. A ``source_event_id`` or a key
+    only finds a related claim; it never makes two claims equal (P105)."""
+    return claim_content(claim) in {claim_content(o) for o in others}
+
+
+def _listing_key(claim: Claim) -> tuple[object, ...]:
+    return (
+        claim.place_id,
+        claim.institution or claim.office_class,
+        norm_name(claim.jurisdiction or ""),
+        claim.kind,
+        claim.round,
+    )
+
+
+def same_listing(claim: Claim, others: Sequence[Claim]) -> bool:
+    """Still listed (P91): a claim of ``others`` with this claim's ``source_event_id`` when it
+    has one, else with its key (place, institution or office class, jurisdiction, kind, round).
+    """
+    if claim.source_event_id is not None:
+        return any(o.source_event_id == claim.source_event_id for o in others)
+    key = _listing_key(claim)
+    return any(_listing_key(o) == key for o in others)
+
+
+@dataclass(frozen=True, slots=True)
+class Decision:
+    """What one run of one source serves, and what ``baseline.json`` holds after it."""
+
+    source: str
+    candidate: Snapshot
+    served: Snapshot | None
+    acceptance: Acceptance
+    claims: tuple[Claim, ...]  # the served claims stamped, then the provisional ones
+    provisional: tuple[Claim, ...]  # the provisional ones alone (also in claims)
+    provisional_units: tuple[InputUnit, ...]
+    baseline: Baseline | None  # the input baseline unless the candidate was promoted
+    disappeared: tuple[Disappeared, ...]  # in effect at now, by source_event_id
+    coverage_gaps: tuple[CoverageGap, ...]  # in effect at now, by (scope, since)
+    reasons: tuple[Reason, ...]
+    health: SnapshotHealth
+
+
+def _reason(code: ReasonCode, detail: str, **where: Any) -> Reason:
+    return Reason(code, detail[:MAX_DETAIL], **where)
+
+
+def _own_reasons(
+    candidate: Snapshot,
+    run_outcome: SourceOutcome,
+    run_detail: str,
+    ledger: LedgerReport | None,
+    base: Snapshot | None,
+) -> list[Reason]:
+    """Rule 1: the run, the pages, the notes and the ledger, with P92 applied in place."""
+    reasons: list[Reason] = []
+    if run_outcome in ("deadline", "scrape_deadline"):
+        reasons.append(_reason("deadline", run_detail or run_outcome))
+    elif run_outcome == "worker_failed":
+        reasons.append(_reason("worker_failed", run_detail))
+    published = (
+        set()
+        if base is None
+        else {p.year for p in base.pages if p.outcome in _WITH_UNITS and p.year is not None}
+    )
+    for reason in coverage_reasons(_coverage(candidate.pages)) + candidate.notes:
+        if reason.code == "not_published_yet" and reason.year in published:
+            reason = Reason(
+                "required_year_missing",
+                f"{reason.year} was published before and is now missing",
+                page=reason.page,
+                year=reason.year,
+            )
+        reasons.append(reason)
+    if ledger is not None:
+        reasons += ledger.reasons
+    return reasons
+
+
+def _major(version: str) -> str:
+    return version.partition(".")[0]
+
+
+def _fall(cand: ScopeCount, units: int, claims: int) -> tuple[str, int, int] | None:
+    """``(what, reference, the candidate's number)`` when either number is under half."""
+    if cand.units * 2 < units:
+        return "units", units, cand.units
+    if cand.claims * 2 < claims:
+        return "claims", claims, cand.claims
+    return None
+
+
+@dataclass(slots=True)
+class _Checks:
+    reasons: list[Reason]
+    unexplained: bool
+    accepted: set[str]  # the scopes whose drop an accept_drop explained
+
+
+def _drop_checks(
+    source: str,
+    cand_counts: dict[str, ScopeCount],
+    base_counts: dict[str, ScopeCount],
+    history: Sequence[HistoryEntry],
+    acceptances: Sequence[DropAcceptance],
+    now: datetime,
+) -> _Checks:
+    """Rule 5 (P90, P95): per scope in both, the drop or its explanation, then the page count."""
+    checks = _Checks([], False, set())
+    for scope, cand in cand_counts.items():
+        base = base_counts.get(scope)
+        if base is None:
+            continue
+        recent = [
+            h for h in history if h.scope == scope and now - h.fetched_at <= HISTORY_DAYS
+        ]
+        code: ReasonCode = "sudden_drop"
+        fall = _fall(cand, base.units, base.claims)
+        if fall is None:
+            code = "cumulative_drop"
+            fall = _fall(
+                cand,
+                max((h.units_seen for h in recent), default=0),
+                max((h.claims for h in recent), default=0),
+            )
+        if fall is not None:
+            what, ref, n = fall
+            fell = f"{scope}: {what} fell from {ref} to {n}"
+            changed = _year_change(base, cand)
+            accepted = next(
+                (
+                    a
+                    for a in acceptances
+                    if a.source == source
+                    and a.reason == code
+                    and a.page == scope
+                    and a.year == cand.year
+                    and cand.units >= a.units_seen_min
+                    and cand.claims >= a.claims_min
+                ),
+                None,
+            )
+            explained: str | None = None
+            if cand.all_valid_empty:
+                explained = f"{fell}; the source lists none"
+            elif changed is not None:
+                explained = f"{fell}; the year changed from {changed[0]} to {changed[1]}"
+            elif accepted is not None:
+                explained = f"{fell}; accepted until {_utc_iso(accepted.until)}"
+                checks.accepted.add(scope)
+            if explained is not None:
+                checks.reasons.append(
+                    _reason("count_change", explained, page=scope, year=cand.year)
+                )
+            else:
+                checks.unexplained = True
+                counts = f"(candidate: units {cand.units}, claims {cand.claims})"
+                high = f"{scope}: {what} fell to {n}, under half the 30-day high of {ref}"
+                detail = f"{fell} {counts}" if code == "sudden_drop" else f"{high} {counts}"
+                checks.reasons.append(_reason(code, detail, page=scope, year=cand.year))
+        if base.pages != cand.pages:
+            checks.reasons.append(
+                _reason(
+                    "count_change",
+                    f"{scope}: {base.pages} pages, now {cand.pages}",
+                    page=scope,
+                    year=cand.year,
+                )
+            )
+    return checks
+
+
+def _gaps(
+    promoting: bool,
+    baseline: Baseline | None,
+    candidate: Snapshot,
+    cand_counts: dict[str, ScopeCount],
+    base_counts: dict[str, ScopeCount],
+    served_claims: Sequence[Claim],
+    window: Window,
+    now: datetime,
+) -> tuple[CoverageGap, ...]:
+    """Rule 6 (P91): the baseline's gaps cut to the claims still missing, then on a
+    promotion the new gaps of each scope whose year changed; by (scope, since)."""
+    if baseline is None:
+        return ()
+    kept: list[CoverageGap] = []
+    for gap in baseline.coverage_gaps:
+        rest = tuple(
+            c
+            for c in gap.claims
+            if window.overlaps(c.span) and not same_listing(c, served_claims)
+        )
+        if rest:
+            kept.append(dataclasses.replace(gap, claims=rest))
+    new: list[CoverageGap] = []
+    if promoting:
+        scopes = _scopes(baseline.snapshot)
+        for scope, cand in cand_counts.items():
+            changed = _year_change(base_counts.get(scope), cand)
+            if changed is None:
+                continue
+            prefixes = _prefixes(scopes[scope])
+            lost = tuple(
+                c
+                for c in baseline.snapshot.claims
+                if c.unit_id.startswith(prefixes)
+                and window.overlaps(c.span)
+                and not same_listing(c, candidate.claims)
+            )
+            if lost:
+                new.append(CoverageGap(scope, changed[0], changed[1], now, lost))
+    return tuple(sorted(kept + new, key=lambda g: (g.scope, g.since)))
+
+
+def _disappeared(
+    promoting: bool, baseline: Baseline | None, candidate: Snapshot, now: datetime
+) -> tuple[Disappeared, ...]:
+    """Rule 7: events no longer listed, found through ``source_event_id``; by that id."""
+    if baseline is None:
+        return ()
+    today = now.astimezone(UTC).date()
+
+    def in_effect(d: Disappeared) -> bool:
+        return now - d.since < DISAPPEARED_DAYS and d.end >= today
+
+    if not promoting:
+        shown = [d for d in baseline.disappeared if in_effect(d)]
+        return tuple(sorted(shown, key=lambda d: d.source_event_id))
+    listed = {c.source_event_id for c in candidate.claims if c.source_event_id is not None}
+    carried = [d for d in baseline.disappeared if in_effect(d) and d.source_event_id not in listed]
+    texts = {u.unit_id: u.text for u in baseline.snapshot.units}
+    new: list[Disappeared] = []
+    for c in baseline.snapshot.claims:
+        start, end = c.span.start, c.span.end
+        if c.source_event_id is None or start is None or end is None:
+            continue
+        if end >= today and c.source_event_id not in listed:
+            text = collapse_ws(texts.get(c.unit_id, ""))[:MAX_ATTENTION_TEXT]
+            sei = c.source_event_id
+            new.append(Disappeared(sei, c.unit_id, text, c.date_text, start, end, c.link, now))
+    return tuple(sorted(carried + new, key=lambda d: d.source_event_id))
+
+
+def _history(
+    candidate: Snapshot,
+    cand_counts: dict[str, ScopeCount],
+    baseline: Baseline | None,
+    comparable: bool,
+    restarted: set[str],
+    now: datetime,
+) -> tuple[HistoryEntry, ...]:
+    """Rule 8: the recent entries of scopes not restarted, then one per candidate scope."""
+    kept = (
+        [
+            h
+            for h in baseline.history
+            if now - h.fetched_at <= HISTORY_DAYS and h.scope not in restarted
+        ]
+        if baseline is not None and comparable
+        else []
+    )
+    when = candidate.fetched_at  # None only when no page was fetched, so there is no scope
+    new = (
+        []
+        if when is None
+        else [HistoryEntry(scope, when, c.units, c.claims) for scope, c in cand_counts.items()]
+    )
+    return tuple(sorted(kept + new, key=lambda h: (h.scope, h.fetched_at)))
+
+
+def _stamp(
+    claims: Iterable[Claim], snapshot: Snapshot, *, fallback: bool, provisional: bool
+) -> tuple[Claim, ...]:
+    """R19: each claim gets the fetch time of its page and the snapshot's id.
+
+    A claim on no page of the snapshot (only a hand-edited file has one) gets the snapshot's
+    oldest fetch time, so it never looks fresher than it is.
+    """
+    pages = [(p.unit_prefix, p.fetched_at) for p in snapshot.pages if p.unit_prefix is not None]
+    stamped: list[Claim] = []
+    for c in claims:
+        when = next((t for prefix, t in pages if c.unit_id.startswith(prefix)), None)
+        stamped.append(
+            dataclasses.replace(
+                c,
+                fetched_at=when or snapshot.fetched_at,
+                fallback=fallback,
+                snapshot_id=snapshot.snapshot_id,
+                provisional=provisional,
+            )
+        )
+    return tuple(stamped)
+
+
+def _provisional(
+    candidate: Snapshot, served: Snapshot, ledger: LedgerReport | None
+) -> tuple[list[Claim], tuple[InputUnit, ...]]:
+    """Rule 10 (P88, P105): what the fully parsed pages changed; none without a clean ledger."""
+    if ledger is None or not ledger.ok:
+        return [], ()
+    prefixes = _prefixes(p for p in candidate.pages if p.outcome in _WITH_UNITS)
+    seen = {claim_content(c) for c in served.claims}  # unchanged(c, served.claims), once
+    claims = [
+        c
+        for c in candidate.claims
+        if c.unit_id.startswith(prefixes) and claim_content(c) not in seen
+    ]
+    texts = {collapse_ws(u.text) for u in served.units}
+    units = tuple(
+        u
+        for u in candidate.units
+        if u.unit_id.startswith(prefixes)
+        and u.outcome in ("partial", "unparsed")
+        and u.relevance != "before_window"
+        and collapse_ws(u.text) not in texts
+    )
+    return claims, units
+
+
+def _unavailable(base: Snapshot | None, baseline_problem: str | None) -> str:
+    if base is not None:
+        return "baseline.json is from another registry version"
+    return "no baseline" if baseline_problem is None else "baseline.json is corrupt"
+
+
+def decide(
+    candidate: Snapshot,
+    *,
+    run_outcome: SourceOutcome,
+    run_detail: str,
+    ledger: LedgerReport | None,
+    baseline: Baseline | None,
+    baseline_problem: str | None,
+    acceptances: Sequence[DropAcceptance],
+    window: Window,
+    now: datetime,
+) -> Decision:
+    """Spec §9.3: promote, quarantine or fall back, and stamp what is served.
+
+    ``ledger`` is None when parsing failed; ``baseline_problem`` is ``load_baseline``'s
+    message when the file was corrupt (``baseline`` is then None); ``acceptances`` are the
+    ``accept_drop`` entries in effect, of any source. ``now`` is timezone-aware: nothing
+    here reads the clock. Only a promotion gives a new baseline; otherwise
+    ``Decision.baseline`` is the input baseline itself.
+    """
+    if now.utcoffset() is None:
+        raise ValueError("decide: now must be timezone-aware")
+    base = None if baseline is None else baseline.snapshot
+    own = _own_reasons(candidate, run_outcome, run_detail, ledger, base)
+    valid = all(REASON_LEVEL[r.code] != "error" for r in own)
+    head = list(own)
+    if baseline_problem is not None:
+        head.append(_reason("ledger_mismatch", baseline_problem))
+    same_registry = base is not None and base.registry_version == candidate.registry_version
+    comparable = base is not None and _major(base.parser_version) == _major(
+        candidate.parser_version
+    )
+    servable = same_registry
+    if base is not None and not same_registry:
+        head.append(Reason("count_change", _REGISTRY_INFO))
+
+    cand_counts = scope_counts(candidate)
+    base_counts = {} if base is None else scope_counts(base)
+    checks = _Checks([], False, set())
+    if valid and comparable and baseline is not None:
+        checks = _drop_checks(
+            candidate.source, cand_counts, base_counts, baseline.history, acceptances, now
+        )
+
+    acceptance: Acceptance
+    if not valid:
+        acceptance = "fallback" if servable else "unavailable"
+    elif not comparable:
+        acceptance = "promoted"
+    elif checks.unexplained:
+        acceptance = "quarantined" if servable else "unavailable"
+    else:
+        acceptance = "promoted"
+    promoting = acceptance == "promoted"
+    served = candidate if promoting else base if acceptance in _SERVES_THE_BASELINE else None
+
+    served_claims = () if served is None else served.claims
+    gaps = _gaps(
+        promoting, baseline, candidate, cand_counts, base_counts, served_claims, window, now
+    )
+    gone = _disappeared(promoting, baseline, candidate, now)
+    stamped: tuple[Claim, ...] = ()
+    provisional: tuple[Claim, ...] = ()
+    provisional_units: tuple[InputUnit, ...] = ()
+    if served is not None:
+        stamped = _stamp(
+            served.claims,
+            served,
+            fallback=acceptance in ("quarantined", "fallback"),
+            provisional=False,
+        )
+        if acceptance in _SERVES_THE_BASELINE:
+            changed, provisional_units = _provisional(candidate, served, ledger)
+            provisional = _stamp(changed, candidate, fallback=False, provisional=True)
+
+    tail = [
+        Reason(
+            "coverage_gap",
+            f"{g.scope}: the {g.old_year} list was replaced by {g.new_year}; "
+            f"in-window claims no longer listed: {len(g.claims)}",
+            page=g.scope,
+            year=g.new_year,
+            since=g.since,
+        )
+        for g in gaps
+    ]
+    if acceptance == "unavailable":
+        tail.append(Reason("unavailable", _unavailable(base, baseline_problem)))
+    if (
+        acceptance in _SERVES_THE_BASELINE
+        and served is not None
+        and served.fetched_at is not None
+        and now - served.fetched_at > FALLBACK_FRESH
+    ):
+        tail.append(Reason("fallback_stale", f"serving data fetched {_utc_iso(served.fetched_at)}"))
+    if len(provisional) > 0:
+        tail.append(
+            Reason(
+                "provisional_changes",
+                f"new or changed claims from an incomplete fetch: {len(provisional)}",
+            )
+        )
+    if gone:
+        tail.append(Reason("units_disappeared", f"listed events no longer listed: {len(gone)}"))
+
+    restarted = (
+        set(checks.accepted)
+        | {s for s, c in cand_counts.items() if c.all_valid_empty}
+        | {s for s, c in cand_counts.items() if _year_change(base_counts.get(s), c)}
+    )
+    kept_or_new = (
+        Baseline(
+            candidate,
+            _history(candidate, cand_counts, baseline, comparable, restarted, now),
+            gone,
+            gaps,
+            True,
+            True,
+        )
+        if acceptance == "promoted"
+        else baseline
+    )
+    return Decision(
+        source=candidate.source,
+        candidate=candidate,
+        served=served,
+        acceptance=acceptance,
+        claims=stamped + provisional,
+        provisional=provisional,
+        provisional_units=provisional_units,
+        baseline=kept_or_new,
+        disappeared=gone,
+        coverage_gaps=gaps,
+        reasons=(*head, *checks.reasons, *tail),
+        health=SnapshotHealth(
+            acceptance=acceptance,
+            using_fallback=acceptance in _SERVES_THE_BASELINE,
+            served_snapshot_id=None if served is None else served.snapshot_id,
+            served_fetched_at=None if served is None else served.fetched_at,
+            baseline_units_seen=None if base is None else sum(p.units_seen for p in base.pages),
+            comparable=comparable,
+        ),
+    )
