@@ -945,9 +945,19 @@ def test_match_fails_closed() -> None:
     with pytest.raises(MergeError) as dup:
         match([mk("osce:elections/r1"), mk("osce:elections/r1")], NOW)
     assert str(dup.value) == "duplicate merge_id: served/osce:elections/r1#0"
-    with pytest.raises(MergeError) as unknown:
-        match([mk("xyz:p/r1")], NOW)
-    assert str(unknown.value) == "unknown source: xyz"
+    # step 0 looks every source up, so no role escapes the check: a dated anchor, a
+    # year-only claim, a month claim, an observation and a provisional claim
+    unknown_sources = [
+        cl("xyz:p/r1"),
+        cl("xyz:p/r1", span=year(2027)),
+        cl("xyz:p/r1", MB),
+        cl("xyz:p/r1", OBS),
+        cl("xyz:p/r1", provisional=True),
+    ]
+    for c in unknown_sources:
+        with pytest.raises(MergeError) as unknown:
+            match([c], NOW)
+        assert str(unknown.value) == "unknown source: xyz", c
     with pytest.raises(ValueError) as naive:
         match([mk("osce:elections/r1")], datetime(2026, 10, 19))
     assert str(naive.value) == "now must be timezone-aware"

@@ -3,8 +3,15 @@
 Spec 10.1-10.4 with the plan's P66-P82. ``match`` runs the steps in order: 0 input, 1 the
 clustering (used by 2, 4, 11 and 13), 2 Phase A, 3 Phase B, 4 Phase C, 5 umbrellas and C7,
 6 sessions, 7 observations, 8 resolve, 9 Phase D, 10 links, 11 aggregates, 12 possible
-matches, 13 undated groups. Claims are paired only within one place. Every intermediate list
-keeps step 0's order (by merge id), so the result never depends on the input order.
+matches, 13 undated groups. Claims are paired only within one place.
+
+Step 0 sorts the claims by merge id and every walk follows that order. A contest's members,
+attached and provisional claims are kept in step 0's order as they are added. The undated
+pool, the umbrella list and the pending items are not: they also take claims after their
+walk (conflicting proposals, year-only umbrellas, dissolved sessions), so step 0's order is
+restored where the pool and the umbrella list are read (steps 10 and 13), and the pending
+items are sorted at the output like every result tuple. So the result never depends on the
+input order.
 """
 
 from bisect import insort
@@ -21,6 +28,7 @@ from elections_calendar.merge.identity import (
     MergeError,
     Role,
     dates_compatible,
+    family,
     gap_days,
     identity_compatible,
     joinable,
@@ -83,7 +91,7 @@ class Contest:
     def span(self) -> DateSpan:
         """The selected claim's span."""
         if self.selection is None or self.selection.claim is None:
-            raise MergeError(f"contest {self.child_id} has no eligible date")
+            raise MergeError(f"contest {self.child_id} is not resolved yet")
         return self.selection.claim.span
 
 
@@ -164,12 +172,14 @@ class _Run:
 
 
 def _start(claims: Sequence[Claim], now: datetime) -> _Run:
-    """Step 0: the window, the duplicate check, the sort and every claim's role."""
+    """Step 0: the window, the duplicate check, the sort, the source check and the roles."""
     window = window_for(now)
     repeated = sorted(m for m, n in Counter(c.merge_id for c in claims).items() if n > 1)
     if repeated:
         raise MergeError(f"duplicate merge_id: {repeated[0]}")
     ordered = sorted(claims, key=lambda c: c.merge_id)
+    for c in ordered:
+        family(c)  # an unknown source raises before any phase, whatever the claim's role
     roles = {c.merge_id: role(c) for c in ordered}
     rank = {c.merge_id: i for i, c in enumerate(ordered)}
     return _Run(ordered, roles, rank, now, window.today)
