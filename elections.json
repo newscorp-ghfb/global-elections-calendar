@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-20T00:02:28Z",
+  "generated_at": "2026-10-21T00:02:32Z",
   "current_month": "2026-10",
   "months": {
     "2026-09": [
@@ -482,7 +482,7 @@
       {
         "date": "2026-10-19",
         "country": "Canada",
-        "type": "Alberta , Referendum",
+        "type": "Alberta , Referendums",
         "status": "Held",
         "source_names": [
           "Wikipedia"
