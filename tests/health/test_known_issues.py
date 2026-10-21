@@ -289,7 +289,33 @@ ENTRY_CHECKS: list[tuple[str, str, str]] = [
 NULL_PAGE = "{stage: snapshot, year: null, page: null}"
 TYPO = "{stage: fecth, year: null, page: null}"
 LATER = NOW + 3 * DAY
+HUGE = "0x" + "f" * 4000
+YEAR_RANGE = "scope.year must be from 1900 to 2199"
 ENTRY_CHECKS += [
+    ("year 1899", entry(scope="{stage: fetch, year: 1899, page: null}"), YEAR_RANGE),
+    ("year 2200", entry(scope="{stage: fetch, year: 2200, page: null}"), YEAR_RANGE),
+    ("year huge", entry(scope="{stage: fetch, year: " + HUGE + ", page: null}"), YEAR_RANGE),
+    (
+        "order: year before source",
+        entry(source="cnn", scope="{stage: fetch, year: 2200, page: null}"),
+        YEAR_RANGE,
+    ),
+    (
+        "units min over the cap",
+        _drop(accept_units_seen_min="1000001"),
+        "accept_units_seen_min must be at most 1000000",
+    ),
+    (
+        "claims min over the cap",
+        _drop(accept_claims_min="1000001"),
+        "accept_claims_min must be at most 1000000",
+    ),
+    (
+        "units min huge",
+        _drop(accept_units_seen_min=HUGE),
+        "accept_units_seen_min must be at most 1000000",
+    ),
+    ("claims min huge", _drop(accept_claims_min=HUGE), "accept_claims_min must be at most 1000000"),
     ("stage typo", entry(scope=TYPO), "scope.stage must be fetch for http_error"),
     (
         "bad stage and bad source: source wins",
@@ -409,3 +435,23 @@ def test_load_known_issues(tmp_path: Path) -> None:
 def test_repository_file_is_empty_and_valid() -> None:
     path = Path(__file__).resolve().parents[2] / "known_issues.yml"
     assert load_known_issues(path, now=NOW) == KnownIssues((), ())
+
+
+@pytest.mark.parametrize("year", [1900, 2199])
+def test_the_year_bounds_are_valid(year: int) -> None:
+    result = parse_known_issues(
+        entry(scope=f"{{stage: fetch, year: {year}, page: null}}") + "\n", now=NOW
+    )
+    assert result.problems == ()
+    (only,) = result.entries
+    assert only.scope is not None and only.scope.year == year
+    assert in_effect(only, HealthState(()), NOW)
+
+
+def test_the_floor_cap_is_valid() -> None:
+    result = parse_known_issues(
+        _drop(accept_units_seen_min="1000000", accept_claims_min="1000000") + "\n", now=NOW
+    )
+    assert result.problems == ()
+    (only,) = result.entries
+    assert (only.units_seen_min, only.claims_min) == (1_000_000, 1_000_000)

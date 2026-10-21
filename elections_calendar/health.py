@@ -19,6 +19,8 @@ import yaml
 import yaml.constructor
 
 from elections_calendar.model import (
+    FIRST_YEAR,
+    LAST_YEAR,
     MAX_DETAIL,
     NEVER_ACKNOWLEDGEABLE,
     REASON_LEVEL,
@@ -38,6 +40,7 @@ from elections_calendar.text import collapse_ws
 
 MAX_ACK_LENGTH: Final = timedelta(days=14)
 MAX_ACK_AHEAD: Final = timedelta(days=1)
+MAX_FLOOR: Final = 1_000_000  # accept_units_seen_min and accept_claims_min
 UNIT_REASONS: Final = ("unparsed_relevant", "partial_relevant")
 DROP_REASONS: Final = ("sudden_drop", "cumulative_drop")
 
@@ -279,6 +282,8 @@ def _entry(index: int, raw: object, now: datetime) -> Entry | str:
         shape = _scope(raw["scope"])
         if shape is None:
             return "scope must have stage, year and page"
+        if shape[1] is not None and not FIRST_YEAR <= shape[1] <= LAST_YEAR:
+            return f"scope.year must be from {FIRST_YEAR} to {LAST_YEAR}"
     source, reason = raw["source"], raw["reason"]
     if source not in SOURCE_ORDER:
         return f"unknown source {_show(source)}"
@@ -301,6 +306,8 @@ def _entry(index: int, raw: object, now: datetime) -> Entry | str:
         for name in ("accept_units_seen_min", "accept_claims_min"):
             if not _whole_number(raw[name]):
                 return f"{name} must be a whole number of at least 0"
+            if raw[name] > MAX_FLOOR:
+                return f"{name} must be at most {MAX_FLOOR}"
     if shape is not None and shape[0] != REASON_STAGE[reason]:
         return f"scope.stage must be {REASON_STAGE[reason]} for {reason}"
     scope = None if shape is None else Scope(REASON_STAGE[reason], shape[1], shape[2])
