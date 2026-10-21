@@ -270,6 +270,13 @@ def test_invalid_candidates(
     assert d.health == SnapshotHealth("fallback", True, base.snapshot.snapshot_id, T0, 30, True)
 
 
+def test_quarantine_health() -> None:
+    base = promoted(one(100, fetched_at=T0))
+    d = run(one(40), base)
+    assert d.acceptance == "quarantined"
+    assert d.health == SnapshotHealth("quarantined", True, base.snapshot.snapshot_id, T0, 100, True)
+
+
 def test_partial_baselines_are_impossible() -> None:
     def two(
         p1: int = 50, p2: int = 50, *, outcome: PageOutcome = "ok", at: datetime = NOW

@@ -9,7 +9,7 @@ clock; ``now`` is passed in and must be timezone-aware.
 
 import hashlib
 import json
-from collections.abc import Hashable, Mapping, Sequence
+from collections.abc import Collection, Hashable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -27,7 +27,9 @@ from elections_calendar.model import (
     REASON_STAGE,
     SOURCE_ORDER,
     AttentionItem,
+    Claim,
     DropAcceptance,
+    MergeResult,
     Reason,
     ReasonCode,
     RecordError,
@@ -37,6 +39,7 @@ from elections_calendar.model import (
     _utc_iso,
 )
 from elections_calendar.text import collapse_ws
+from elections_calendar.window import Window
 
 MAX_ACK_LENGTH: Final = timedelta(days=14)
 MAX_ACK_AHEAD: Final = timedelta(days=1)
@@ -59,6 +62,11 @@ _UNIT_FIELDS: Final = tuple("unit_text" if f == "scope" else f for f in _ACK_FIE
 _DROP_FIELDS: Final = (*_ACK_FIELDS, "accept_units_seen_min", "accept_claims_min")
 _FILE_NOT_VALID: Final = "known_issues.yml is not valid YAML"
 _FILE_NOT_LIST: Final = "known_issues.yml is not a list"
+MIN_ELIGIBLE: Final = 5  # a match diagnostic says something from this many contests
+MIN_PEERS: Final = 2  # ... and from this many other sources
+
+Severity = Literal["ok", "warning", "error"]
+Verdict = Literal["green", "red"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -601,3 +609,127 @@ def next_health_state(
     # The lost history could have voided an old acknowledgement (review P4-05).
     reset_at = now if previous.problem is not None else previous.reset_at
     return HealthState(tuple(pairs), None, reset_at)
+
+
+# --- match diagnostic, severity and verdict (spec §5.6, §9.4, §9.5) ------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class MatchDiagnostic:
+    """How many of a source's in-window national contests another source also lists."""
+
+    eligible: int
+    peers_fresh: int
+    matched: int
+    unmatched: int
+    informative: bool
+
+    def __post_init__(self) -> None:
+        _check_fields(self)
+
+
+def match_diagnostic(
+    result: MergeResult,
+    claims: Sequence[Claim],
+    source: str,
+    *,
+    fresh: Collection[str],
+    window: Window,
+) -> MatchDiagnostic:
+    """The diagnostic of ``source`` over a merge of ``claims``; ``fresh`` are the sources whose
+    candidate was promoted this run.
+
+    Eligible: a national, non-aggregate child of an in-window card with a claim of ``source``
+    that is not provisional. A peer is another fresh source with any claim in ``claims`` at an
+    eligible child's place. A child is matched when a non-provisional claim of a fresh peer is
+    among its sources.
+    """
+    eligible = [
+        child
+        for card in result.cards
+        if window.bucket(card.span) is not None
+        for child in card.children
+        if child.level == "national"
+        and not child.aggregate
+        and any(s.claim.source == source and not s.claim.provisional for s in child.sources)
+    ]
+    places = {child.place_id for child in eligible}
+    peers = {
+        c.source
+        for c in claims
+        if c.source != source and c.source in fresh and c.place_id in places
+    }
+    matched = sum(
+        any(
+            s.claim.source != source and s.claim.source in fresh and not s.claim.provisional
+            for s in child.sources
+        )
+        for child in eligible
+    )
+    return MatchDiagnostic(
+        eligible=len(eligible),
+        peers_fresh=len(peers),
+        matched=matched,
+        unmatched=len(eligible) - matched,
+        informative=len(peers) >= MIN_PEERS and len(eligible) >= MIN_ELIGIBLE,
+    )
+
+
+def match_reason(diagnostic: MatchDiagnostic) -> Reason | None:
+    if diagnostic.informative and diagnostic.matched == 0:
+        return Reason(
+            "no_cross_source_match",
+            f"no other source lists any of its {diagnostic.eligible} in-window national contests",
+        )
+    return None
+
+
+def source_reasons(
+    decision_reasons: Sequence[Reason],
+    items: Sequence[AttentionItem],
+    match: MatchDiagnostic,
+    state: HealthState,
+) -> tuple[Reason, ...]:
+    """The decision's reasons, then those of the unit items, the match and the state file."""
+    later = (match_reason(match), state_problem_reason(state))
+    return (
+        *decision_reasons,
+        *relevance_reasons(items),
+        *(r for r in later if r is not None),
+    )
+
+
+def severity(reasons: Sequence[Reason]) -> Severity:
+    levels = {REASON_LEVEL[r.code] for r in reasons}
+    if "error" in levels:
+        return "error"
+    return "warning" if "warning" in levels else "ok"
+
+
+def _covers(a: Acknowledgement, r: Reason) -> bool:
+    return (
+        a.code == r.code
+        and a.stage == REASON_STAGE[r.code]
+        and a.year == r.year
+        and a.page == r.page
+        and a.since == r.since
+    )
+
+
+def unacknowledged(
+    reasons: Sequence[Reason], acknowledged: Sequence[Acknowledgement]
+) -> tuple[Reason, ...]:
+    """The error and warning reasons that no acknowledgement covers, in order (P91).
+
+    An acknowledgement covers a reason of the same code, stage, year, page and ``since``.
+    """
+    return tuple(
+        r
+        for r in reasons
+        if REASON_LEVEL[r.code] != "info" and not any(_covers(a, r) for a in acknowledged)
+    )
+
+
+def verdict(open_reasons: Sequence[Reason]) -> Verdict:
+    """Red when any reason of level error or warning is open."""
+    return "red" if any(REASON_LEVEL[r.code] != "info" for r in open_reasons) else "green"
