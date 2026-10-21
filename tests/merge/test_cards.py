@@ -11,6 +11,7 @@ from typing import Any
 
 import pytest
 
+from elections_calendar.merge import merge
 from elections_calendar.merge.cards import build, card_type, display_label, relevance_of
 from elections_calendar.merge.identity import short_id
 from elections_calendar.merge.match import match
@@ -56,6 +57,7 @@ from tests.support.claims import (
     result,
     year,
 )
+from tests.support.fixture_claims import FIXTURE_NOW, fixture_claims
 
 
 def only_card(res: MergeResult) -> Card:
@@ -914,6 +916,27 @@ def test_attention_items_conflicting_claims_sorted_by_item_id() -> None:
     assert disposition(res, W2)[0] == "attention"
     assert disposition(res, W1)[1] == ("fb5d5d211420",)
     assert disposition(res, W2)[1] == ("82d1189a7079",)
+
+
+def test_merge_items_have_dates() -> None:  # P87
+    claims = fixture_claims()
+    by_id = {c.merge_id: c for c in claims}
+    items = merge(claims, now=FIXTURE_NOW, places=PlaceRegistry.load()).attention
+    evidence = [i for i in items if i.kind == "unresolved_evidence"]
+    listings = [i for i in items if i.kind == "undated_listing"]
+    assert (len(evidence), len(listings)) == (36, 31)
+    assert sum(i.date is not None for i in evidence) > 0
+    assert sum(i.date is None for i in evidence) > 0
+    for item in evidence:
+        (claim,) = (by_id[m] for m in item.merge_ids)
+        assert item.date == (None if claim.span.precision == "year" else claim.span.start)
+    assert all(i.date is None for i in listings)
+
+
+def test_provisional_change_items_have_dates() -> None:
+    (item,) = result(E, PO).attention
+    assert item.kind == "provisional_change"
+    assert item.date == date(2026, 11, 15)
 
 
 def test_attention_text_is_collapsed_and_cut() -> None:

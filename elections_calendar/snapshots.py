@@ -22,7 +22,10 @@ from elections_calendar.model import (
     MAX_ATTENTION_TEXT,
     MAX_DETAIL,
     REASON_LEVEL,
+    SOURCE_NAMES,
     Acceptance,
+    AttentionItem,
+    AttentionKind,
     Claim,
     DropAcceptance,
     FetchOutcome,
@@ -36,6 +39,7 @@ from elections_calendar.model import (
     _iso_moment,
     _utc_iso,
     canonical_json,
+    short_id,
 )
 from elections_calendar.offices import DEFAULT_INSTITUTIONS
 from elections_calendar.places import DEFAULT_PLACES, DEFAULT_SUBDIVISIONS
@@ -1155,3 +1159,92 @@ def decide(
             comparable=comparable,
         ),
     )
+
+
+# ------------------------------------------------------------ unit attention items (P87, P88)
+
+
+def _page_of(snapshot: Snapshot, unit_id: str) -> PageRecord | None:
+    """The page whose ``unit_prefix`` starts the unit id (the longest, when several do)."""
+    owners = [p for p in snapshot.pages if p.unit_prefix and unit_id.startswith(p.unit_prefix)]
+    return max(owners, key=lambda p: len(p.unit_prefix or ""), default=None)
+
+
+def _unit_item(
+    kind: AttentionKind,
+    snapshot: Snapshot,
+    unit: InputUnit,
+    source: str,
+    prefix: str,
+) -> AttentionItem | None:
+    page = _page_of(snapshot, unit.unit_id)
+    claims = [c for c in snapshot.claims if c.unit_id == unit.unit_id]
+    starts = [c.span.start for c in claims if c.span.start is not None]  # a year claim has none
+    if claims:
+        link = claims[0].link
+    elif page is not None:
+        link = page.link
+    else:
+        return None  # a unit on no page of its snapshot cannot be linked
+    full = collapse_ws(unit.text)
+    return AttentionItem(
+        item_id=short_id([kind, unit.unit_id]),
+        kind=kind,
+        source=source,
+        link=link,
+        snapshot_id=snapshot.snapshot_id,
+        relevance=unit.relevance,
+        text=(prefix + full)[:MAX_ATTENTION_TEXT],
+        reason=unit.reason or unit.outcome,
+        possible_matches=(),
+        merge_ids=(),
+        undated_id=None,
+        date=min(starts, default=None),
+        unit_id=unit.unit_id,
+        unit_text=full if kind in ("partial_unit", "unparsed_unit") else None,
+    )
+
+
+def unit_items(decision: Decision) -> tuple[AttentionItem, ...]:
+    """The attention items about single units (P88); sorted by ``item_id``.
+
+    Partial and unparsed relevant units of the served snapshot, the same of a non-promoted
+    candidate's fully parsed pages (``provisional_change``), and each disappeared event.
+    ``()`` when nothing is served.
+    """
+    served = decision.served
+    if served is None:
+        return ()
+    items: list[AttentionItem | None] = []
+    for unit in served.units:
+        if unit.outcome in ("partial", "unparsed") and unit.relevance != "before_window":
+            kind: AttentionKind = "partial_unit" if unit.outcome == "partial" else "unparsed_unit"
+            items.append(_unit_item(kind, served, unit, decision.source, ""))
+    cand = decision.candidate
+    for unit in decision.provisional_units:
+        items.append(
+            _unit_item(
+                "provisional_change", cand, unit, decision.source, "From an incomplete fetch: "
+            )
+        )
+    name = SOURCE_NAMES[decision.source]
+    for gone in decision.disappeared:
+        text = f"No longer listed by {name}: {gone.text}, was {gone.date_text}"
+        items.append(
+            AttentionItem(
+                item_id=short_id(["disappeared_unit", gone.source_event_id]),
+                kind="disappeared_unit",
+                source=decision.source,
+                link=gone.link,
+                snapshot_id=served.snapshot_id,
+                relevance="in_or_after_window",
+                text=text[:MAX_ATTENTION_TEXT],
+                reason="disappeared",
+                possible_matches=(),
+                merge_ids=(),
+                undated_id=None,
+                date=gone.start,
+                unit_id=gone.unit_id,
+            )
+        )
+    return tuple(sorted((i for i in items if i is not None), key=lambda i: i.item_id))

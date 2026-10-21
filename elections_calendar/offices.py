@@ -148,8 +148,12 @@ _EXECUTIVE_TITLE = _rx(
     r"|\b(?:police and crime|insurance|agriculture|labou?r|land|railroad) commissioners?\b"
     r"|\bpublic advocate\b"
 )
-# the second part of a joint ticket: "Lieutenant Governor" after "Governor"
-_DEPUTY_OF = _rx(r"^(?:lieutenant|deputy|vice)[\s-]+(governor|mayor|president)$")
+# the second part of a joint ticket: "Lieutenant Governor" after "Governor", and the adjective
+# forms ("Vice-Presidential" after "Presidential", "Lieutenant Gubernatorial", "Vice-Mayoral")
+_DEPUTY_OF = _rx(
+    r"^(?:lieutenant|deputy|vice)[\s-]+"
+    r"(governor|mayor|president|gubernatorial|mayoral|presidential)$"
+)
 _PLURAL_BODY = _rx(r"\b(?:councils|assemblies|elections|governors|mayors)\b|\band\b")
 _GOVERNORS = _rx(r"\bgovernors\b")
 _MAYORS = _rx(r"\bmayors\b")
@@ -424,10 +428,12 @@ def split_offices(text: str, place_id: str, registry: InstitutionRegistry) -> li
     only when every part names an office and the parts are not all of one
     class, so "regional and municipal elections" stays whole. A two-part
     "and" split whose second part is the deputy title of the first
-    ("Governor and Lieutenant Governor", "President and Vice President") is
-    a joint ticket and stays whole. An executive title is an office of its
-    own class, so "Mayor and Attorney General" splits. The "and " that
-    opens the last part of a list with an Oxford comma is dropped.
+    ("Governor and Lieutenant Governor", "President and Vice President",
+    and the adjective forms "Presidential and Vice-Presidential", "Gubernatorial and
+    Lieutenant Gubernatorial", "Mayoral and Vice-Mayoral") is a joint ticket and stays whole.
+    An executive title is an office of its own class, so "Mayor and Attorney
+    General" splits. The "and " that opens the last part of a list with an
+    Oxford comma is dropped.
     """
     parts: list[str] = []
     for chunk in _split_if_offices(text, (",",), place_id, registry):
@@ -441,13 +447,16 @@ def unnamed_parts(text: str, place_id: str, registry: InstitutionRegistry) -> li
     The parts are split at top-level commas, then at " and " and " & ", as in
     ``split_offices``, but without requiring every part to name an office. With two or more
     parts of which some but not all have an office class, the parts with none are returned in
-    order; otherwise ``[]``.
+    order; otherwise ``[]``. A two-part joint ticket is one office and gives ``[]``, adjective
+    forms included ("Presidential and Vice-Presidential"); "National and Provincial" is not one.
     """
     parts: list[str] = []
     for chunk in _split_top_level(collapse_ws(text), (",",)):
         parts.extend(_split_top_level(collapse_ws(chunk), (" and ", " & ")))
     parts = [p for p in (collapse_ws(x) for x in parts) if p]
     if len(parts) < 2:
+        return []
+    if len(parts) == 2 and _joint_ticket(parts[0], parts[1]):
         return []
     named = [office_class_of(p, place_id, registry) is not None for p in parts]
     if any(named) and not all(named):

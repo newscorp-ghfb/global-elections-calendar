@@ -20,7 +20,7 @@ import typing
 from collections.abc import Iterable
 from dataclasses import dataclass, fields
 from datetime import UTC, date, datetime
-from typing import Any, Final, Literal, get_args, get_origin
+from typing import Any, Final, Literal, TypeAlias, get_args, get_origin
 
 Precision = Literal["day", "month", "year"]
 DateMeaning = Literal["voting_period", "expected_window", "unknown"]
@@ -732,6 +732,14 @@ class UndatedListing:
             raise RecordError("UndatedListing: every claim is year-only, of its year")
 
 
+# ``date: date | None`` inside AttentionItem would read ``date`` as the field's own default
+# (None) when the annotation is evaluated, so the type has a second name.
+_Day: TypeAlias = date  # noqa: UP040  (`type` makes a TypeAliasType, which _conforms rejects)
+_UNIT_KINDS: Final = ("unparsed_unit", "partial_unit", "disappeared_unit")
+_MERGE_ONLY_KINDS: Final = ("undated_listing", "unresolved_evidence")
+_TEXT_KINDS: Final = ("partial_unit", "unparsed_unit")
+
+
 @dataclass(frozen=True, slots=True)
 class AttentionItem:
     """Something a person should look at (spec §5.5)."""
@@ -747,6 +755,9 @@ class AttentionItem:
     possible_matches: tuple[str, ...]
     merge_ids: tuple[str, ...]
     undated_id: str | None
+    date: _Day | None = None  # P87: the earliest start of its claims' day or month spans
+    unit_id: str | None = None  # set on items about one unit; such items have no merge_ids
+    unit_text: str | None = None  # P88: the full collapse_ws text of a unit; never cut
 
     def __post_init__(self) -> None:
         _check_fields(self)
@@ -756,8 +767,19 @@ class AttentionItem:
         if (self.undated_id is not None) != (self.kind == "undated_listing"):
             raise RecordError("AttentionItem: undated_id goes with kind undated_listing")
         _check_matches(self)
-        if not self.merge_ids or not _sorted_unique(self.merge_ids):
-            raise RecordError("AttentionItem.merge_ids must be sorted, unique and non-empty")
+        if self.unit_id is None:
+            if not self.merge_ids or not _sorted_unique(self.merge_ids):
+                raise RecordError("AttentionItem.merge_ids must be sorted, unique and non-empty")
+        elif self.merge_ids:
+            raise RecordError("AttentionItem: a unit item has no merge_ids")
+        if self.kind in _UNIT_KINDS and self.unit_id is None:
+            raise RecordError(f"AttentionItem: a {self.kind} item needs a unit_id")
+        if self.kind in _MERGE_ONLY_KINDS and self.unit_id is not None:
+            raise RecordError(f"AttentionItem: a {self.kind} item has no unit_id")
+        if (self.unit_text is not None) != (self.kind in _TEXT_KINDS):
+            raise RecordError(
+                "AttentionItem: unit_text is set exactly on partial_unit and unparsed_unit items"
+            )
 
 
 @dataclass(frozen=True, slots=True)

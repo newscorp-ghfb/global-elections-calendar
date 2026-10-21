@@ -433,7 +433,7 @@ def _listing(**changes: object) -> UndatedListing:
 def _item(**changes: object) -> AttentionItem:
     values: dict[str, object] = {
         "item_id": "0123456789ab",
-        "kind": "unparsed_unit",
+        "kind": "unresolved_evidence",
         "source": "s",
         "link": "https://example.test/e",
         "snapshot_id": None,
@@ -479,6 +479,9 @@ _MERGE_IDS = "AttentionItem.merge_ids must be sorted, unique and non-empty"
 _TARGETS = "Disposition.targets must be sorted, unique and non-empty"
 _LISTING = "UndatedListing: every claim is year-only, of its year"
 _UNDATED_ID = "AttentionItem: undated_id goes with kind undated_listing"
+_UNIT_NO_MERGE = "AttentionItem: a unit item has no merge_ids"
+_UNIT_TEXT = "AttentionItem: unit_text is set exactly on partial_unit and unparsed_unit items"
+_UNIT = {"unit_id": "osce:p1/u1", "merge_ids": ()}
 
 
 @pytest.mark.parametrize(
@@ -591,6 +594,55 @@ _UNDATED_ID = "AttentionItem: undated_id goes with kind undated_listing"
         ),
         pytest.param(lambda: _item(merge_ids=()), _MERGE_IDS, id="item-merge-ids-empty"),
         pytest.param(lambda: _item(merge_ids=("b", "a")), _MERGE_IDS, id="item-merge-ids-unsorted"),
+        pytest.param(
+            lambda: _item(unit_id="osce:p1/u1", kind="provisional_change"),
+            _UNIT_NO_MERGE,
+            id="item-unit-with-merge-ids",
+        ),
+        pytest.param(
+            lambda: _item(kind="partial_unit", unit_text="t"),
+            "AttentionItem: a partial_unit item needs a unit_id",
+            id="item-partial-without-unit-id",
+        ),
+        pytest.param(
+            lambda: _item(kind="unparsed_unit", unit_text="t"),
+            "AttentionItem: a unparsed_unit item needs a unit_id",
+            id="item-unparsed-without-unit-id",
+        ),
+        pytest.param(
+            lambda: _item(kind="disappeared_unit"),
+            "AttentionItem: a disappeared_unit item needs a unit_id",
+            id="item-disappeared-without-unit-id",
+        ),
+        pytest.param(
+            lambda: _item(kind="undated_listing", undated_id="0123456789ab", **_UNIT),
+            "AttentionItem: a undated_listing item has no unit_id",
+            id="item-listing-with-unit-id",
+        ),
+        pytest.param(
+            lambda: _item(**_UNIT),
+            "AttentionItem: a unresolved_evidence item has no unit_id",
+            id="item-evidence-with-unit-id",
+        ),
+        pytest.param(
+            lambda: _item(kind="partial_unit", **_UNIT), _UNIT_TEXT, id="item-partial-no-text"
+        ),
+        pytest.param(
+            lambda: _item(kind="unparsed_unit", **_UNIT), _UNIT_TEXT, id="item-unparsed-no-text"
+        ),
+        pytest.param(
+            lambda: _item(kind="provisional_change", unit_text="t", **_UNIT),
+            _UNIT_TEXT,
+            id="item-provisional-with-text",
+        ),
+        pytest.param(
+            lambda: _item(kind="disappeared_unit", unit_text="t", **_UNIT),
+            _UNIT_TEXT,
+            id="item-disappeared-with-text",
+        ),
+        pytest.param(
+            lambda: _item(unit_text="t"), _UNIT_TEXT, id="item-evidence-with-text"
+        ),
         pytest.param(lambda: _disposition(targets=()), _TARGETS, id="disposition-no-targets"),
         pytest.param(
             lambda: _disposition(kind="umbrella_link", targets=("b", "a")),
@@ -608,6 +660,18 @@ def test_merge_record_rules(build: Callable[[], object], message: str) -> None:
     with pytest.raises(RecordError) as caught:
         build()
     assert str(caught.value) == message
+
+
+def test_attention_item_unit_rules() -> None:
+    unit = _item(kind="partial_unit", unit_text="Mali: vote", date=date(2026, 11, 15), **_UNIT)
+    assert (unit.unit_id, unit.merge_ids, unit.date) == ("osce:p1/u1", (), date(2026, 11, 15))
+    assert _item(kind="unparsed_unit", unit_text="x", **_UNIT).unit_text == "x"
+    assert _item(kind="disappeared_unit", **_UNIT).unit_text is None
+    unit_change = _item(kind="provisional_change", **_UNIT)
+    assert (unit_change.unit_id, unit_change.merge_ids) == ("osce:p1/u1", ())
+    merge_change = _item(kind="provisional_change")
+    assert (merge_change.unit_id, merge_change.merge_ids) == (None, ("served/s:v/r1#0",))
+    assert _item().date is None
 
 
 def test_a_card_type_of_the_limit_builds() -> None:
