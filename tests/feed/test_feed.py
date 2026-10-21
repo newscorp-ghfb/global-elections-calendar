@@ -6,6 +6,8 @@ from datetime import UTC, date, datetime, timedelta
 from functools import cache
 from typing import Any
 
+import pytest
+
 from elections_calendar.feed import (
     MAX_FEED_ITEMS,
     FeedParts,
@@ -560,3 +562,25 @@ def test_orphan_unit_items_with_an_empty_link_are_copied() -> None:
         run_reasons=(),
     )
     assert [i["link"] for i in parts.doc["attention_items"]] == [""]
+
+
+def test_build_feed_rejects_a_naive_now() -> None:
+    with pytest.raises(ValueError, match="timezone-aware"):
+        build_feed(
+            EMPTY,
+            [],
+            window=window_for(RUN_NOW),
+            now=datetime(2026, 10, 19, 12, 0),
+            run=RUN,
+            run_reasons=(),
+        )
+
+
+def test_build_feed_never_drops_a_source_silently() -> None:
+    ipu = first_run().sources["ipu"]
+    window = window_for(RUN_NOW)
+    with pytest.raises(ValueError, match="a source appears twice: ipu"):
+        build_feed(EMPTY, [ipu, ipu], window=window, now=RUN_NOW, run=RUN, run_reasons=())
+    stray = dataclasses.replace(ipu, source="nowhere")
+    with pytest.raises(ValueError, match="unknown source: nowhere"):
+        build_feed(EMPTY, [ipu, stray], window=window, now=RUN_NOW, run=RUN, run_reasons=())
