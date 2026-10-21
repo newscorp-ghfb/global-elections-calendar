@@ -4,7 +4,7 @@ import dataclasses
 from collections import Counter
 from datetime import date
 
-from elections_calendar.model import MAX_ATTENTION_TEXT, AttentionItem, InputUnit
+from elections_calendar.model import MAX_ATTENTION_TEXT, AttentionItem, InputUnit, short_id
 from elections_calendar.snapshots import (
     Decision,
     Disappeared,
@@ -122,6 +122,8 @@ def test_unit_items_follow_the_served_snapshot() -> None:
     assert prov.unit_text is None
     assert prov.reason == "no date"
     assert prov.link == "https://osce.test/p1"
+    items = unit_items(d)
+    assert [i.item_id for i in items] == sorted(short_id([i.kind, i.unit_id or ""]) for i in items)
 
     pending = unparsed("osce:p1/u3", "Mali: vote soon")
     cut = synth(
@@ -147,6 +149,7 @@ def test_disappeared_items() -> None:
     d, gone = _gone_decision()
     (item,) = unit_items(d)
     assert item.kind == "disappeared_unit"
+    assert item.item_id == short_id(["disappeared_unit", gone.source_event_id])
     assert (
         item.text == "No longer listed by ElectionGuide: Gambia: Presidential, was 15 November 2026"
     )
@@ -167,6 +170,7 @@ def test_unit_item_ids_are_stable() -> None:
     d = run(synth(pages=(SynthPage("p1", claims=(A,), extra=units),), fetched_at=NOW), base)
     first, second = unit_items(d), unit_items(d)
     assert len(first) == 8
+    assert [i.item_id for i in first] == sorted(short_id([i.kind, i.unit_id or ""]) for i in first)
     assert first == second
     assert [i.item_id for i in first] == sorted(i.item_id for i in first)
     assert len({i.item_id for i in first}) == 8
@@ -225,3 +229,17 @@ def test_unit_item_date_and_link_come_from_the_served_claims() -> None:
     (item,) = unit_items(dataclasses.replace(d, served=only_year))
     assert item.date is None
     assert item.link == claims[2].link
+
+
+def test_an_orphan_unit_keeps_its_item() -> None:
+    orphan = unparsed("osce:p1/u1", "Mali: vote soon")
+    d = run(synth(pages=(SynthPage("p1", claims=(A,), extra=(orphan,)),), fetched_at=NOW))
+    assert d.served is not None
+    page = d.served.pages[0]
+    moved = dataclasses.replace(page, unit_prefix="osce:elsewhere/")
+    lost = dataclasses.replace(d.served, pages=(moved,))
+    (item,) = unit_items(dataclasses.replace(d, served=lost))
+    assert (item.unit_id, item.link) == (orphan.unit_id, page.link)
+    none = dataclasses.replace(d.served, pages=())
+    (item,) = unit_items(dataclasses.replace(d, served=none))
+    assert (item.unit_id, item.link) == (orphan.unit_id, "")

@@ -757,7 +757,7 @@ class AttentionItem:
     undated_id: str | None
     date: _Day | None = None  # P87: the earliest start of its claims' day or month spans
     unit_id: str | None = None  # set on items about one unit; such items have no merge_ids
-    unit_text: str | None = None  # P88: the full collapse_ws text of a unit; never cut
+    unit_text: str | None = None  # P88: full collapse_ws text; only on partial/unparsed units
 
     def __post_init__(self) -> None:
         _check_fields(self)
