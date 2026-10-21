@@ -494,6 +494,9 @@ def test_joint_ticket_is_not_unnamed_parts(  # R21, P102
     text: str, place_id: str, expected: list[str]
 ) -> None:
     assert unnamed_parts(text, place_id, REGISTRY) == expected
+
+
+def test_an_adjective_joint_ticket_stays_whole() -> None:  # R21, P102
     assert split_offices("Presidential and Vice-Presidential", "iso:PH", REGISTRY) == [
         "Presidential and Vice-Presidential"
     ]

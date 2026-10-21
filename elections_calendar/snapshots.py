@@ -1176,16 +1176,17 @@ def _unit_item(
     unit: InputUnit,
     source: str,
     prefix: str,
-) -> AttentionItem | None:
+) -> AttentionItem:
     page = _page_of(snapshot, unit.unit_id)
     claims = [c for c in snapshot.claims if c.unit_id == unit.unit_id]
     starts = [c.span.start for c in claims if c.span.start is not None]  # a year claim has none
+    # An orphan unit (only a hand-edited baseline.json has one) keeps its item and a fallback link.
     if claims:
         link = claims[0].link
     elif page is not None:
         link = page.link
     else:
-        return None  # a unit on no page of its snapshot cannot be linked
+        link = snapshot.pages[0].link if snapshot.pages else ""
     full = collapse_ws(unit.text)
     return AttentionItem(
         item_id=short_id([kind, unit.unit_id]),
@@ -1215,7 +1216,7 @@ def unit_items(decision: Decision) -> tuple[AttentionItem, ...]:
     served = decision.served
     if served is None:
         return ()
-    items: list[AttentionItem | None] = []
+    items: list[AttentionItem] = []
     for unit in served.units:
         if unit.outcome in ("partial", "unparsed") and unit.relevance != "before_window":
             kind: AttentionKind = "partial_unit" if unit.outcome == "partial" else "unparsed_unit"
@@ -1247,4 +1248,4 @@ def unit_items(decision: Decision) -> tuple[AttentionItem, ...]:
                 unit_id=gone.unit_id,
             )
         )
-    return tuple(sorted((i for i in items if i is not None), key=lambda i: i.item_id))
+    return tuple(sorted(items, key=lambda i: i.item_id))
