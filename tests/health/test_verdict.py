@@ -187,7 +187,9 @@ def test_acknowledgements_change_only_the_verdict() -> None:
     reasons, _, acks = judged("osce", drop, known)
     assert [a.code for a in acks] == ["sudden_drop"]
     assert unacknowledged(reasons, acks) == ()
-    assert osce_drop().acceptance == "quarantined"
+    plain = drop_acceptances(known, {"osce": CLEAN}, NOW)
+    assert plain == ()
+    assert osce_drop(plain).acceptance == "quarantined"
 
     accept = issues(
         entry(

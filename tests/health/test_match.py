@@ -25,7 +25,7 @@ from elections_calendar.sources.base import PARSER_VERSION, ParseResult, RawPage
 from elections_calendar.sources.osce import Osce
 from elections_calendar.window import window_for
 from tests.support.claims import NOW, cl, day, result
-from tests.support.feed import RUN_NOW, fixture_snapshot
+from tests.support.feed import RUN_NOW, first_run, fixture_snapshot
 from tests.support.fixture_claims import FIXTURE_NOW, fixture_claims
 from tests.support.fixtures import fixture
 from tests.support.pages import raw_pages
@@ -213,3 +213,8 @@ def test_osce_column_shift_is_an_error() -> None:
         reasons = source_reasons(decision.reasons, (), empty, HealthState(()))
         assert [r.code for r in reasons] == ["layout_not_recognised"]
         assert severity(reasons) == "error"
+
+
+@pytest.mark.parametrize(("source", "expected"), FIXTURE_MATCH)
+def test_first_run_matches_the_fixture_table(source: str, expected: MatchDiagnostic) -> None:
+    assert first_run().sources[source].match == expected
