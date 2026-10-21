@@ -118,8 +118,9 @@ def _legacy(doc: Any) -> list[str]:
             problems.append(f"{who}country is empty")
         if not isinstance(card.get("type"), str):
             problems.append(f"{who}type is not a string")
-        if card.get("status") not in _LEGACY_STATUS:
-            problems.append(f"{who}status {card.get('status')!r} is not a legacy value")
+        status = card.get("status")
+        if not isinstance(status, str) or status not in _LEGACY_STATUS:
+            problems.append(f"{who}status {status!r} is not a legacy value")
         sources = card.get("sources")
         names: list[Any] = []
         links: list[Any] = []
@@ -321,7 +322,8 @@ def validate_feed(
     """The problems of an ``elections.json`` (§11.3), or ``()``.
 
     ``wall_clock`` is the machine clock, timezone-aware. Bytes that are not UTF-8 JSON give
-    the ``json`` problem alone; otherwise every check runs.
+    the ``json`` problem alone; otherwise every check runs. It never raises on the document's
+    content, whatever its shape; a naive ``wall_clock`` raises ``ValueError``.
     """
     if wall_clock.utcoffset() is None:
         raise ValueError("wall_clock must be timezone-aware")
