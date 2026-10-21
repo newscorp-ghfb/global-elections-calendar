@@ -1,0 +1,310 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elections-calendar.invalid/schemas/status-v1.schema.json",
+  "title": "Elections calendar status, schema version 1",
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "Severity": {
+      "enum": [
+        "ok",
+        "warning",
+        "error"
+      ]
+    },
+    "ReasonCode": {
+      "enum": [
+        "fetch_failed",
+        "tls_error",
+        "timeout",
+        "dns_error",
+        "http_error",
+        "challenge_page",
+        "api_error",
+        "layout_not_recognised",
+        "required_year_missing",
+        "pagination_incomplete",
+        "deadline",
+        "unavailable",
+        "ledger_mismatch",
+        "discovery_mismatch",
+        "worker_failed",
+        "merge_failed",
+        "validation_failed",
+        "unparsed_relevant",
+        "partial_relevant",
+        "sudden_drop",
+        "cumulative_drop",
+        "coverage_gap",
+        "no_cross_source_match",
+        "fallback_stale",
+        "served_mismatch",
+        "attention_truncated",
+        "ack_invalid",
+        "not_published_yet",
+        "count_change",
+        "provisional_changes",
+        "units_disappeared"
+      ]
+    },
+    "ReasonLevel": {
+      "enum": [
+        "error",
+        "warning",
+        "info"
+      ]
+    },
+    "Stage": {
+      "enum": [
+        "fetch",
+        "parse",
+        "snapshot",
+        "match",
+        "run"
+      ]
+    },
+    "Outcome": {
+      "enum": [
+        "published",
+        "validation_failed",
+        "superseded",
+        "paused",
+        "republished"
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "attempt_id": {
+      "type": "string",
+      "pattern": "^[0-9]{8}T[0-9]{6}Z-([0-9]+|local)$"
+    },
+    "attempt_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "trigger": {
+      "type": "string",
+      "pattern": "^([a-z_]+|local)$"
+    },
+    "code_sha": {
+      "type": "string",
+      "pattern": "^([0-9a-f]{40}|local)$"
+    },
+    "outcome": {
+      "$ref": "#/$defs/Outcome"
+    },
+    "severity": {
+      "$ref": "#/$defs/Severity"
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "code": {
+            "$ref": "#/$defs/ReasonCode"
+          },
+          "level": {
+            "$ref": "#/$defs/ReasonLevel"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "acknowledged": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "source",
+          "code",
+          "level",
+          "text",
+          "page",
+          "year",
+          "acknowledged"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "serving_feed_sha256": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/hash"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "serving_published_at": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/timestamp"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "serving_generated_at": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/timestamp"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "serving_content_id": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/hash"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/$defs/Severity"
+          },
+          "using_fallback": {
+            "type": "boolean"
+          },
+          "served_fetched_at": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/timestamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "severity",
+          "using_fallback",
+          "served_fetched_at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "acknowledged": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "code": {
+            "$ref": "#/$defs/ReasonCode"
+          },
+          "until": {
+            "$ref": "#/$defs/timestamp"
+          },
+          "stage": {
+            "$ref": "#/$defs/Stage"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "source",
+          "code",
+          "until",
+          "stage",
+          "year",
+          "page"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "attempt_id",
+    "attempt_at",
+    "trigger",
+    "code_sha",
+    "outcome",
+    "severity",
+    "reasons",
+    "serving_feed_sha256",
+    "serving_published_at",
+    "serving_generated_at",
+    "serving_content_id",
+    "sources",
+    "acknowledged"
+  ],
+  "additionalProperties": false
+}

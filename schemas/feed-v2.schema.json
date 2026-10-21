@@ -1,0 +1,1377 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elections-calendar.invalid/schemas/feed-v2.schema.json",
+  "title": "Elections calendar feed, schema version 2",
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$"
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{12}$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "Kind": {
+      "enum": [
+        "candidate_election",
+        "by_election",
+        "referendum_day",
+        "referendum_question",
+        "aggregate"
+      ]
+    },
+    "OfficeClass": {
+      "enum": [
+        "head_of_state",
+        "lower_house",
+        "upper_house",
+        "legislature",
+        "governor",
+        "mayor",
+        "local_council",
+        "referendum",
+        "general"
+      ]
+    },
+    "Level": {
+      "enum": [
+        "national",
+        "subnational",
+        "unknown"
+      ]
+    },
+    "JurisdictionKind": {
+      "enum": [
+        "nationwide",
+        "named",
+        "subdivision",
+        "unknown"
+      ]
+    },
+    "Precision": {
+      "enum": [
+        "day",
+        "month",
+        "year"
+      ]
+    },
+    "DateMeaning": {
+      "enum": [
+        "voting_period",
+        "expected_window",
+        "unknown"
+      ]
+    },
+    "DateStatus": {
+      "enum": [
+        "confirmed",
+        "tentative",
+        "unknown"
+      ]
+    },
+    "StatusClaim": {
+      "enum": [
+        "postponed",
+        "cancelled",
+        "disputed",
+        "held"
+      ]
+    },
+    "LegacyStatus": {
+      "enum": [
+        "Upcoming",
+        "Held",
+        "Postponed",
+        "Cancelled",
+        "Disputed",
+        "Unknown"
+      ]
+    },
+    "EvidenceKind": {
+      "enum": [
+        "calendar",
+        "expected_renewal",
+        "observation",
+        "umbrella"
+      ]
+    },
+    "RejectedReason": {
+      "enum": [
+        "observation",
+        "year_only",
+        "lower_evidence",
+        "old_date",
+        "not_covering",
+        "less_precise",
+        "less_certain",
+        "stale",
+        "lower_priority",
+        "provisional"
+      ]
+    },
+    "ProvisionalDate": {
+      "enum": [
+        "moved",
+        "less_precise"
+      ]
+    },
+    "AttentionKind": {
+      "enum": [
+        "unparsed_unit",
+        "partial_unit",
+        "undated_listing",
+        "unresolved_evidence",
+        "provisional_change",
+        "disappeared_unit"
+      ]
+    },
+    "Relevance": {
+      "enum": [
+        "in_or_after_window",
+        "unknown",
+        "before_window"
+      ]
+    },
+    "Acceptance": {
+      "enum": [
+        "promoted",
+        "quarantined",
+        "fallback",
+        "unavailable"
+      ]
+    },
+    "DownloadOutcome": {
+      "enum": [
+        "ok",
+        "http_error",
+        "timeout",
+        "tls_error",
+        "dns_error",
+        "challenge_page",
+        "api_error",
+        "layout_not_recognised",
+        "not_published_yet",
+        "deadline",
+        "fetch_failed",
+        "worker_failed"
+      ]
+    },
+    "Severity": {
+      "enum": [
+        "ok",
+        "warning",
+        "error"
+      ]
+    },
+    "ReasonCode": {
+      "enum": [
+        "fetch_failed",
+        "tls_error",
+        "timeout",
+        "dns_error",
+        "http_error",
+        "challenge_page",
+        "api_error",
+        "layout_not_recognised",
+        "required_year_missing",
+        "pagination_incomplete",
+        "deadline",
+        "unavailable",
+        "ledger_mismatch",
+        "discovery_mismatch",
+        "worker_failed",
+        "merge_failed",
+        "validation_failed",
+        "unparsed_relevant",
+        "partial_relevant",
+        "sudden_drop",
+        "cumulative_drop",
+        "coverage_gap",
+        "no_cross_source_match",
+        "fallback_stale",
+        "served_mismatch",
+        "attention_truncated",
+        "ack_invalid",
+        "not_published_yet",
+        "count_change",
+        "provisional_changes",
+        "units_disappeared"
+      ]
+    },
+    "ReasonLevel": {
+      "enum": [
+        "error",
+        "warning",
+        "info"
+      ]
+    },
+    "Stage": {
+      "enum": [
+        "fetch",
+        "parse",
+        "snapshot",
+        "match",
+        "run"
+      ]
+    },
+    "bib": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "link": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "link"
+      ],
+      "additionalProperties": false
+    },
+    "reason": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ReasonCode"
+        },
+        "level": {
+          "$ref": "#/$defs/ReasonLevel"
+        },
+        "stage": {
+          "$ref": "#/$defs/Stage"
+        },
+        "year": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 300
+        }
+      },
+      "required": [
+        "code",
+        "level",
+        "stage",
+        "year",
+        "page",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "acknowledged": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ReasonCode"
+        },
+        "until": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "stage": {
+          "$ref": "#/$defs/Stage"
+        },
+        "year": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "until",
+        "stage",
+        "year",
+        "page"
+      ],
+      "additionalProperties": false
+    },
+    "childSource": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "link": {
+          "type": "string"
+        },
+        "source_event_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "date": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "end_date": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "date_precision": {
+          "$ref": "#/$defs/Precision"
+        },
+        "date_text": {
+          "type": "string"
+        },
+        "date_meaning": {
+          "$ref": "#/$defs/DateMeaning"
+        },
+        "date_status": {
+          "$ref": "#/$defs/DateStatus"
+        },
+        "status_claim": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StatusClaim"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fetched_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fallback": {
+          "type": "boolean"
+        },
+        "provisional": {
+          "type": "boolean"
+        },
+        "evidence_kind": {
+          "$ref": "#/$defs/EvidenceKind"
+        },
+        "selected": {
+          "type": "boolean"
+        },
+        "rejected_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RejectedReason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "link",
+        "source_event_id",
+        "date",
+        "end_date",
+        "date_precision",
+        "date_text",
+        "date_meaning",
+        "date_status",
+        "status_claim",
+        "fetched_at",
+        "fallback",
+        "provisional",
+        "evidence_kind",
+        "selected",
+        "rejected_reason"
+      ],
+      "additionalProperties": false
+    },
+    "child": {
+      "type": "object",
+      "properties": {
+        "child_id": {
+          "$ref": "#/$defs/id"
+        },
+        "jurisdiction": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "jurisdiction_kind": {
+          "$ref": "#/$defs/JurisdictionKind"
+        },
+        "institution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "office_class": {
+          "$ref": "#/$defs/OfficeClass"
+        },
+        "office_label": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/Kind"
+        },
+        "round": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "indirect": {
+          "type": "boolean"
+        },
+        "aggregate": {
+          "type": "boolean"
+        },
+        "occurrence_confirmed": {
+          "type": "boolean"
+        },
+        "status_conflict": {
+          "type": "boolean"
+        },
+        "date_conflict": {
+          "type": "boolean"
+        },
+        "unverified": {
+          "type": "boolean"
+        },
+        "ambiguous": {
+          "type": "boolean"
+        },
+        "rescheduled_from": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "provisional_date": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProvisionalDate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "possible_matches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "possible_matches_outside": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/childSource"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "child_id",
+        "jurisdiction",
+        "jurisdiction_kind",
+        "institution",
+        "office_class",
+        "office_label",
+        "kind",
+        "round",
+        "indirect",
+        "aggregate",
+        "occurrence_confirmed",
+        "status_conflict",
+        "date_conflict",
+        "unverified",
+        "ambiguous",
+        "rescheduled_from",
+        "provisional_date",
+        "possible_matches",
+        "possible_matches_outside",
+        "sources"
+      ],
+      "additionalProperties": false
+    },
+    "umbrella": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "link": {
+          "type": "string"
+        },
+        "office_label": {
+          "type": "string"
+        },
+        "date_text": {
+          "type": "string"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "link",
+        "office_label",
+        "date_text",
+        "children"
+      ],
+      "additionalProperties": false
+    },
+    "card": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "$ref": "#/$defs/date"
+        },
+        "country": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/LegacyStatus"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/bib"
+          }
+        },
+        "source_names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "group_id": {
+          "$ref": "#/$defs/id"
+        },
+        "end_date": {
+          "$ref": "#/$defs/date"
+        },
+        "date_precision": {
+          "$ref": "#/$defs/Precision"
+        },
+        "date_meaning": {
+          "$ref": "#/$defs/DateMeaning"
+        },
+        "date_status": {
+          "$ref": "#/$defs/DateStatus"
+        },
+        "level": {
+          "$ref": "#/$defs/Level"
+        },
+        "place_id": {
+          "type": "string"
+        },
+        "country_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/child"
+          },
+          "minItems": 1
+        },
+        "umbrella_sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/bib"
+          }
+        },
+        "umbrellas": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/umbrella"
+          }
+        }
+      },
+      "required": [
+        "date",
+        "country",
+        "type",
+        "status",
+        "sources",
+        "source_names",
+        "links",
+        "group_id",
+        "end_date",
+        "date_precision",
+        "date_meaning",
+        "date_status",
+        "level",
+        "place_id",
+        "country_code",
+        "children",
+        "umbrella_sources",
+        "umbrellas"
+      ],
+      "additionalProperties": false
+    },
+    "listing": {
+      "type": "object",
+      "properties": {
+        "undated_id": {
+          "$ref": "#/$defs/id"
+        },
+        "place_id": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        },
+        "office_label": {
+          "type": "string"
+        },
+        "year": {
+          "type": "integer"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/bib"
+          }
+        },
+        "possible_matches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "possible_matches_outside": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "undated_id",
+        "place_id",
+        "country",
+        "office_label",
+        "year",
+        "sources",
+        "possible_matches",
+        "possible_matches_outside"
+      ],
+      "additionalProperties": false
+    },
+    "item": {
+      "type": "object",
+      "properties": {
+        "item_id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "$ref": "#/$defs/AttentionKind"
+        },
+        "source": {
+          "type": "string"
+        },
+        "link": {
+          "type": "string"
+        },
+        "snapshot_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "relevance": {
+          "$ref": "#/$defs/Relevance"
+        },
+        "date": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "reason": {
+          "type": "string"
+        },
+        "possible_matches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "possible_matches_outside": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "undated_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "item_id",
+        "kind",
+        "source",
+        "link",
+        "snapshot_id",
+        "relevance",
+        "date",
+        "text",
+        "reason",
+        "possible_matches",
+        "possible_matches_outside",
+        "undated_id"
+      ],
+      "additionalProperties": false
+    },
+    "sourceHealth": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "enum": [
+            "electionguide",
+            "osce",
+            "wikipedia",
+            "ndi",
+            "aweb",
+            "eisa",
+            "ipu",
+            "carter",
+            "eeas"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "download": {
+          "type": "object",
+          "properties": {
+            "outcome": {
+              "$ref": "#/$defs/DownloadOutcome"
+            },
+            "stage": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "http_status": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "final_url": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "content_type": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "elapsed_ms": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "attempts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "error": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "pages": {
+              "type": "object",
+              "properties": {
+                "requested": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "ok": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "failed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "stop_reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "requested",
+                "ok",
+                "failed",
+                "stop_reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "outcome",
+            "stage",
+            "http_status",
+            "final_url",
+            "content_type",
+            "bytes",
+            "elapsed_ms",
+            "attempts",
+            "error",
+            "pages"
+          ],
+          "additionalProperties": false
+        },
+        "parse": {
+          "type": "object",
+          "properties": {
+            "parser_version": {
+              "type": "string"
+            },
+            "parse_ms": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "units": {
+              "type": "object",
+              "properties": {
+                "seen": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "parsed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "partial": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unparsed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "ignored": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "seen",
+                "parsed",
+                "partial",
+                "unparsed",
+                "ignored"
+              ],
+              "additionalProperties": false
+            },
+            "claims": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ignored_reasons": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "relevance": {
+              "type": "object",
+              "properties": {
+                "in_or_after_window": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unknown": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "before_window": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "in_or_after_window",
+                "unknown",
+                "before_window"
+              ],
+              "additionalProperties": false
+            },
+            "unparsed_samples": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "maxItems": 5
+            }
+          },
+          "required": [
+            "parser_version",
+            "parse_ms",
+            "units",
+            "claims",
+            "ignored_reasons",
+            "relevance",
+            "unparsed_samples"
+          ],
+          "additionalProperties": false
+        },
+        "coverage": {
+          "type": "object",
+          "properties": {
+            "per_year": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "requested": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "units_seen": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "outcome": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "requested",
+                  "units_seen",
+                  "outcome"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "per_year"
+          ],
+          "additionalProperties": false
+        },
+        "snapshot": {
+          "type": "object",
+          "properties": {
+            "acceptance": {
+              "$ref": "#/$defs/Acceptance"
+            },
+            "using_fallback": {
+              "type": "boolean"
+            },
+            "served_snapshot_id": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/hash"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "served_fetched_at": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/timestamp"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "baseline_units_seen": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "comparable": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "acceptance",
+            "using_fallback",
+            "served_snapshot_id",
+            "served_fetched_at",
+            "baseline_units_seen",
+            "comparable"
+          ],
+          "additionalProperties": false
+        },
+        "match": {
+          "type": "object",
+          "properties": {
+            "eligible": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "peers_fresh": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "matched": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unmatched": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "informative": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "eligible",
+            "peers_fresh",
+            "matched",
+            "unmatched",
+            "informative"
+          ],
+          "additionalProperties": false
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/reason"
+          }
+        },
+        "acknowledged": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/acknowledged"
+          }
+        }
+      },
+      "required": [
+        "source",
+        "name",
+        "download",
+        "parse",
+        "coverage",
+        "snapshot",
+        "match",
+        "severity",
+        "reasons",
+        "acknowledged"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 2
+    },
+    "content_id": {
+      "$ref": "#/$defs/hash"
+    },
+    "generated_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "published_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "data_as_of": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/timestamp"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "current_month": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}$"
+    },
+    "window": {
+      "type": "object",
+      "properties": {
+        "months": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}$"
+          }
+        },
+        "years": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "months",
+        "years"
+      ],
+      "additionalProperties": false
+    },
+    "months": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}$"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/card"
+        }
+      }
+    },
+    "undated": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/listing"
+      }
+    },
+    "attention_items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/item"
+      },
+      "maxItems": 500
+    },
+    "attention_truncated": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "source_health": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sourceHealth"
+      }
+    },
+    "run": {
+      "type": "object",
+      "properties": {
+        "parser_version": {
+          "type": "string"
+        },
+        "code_sha": {
+          "type": "string",
+          "pattern": "^([0-9a-f]{40}|local)$"
+        },
+        "trust_sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "merge_checks": {
+          "type": "object",
+          "properties": {
+            "conservation": {
+              "enum": [
+                "ok"
+              ]
+            }
+          },
+          "required": [
+            "conservation"
+          ],
+          "additionalProperties": false
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/reason"
+          }
+        }
+      },
+      "required": [
+        "parser_version",
+        "code_sha",
+        "trust_sources",
+        "merge_checks",
+        "severity",
+        "reasons"
+      ],
+      "additionalProperties": false
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "content_id",
+    "generated_at",
+    "published_at",
+    "data_as_of",
+    "current_month",
+    "window",
+    "months",
+    "undated",
+    "attention_items",
+    "attention_truncated",
+    "source_health",
+    "run",
+    "errors"
+  ],
+  "additionalProperties": false
+}

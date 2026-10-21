@@ -11,15 +11,31 @@ upstream, except a run's detail, which is redacted and cut here. Nothing here re
 ``build_feed`` uses only the ``now`` it is given.
 """
 
-from collections.abc import Sequence
+import hashlib
+import json
+import re
+import string
+import unicodedata
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Final, Literal, cast
 
 from elections_calendar.fetch import redact_text
-from elections_calendar.health import Acknowledgement, MatchDiagnostic, Severity, severity
+from elections_calendar.health import (
+    DROP_REASONS,
+    UNIT_REASONS,
+    Acknowledgement,
+    Entry,
+    MatchDiagnostic,
+    Severity,
+    Verdict,
+    severity,
+    unacknowledged,
+)
 from elections_calendar.ledger import LedgerReport
 from elections_calendar.model import (
+    NEVER_ACKNOWLEDGEABLE,
     REASON_LEVEL,
     REASON_STAGE,
     SOURCE_NAMES,
@@ -426,14 +442,7 @@ def build_feed(
     """The feed document, the full attention list and the dispositions (§5.7; P84-P87)."""
     if now.utcoffset() is None:
         raise ValueError("now must be timezone-aware")
-    by_source: dict[str, SourceResult] = {}
-    for s in sources:
-        if s.source not in SOURCE_ORDER:
-            raise ValueError(f"unknown source: {s.source}")
-        if s.source in by_source:
-            raise ValueError(f"a source appears twice: {s.source}")
-        by_source[s.source] = s
-    ordered = [by_source[k] for k in SOURCE_ORDER if k in by_source]
+    ordered = _in_order(sources)
     in_window = [c for c in result.cards if window.bucket(c.span) is not None]
     in_feed = frozenset(ch.child_id for c in in_window for ch in c.children)
     umbrella_targets: dict[str, set[str]] = {}
@@ -503,3 +512,357 @@ def build_feed(
         run_reasons=reasons,
         severity=worst,
     )
+
+
+# --- status.json and HEALTH.md (spec §5.8, §11.6; P96, P104; S4-T19, NM-T04) -------------------
+
+AttemptOutcome = Literal["published", "validation_failed"]  # Plan 5 adds the other three
+_RUN_ID: Final = re.compile(r"[0-9]+")
+_TRIGGER: Final = re.compile(r"[a-z_]+")
+_CODE_SHA: Final = re.compile(r"[0-9a-f]{40}")
+_STAMP: Final = re.compile(
+    r"[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z)?"
+)
+_DIGEST: Final = re.compile(r"[0-9a-f]{64}")
+_ESCAPES: Final = str.maketrans({c: "\\" + c for c in string.punctuation})
+_UNIT_HINT: Final = "acknowledge each unit by its full text (unit_text in attention_full.json)"
+_DROP_HINT: Final = "to accept the drop: accept_drop with this scope and the candidate's counts"
+
+
+@dataclass(frozen=True, slots=True)
+class Attempt:
+    """Who ran, when and from which code: the run identity of ``status.json``."""
+
+    attempt_at: datetime
+    run_id: str  # GITHUB_RUN_ID when it is all digits, else "local"
+    trigger: str  # GITHUB_EVENT_NAME when it matches [a-z_]+, else "local"
+    code_sha: str  # GITHUB_SHA when it is 40 lowercase hex characters, else "local"
+
+    def __post_init__(self) -> None:
+        if self.attempt_at.utcoffset() is None:
+            raise ValueError("attempt_at must be timezone-aware")
+
+    @property
+    def attempt_id(self) -> str:
+        return f"{self.attempt_at.astimezone(UTC):%Y%m%dT%H%M%SZ}-{self.run_id}"
+
+
+def _env(environ: Mapping[str, str], name: str, pattern: re.Pattern[str]) -> str:
+    value = environ.get(name, "")
+    return value if pattern.fullmatch(value) else "local"
+
+
+def attempt_of(environ: Mapping[str, str], now: datetime) -> Attempt:
+    """The attempt of this run; an environment value of the wrong shape counts as absent."""
+    return Attempt(
+        attempt_at=now,
+        run_id=_env(environ, "GITHUB_RUN_ID", _RUN_ID),
+        trigger=_env(environ, "GITHUB_EVENT_NAME", _TRIGGER),
+        code_sha=_env(environ, "GITHUB_SHA", _CODE_SHA),
+    )
+
+
+def _serving_fields(serving: bytes | None) -> dict[str, str | None]:
+    """The four ``serving_*`` fields of the bytes the repository serves (NM-T04)."""
+    fields: dict[str, str | None] = {
+        "serving_feed_sha256": None,
+        "serving_published_at": None,
+        "serving_generated_at": None,
+        "serving_content_id": None,
+    }
+    if serving is None:
+        return fields
+    fields["serving_feed_sha256"] = hashlib.sha256(serving).hexdigest()
+    try:
+        loaded = json.loads(serving)
+    except (ValueError, RecursionError):
+        return fields
+    if isinstance(loaded, dict):
+        for field, key, shape in (
+            ("serving_published_at", "published_at", _STAMP),
+            ("serving_generated_at", "generated_at", _STAMP),
+            ("serving_content_id", "content_id", _DIGEST),
+        ):
+            value = loaded.get(key)
+            if isinstance(value, str) and shape.fullmatch(value):
+                fields[field] = value
+    return fields
+
+
+def _in_order(sources: Sequence[SourceResult]) -> list[SourceResult]:
+    """The sources in ``SOURCE_ORDER``; an unknown or repeated source raises."""
+    by_source: dict[str, SourceResult] = {}
+    for s in sources:
+        if s.source not in SOURCE_ORDER:
+            raise ValueError(f"unknown source: {s.source}")
+        if s.source in by_source:
+            raise ValueError(f"a source appears twice: {s.source}")
+        by_source[s.source] = s
+    return [by_source[k] for k in SOURCE_ORDER if k in by_source]
+
+
+def _status_reason(source: str | None, reason: Reason, *, acknowledged: bool) -> dict[str, Any]:
+    shown = reason_dict(reason)
+    return {
+        "source": source,
+        "code": shown["code"],
+        "level": shown["level"],
+        "text": shown["text"],
+        "page": shown["page"],
+        "year": shown["year"],
+        "acknowledged": acknowledged,
+    }
+
+
+def status_doc(
+    *,
+    attempt: Attempt,
+    outcome: AttemptOutcome,
+    severity: Severity,
+    sources: Sequence[SourceResult],
+    run_reasons: Sequence[Reason],
+    serving: bytes | None,
+) -> dict[str, Any]:
+    """``status.json`` (§5.8): this attempt and the feed the repository serves after it."""
+    ordered = _in_order(sources)
+    reasons: list[dict[str, Any]] = []
+    for s in ordered:
+        open_reasons = unacknowledged(s.reasons, s.acknowledged)
+        reasons += [
+            _status_reason(s.source, r, acknowledged=r not in open_reasons)
+            for r in s.reasons
+            if REASON_LEVEL[r.code] != "info"
+        ]
+    reasons += [
+        _status_reason(None, r, acknowledged=False)
+        for r in run_reasons
+        if REASON_LEVEL[r.code] != "info"
+    ]
+    return {
+        "schema_version": 1,
+        "attempt_id": attempt.attempt_id,
+        "attempt_at": _utc_iso(attempt.attempt_at),
+        "trigger": attempt.trigger,
+        "code_sha": attempt.code_sha,
+        "outcome": outcome,
+        "severity": severity,
+        "reasons": reasons,
+        **_serving_fields(serving),
+        "sources": [
+            {
+                "name": SOURCE_NAMES[s.source],
+                "severity": s.severity,
+                "using_fallback": s.decision.health.using_fallback,
+                "served_fetched_at": _utc_iso(s.decision.health.served_fetched_at),
+            }
+            for s in ordered
+        ],
+        "acknowledged": [
+            {
+                "source": s.source,
+                "code": a.code,
+                "until": _utc_iso(a.until),
+                "stage": a.stage,
+                "year": a.year,
+                "page": a.page,
+            }
+            for s in ordered
+            for a in s.acknowledged
+        ],
+    }
+
+
+def md_text(value: object) -> str:
+    """``value`` as one line of plain Markdown text (S4-T19).
+
+    Whitespace is collapsed, control characters are dropped and every ASCII punctuation
+    character gets a backslash, so the text cannot start a heading, link, image, table cell,
+    code span or HTML tag.
+    """
+    text = collapse_ws(str(value))
+    text = "".join(c for c in text if unicodedata.category(c) != "Cc")
+    return text.translate(_ESCAPES)
+
+
+def _stamp_text(value: object) -> str:
+    """A timestamp or date as it is (it holds no Markdown); anything else through ``md_text``."""
+    if isinstance(value, str) and _STAMP.fullmatch(value):
+        return value
+    return "none" if value is None else md_text(value)
+
+
+def _yes(flag: object) -> str:
+    return "yes" if flag else "no"
+
+
+def _reason_hint(reason: Reason, stage: str, ack: Acknowledgement | None) -> str:
+    if REASON_LEVEL[reason.code] == "info":
+        return ""
+    if ack is not None:
+        return f" — acknowledged until {_stamp_text(_utc_iso(ack.until))}"
+    if reason.code in NEVER_ACKNOWLEDGEABLE:
+        return " — cannot be acknowledged"
+    if reason.code in UNIT_REASONS:
+        return f" — {_UNIT_HINT}"
+    year = "null" if reason.year is None else str(reason.year)
+    page = "null" if reason.page is None else md_text(reason.page)
+    hint = f" — to acknowledge: scope {{stage: {stage}, year: {year}, page: {page}}}"
+    if reason.code in DROP_REASONS:
+        hint += f"; {_DROP_HINT}"
+    return hint
+
+
+def _reason_line(reason: Reason, ack: Acknowledgement | None, *, hint: bool = True) -> str:
+    shown = reason_dict(reason)
+    line = f"- **{shown['level']}** {md_text(shown['code'])}: {md_text(shown['text'])}"
+    return line + (_reason_hint(reason, shown["stage"], ack) if hint else "")
+
+
+def _source_section(entry: dict[str, Any], result: SourceResult) -> list[str]:
+    download, parse = entry["download"], entry["parse"]
+    snapshot, match, pages = entry["snapshot"], entry["match"], download["pages"]
+    units, relevance = parse["units"], parse["relevance"]
+    http = "none" if download["http_status"] is None else download["http_status"]
+    lines = [
+        f"## {md_text(entry['name'])}",
+        "",
+        f"- Download: {md_text(download['outcome'])}; HTTP {http}; {download['bytes']} bytes, "
+        f"{download['attempts']} attempts, {download['elapsed_ms']} ms; pages {pages['ok']} of "
+        f"{pages['requested']} ok, {pages['failed']} failed, stop {md_text(pages['stop_reason'])}"
+        + (f"; error {md_text(download['error'])}" if download["error"] else "")
+        + (f"; url {md_text(download['final_url'])}" if download["final_url"] else ""),
+        f"- Parse: parser {md_text(parse['parser_version'])}; {units['seen']} units "
+        f"({units['parsed']} parsed, {units['partial']} partial, {units['unparsed']} unparsed, "
+        f"{units['ignored']} ignored); {parse['claims']} claims; relevance "
+        f"{relevance['in_or_after_window']} in or after the window, {relevance['unknown']} "
+        f"unknown, {relevance['before_window']} before it; {parse['parse_ms']} ms",
+    ]
+    ignored = ", ".join(f"{md_text(k)} {n}" for k, n in sorted(parse["ignored_reasons"].items()))
+    lines.append(f"- Ignored: {ignored or 'none'}")
+    coverage = "; ".join(
+        f"{md_text(year)}: {c['requested']} pages, {c['units_seen']} units, {md_text(c['outcome'])}"
+        for year, c in entry["coverage"]["per_year"].items()
+    )
+    lines.append(f"- Coverage: {coverage or 'none'}")
+    served_id = snapshot["served_snapshot_id"]
+    baseline_units = snapshot["baseline_units_seen"]
+    lines.append(
+        f"- Snapshot: {md_text(snapshot['acceptance'])}; "
+        f"fallback {_yes(snapshot['using_fallback'])}; "
+        f"served {'none' if served_id is None else md_text(served_id)}, "
+        f"fetched {_stamp_text(snapshot['served_fetched_at'])}; "
+        f"baseline units {'none' if baseline_units is None else baseline_units}; "
+        f"comparable {_yes(snapshot['comparable'])}"
+    )
+    lines.append(
+        f"- Match: {match['matched']} of {match['eligible']} eligible matched, "
+        f"{match['unmatched']} unmatched, {match['peers_fresh']} fresh peers, "
+        f"informative {_yes(match['informative'])}"
+    )
+    lines += ["", "### Reasons", ""]
+    if not result.reasons:
+        lines.append("No reasons.")
+    open_reasons = unacknowledged(result.reasons, result.acknowledged)
+    for reason in result.reasons:
+        ack = None
+        if reason not in open_reasons:
+            ack = next((a for a in result.acknowledged if not unacknowledged([reason], [a])), None)
+        lines.append(_reason_line(reason, ack))
+    lists = (
+        ("### Unparsed samples", [md_text(t) for t in parse["unparsed_samples"]]),
+        (
+            "### Provisional changes",
+            [md_text(i.text) for i in result.items if i.kind == "provisional_change"],
+        ),
+        (
+            "### No longer listed",
+            [md_text(i.text) for i in result.items if i.kind == "disappeared_unit"],
+        ),
+    )
+    for heading, texts in lists:
+        if texts:
+            lines += ["", heading, "", *(f"- {t}" for t in texts)]
+    return [*lines, ""]
+
+
+def health_md(
+    parts: FeedParts,
+    *,
+    sources: Sequence[SourceResult],
+    outcome: AttemptOutcome,
+    verdict: Verdict,
+    severity: Severity,
+    feed_size: int | None,
+    budget: int,
+    problems: Sequence[str],
+    not_yet_active: Sequence[Entry],
+) -> str:
+    """``HEALTH.md``: the run, each source and the attention items, every value escaped (S4-T19).
+
+    The source sections render the feed's own source health entries; nothing is recomputed.
+    """
+    doc = parts.doc
+    ordered = _in_order(sources)
+    entries = {e["source"]: e for e in doc["source_health"]}
+    if set(entries) != {s.source for s in ordered}:
+        raise ValueError("the sources do not match the feed's source_health")
+    if feed_size is None:
+        size = "no feed"
+    else:
+        size = f"{feed_size} bytes of a {budget} byte budget" + (
+            ", over budget" if feed_size > budget else ""
+        )
+    lines = [
+        "# Elections calendar health",
+        "",
+        f"- Generated: {_stamp_text(doc['generated_at'])}",
+        f"- Outcome: {'published' if outcome == 'published' else 'validation failed'}",
+        f"- Verdict: {verdict}",
+        f"- Severity: {severity}",
+        f"- Data as of: {_stamp_text(doc['data_as_of'])}",
+        f"- Feed: {size}",
+        "",
+        "## Run",
+        "",
+    ]
+    run_lines = [_reason_line(r, None, hint=False) for r in parts.run_reasons]
+    run_lines += [f"- {md_text(p)}" for p in problems]
+    lines += run_lines or ["No run reasons."]
+    lines += ["", "## Sources", ""]
+    lines += [
+        "| Source | Severity | Acceptance | Served data fetched | Open reasons |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+    for s in ordered:
+        entry = entries[s.source]
+        opened = len(unacknowledged(s.reasons, s.acknowledged))
+        lines.append(
+            f"| {md_text(entry['name'])} | {entry['severity']} "
+            f"| {md_text(entry['snapshot']['acceptance'])} "
+            f"| {_stamp_text(entry['snapshot']['served_fetched_at'])} | {opened} |"
+        )
+    lines.append("")
+    for s in ordered:
+        lines += _source_section(entries[s.source], s)
+    if not_yet_active:
+        lines += ["## Not yet active", ""]
+        lines += [
+            f"- entry {e.index}: {md_text(e.source)} {md_text(e.reason)}, "
+            f"from {_stamp_text(_utc_iso(e.acknowledged_at))}"
+            for e in not_yet_active
+        ]
+        lines.append("")
+    lines += ["## Attention items", ""]
+    items = doc["attention_items"]
+    if items:
+        lines += ["| Kind | Source | Date | Text |", "| --- | --- | --- | --- |"]
+        lines += [
+            f"| {md_text(i['kind'])} | {md_text(SOURCE_NAMES.get(i['source'], i['source']))} "
+            f"| {_stamp_text(i['date']) if i['date'] else ''} | {md_text(i['text'])} |"
+            for i in items
+        ]
+    else:
+        lines.append("No attention items.")
+    if doc["attention_truncated"]:
+        lines += ["", f"and {doc['attention_truncated']} more in attention_full.json"]
+    return "\n".join(lines) + "\n"
