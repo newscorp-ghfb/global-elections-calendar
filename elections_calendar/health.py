@@ -13,7 +13,7 @@ from collections.abc import Hashable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Final, Literal, get_args
+from typing import Any, Final, Literal, cast, get_args
 
 import yaml
 import yaml.constructor
@@ -74,6 +74,7 @@ EntryKind = Literal["acknowledgement", "unit_acknowledgement", "accept_drop"]
 
 
 def _key(code: str, stage: str, year: int | None, page: str | None) -> str:
+    # A page of None and of "" share a key: the same intent, so the sharing is harmless.
     return f"{code}|{stage}|{year if year is not None else ''}|{page or ''}"
 
 
@@ -212,7 +213,27 @@ def _moment(value: object) -> datetime | None:
             return None
     if not isinstance(value, datetime) or value.utcoffset() is None:  # a date is no datetime
         return None
-    return value.astimezone(UTC)
+    try:
+        return value.astimezone(UTC)
+    except OverflowError:  # year 9999 with a negative offset, year 1 with a positive one
+        return None
+
+
+def _show(value: object) -> str:
+    """A YAML value as it may appear in a message: a string, a small int, else its type name.
+
+    Never calls ``str`` or ``repr`` on a huge int or an alias-heavy container.
+    """
+    if isinstance(value, str):
+        return value
+    if type(value) is int and abs(value) < 10**20:
+        return str(value)
+    return type(value).__name__
+
+
+def _require_aware(now: datetime) -> None:
+    if now.utcoffset() is None:
+        raise ValueError("now must be timezone-aware")
 
 
 def _whole_number(value: object) -> bool:
@@ -223,22 +244,22 @@ def _text(value: object) -> str | None:
     return collapse_ws(value) or None if isinstance(value, str) else None
 
 
-def _scope(value: object) -> Scope | None:
+def _scope(value: object) -> tuple[str, int | None, str | None] | None:
+    """The raw stage, year and page of a well-shaped scope; ``Scope`` is built after the checks."""
     if not isinstance(value, dict) or set(value) != {"stage", "year", "page"}:
         return None
-    year, page = value["year"], value["page"]
+    stage, year, page = value["stage"], value["year"], value["page"]
     if year is not None and type(year) is not int:
         return None
     if page is not None and not isinstance(page, str):
         return None
-    stage = value["stage"]
     if not isinstance(stage, str):
         return None
-    return Scope(stage, year, page)  # type: ignore[arg-type]  # compared with the reason's stage
+    return stage, year, page
 
 
 def _entry(index: int, raw: object, now: datetime) -> Entry | str:
-    """The entry, or the first problem with it (the checks are in §9.6's order)."""
+    """The entry, or the first problem with it (the checks are in the plan's table order)."""
     if not isinstance(raw, dict):
         return "not a mapping"
     kind: EntryKind = "acknowledgement"
@@ -250,19 +271,20 @@ def _entry(index: int, raw: object, now: datetime) -> Entry | str:
     for name in names:
         if name not in raw:
             return f"missing field {name}"
-    for name in sorted(raw, key=str):
+    for name in sorted(raw, key=_show):
         if name not in names:
-            return f"unknown field {name}"
-    scope = None
+            return f"unknown field {_show(name)}"
+    shape = None
     if kind != "unit_acknowledgement":
-        scope = _scope(raw["scope"])
-        if scope is None:
+        shape = _scope(raw["scope"])
+        if shape is None:
             return "scope must have stage, year and page"
     source, reason = raw["source"], raw["reason"]
     if source not in SOURCE_ORDER:
-        return f"unknown source {source}"
-    if reason not in _REASON_CODES:
-        return f"unknown reason {reason}"
+        return f"unknown source {_show(source)}"
+    if not isinstance(reason, str) or reason not in _REASON_CODES:
+        return f"unknown reason {_show(reason)}"
+    reason = cast(ReasonCode, reason)
     if reason in NEVER_ACKNOWLEDGEABLE:
         return f"{reason} can never be acknowledged"
     if kind == "unit_acknowledgement":
@@ -279,8 +301,11 @@ def _entry(index: int, raw: object, now: datetime) -> Entry | str:
         for name in ("accept_units_seen_min", "accept_claims_min"):
             if not _whole_number(raw[name]):
                 return f"{name} must be a whole number of at least 0"
-    if scope is not None and scope.stage != REASON_STAGE[reason]:
+    if shape is not None and shape[0] != REASON_STAGE[reason]:
         return f"scope.stage must be {REASON_STAGE[reason]} for {reason}"
+    scope = None if shape is None else Scope(REASON_STAGE[reason], shape[1], shape[2])
+    if kind == "accept_drop" and shape is not None and shape[2] is None:
+        return "an accept_drop needs scope.page"
     texts: dict[str, str] = {}
     for name in ("explanation", "owner", "unit_text"):
         if name in raw:
@@ -319,8 +344,7 @@ def _entry(index: int, raw: object, now: datetime) -> Entry | str:
 
 def parse_known_issues(text: str, *, now: datetime) -> KnownIssues:
     """Read ``known_issues.yml``; an invalid entry gives ``ack_invalid`` and no effect."""
-    if now.utcoffset() is None:
-        raise ValueError("parse_known_issues: now must be timezone-aware")
+    _require_aware(now)
     try:
         data = yaml.load(text, Loader=_Loader)  # noqa: S506  (a SafeLoader subclass)
     except yaml.YAMLError, ValueError, OverflowError, RecursionError:
@@ -346,6 +370,7 @@ def load_known_issues(path: Path, *, now: datetime) -> KnownIssues:
 
     Other ``OSError`` (a directory at the path, no permission) propagate.
     """
+    _require_aware(now)
     try:
         raw = path.read_bytes()
     except FileNotFoundError:
@@ -360,6 +385,17 @@ def load_known_issues(path: Path, *, now: datetime) -> KnownIssues:
 # --- health_state.json -----------------------------------------------------------------------
 
 
+class _RepeatedKey(Exception):
+    pass
+
+
+def _no_repeats(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """A repeated key could hide a later absence (last wins), so it is a corrupt file."""
+    if len({k for k, _ in pairs}) != len(pairs):
+        raise _RepeatedKey
+    return dict(pairs)
+
+
 def load_health_state(path: Path) -> HealthState:
     """A missing file is an empty state; a file that cannot be read gives a ``problem``."""
     try:
@@ -367,7 +403,9 @@ def load_health_state(path: Path) -> HealthState:
     except FileNotFoundError:
         return HealthState(())
     try:
-        data = json.loads(raw.decode("utf-8"))
+        data = json.loads(raw.decode("utf-8"), object_pairs_hook=_no_repeats)
+    except _RepeatedKey:
+        return HealthState((), "shape")
     except UnicodeDecodeError, ValueError, RecursionError:
         return HealthState((), "not JSON")
     if (
@@ -399,7 +437,8 @@ def health_state_to_dict(state: HealthState) -> dict[str, Any]:
 def state_problem_reason(state: HealthState) -> Reason | None:
     if state.problem is None:
         return None
-    return Reason("ack_invalid", f"health_state.json is corrupt: {state.problem}"[:MAX_DETAIL])
+    detail = collapse_ws(f"health_state.json is corrupt: {state.problem}")
+    return Reason("ack_invalid", detail[:MAX_DETAIL])
 
 
 # --- effect ----------------------------------------------------------------------------------
@@ -407,14 +446,17 @@ def state_problem_reason(state: HealthState) -> Reason | None:
 
 def in_effect(entry: Entry, state: HealthState, now: datetime) -> bool:
     """Active at ``now``, the state readable, the key not absent since, not before a reset."""
+    _require_aware(now)
     if not entry.acknowledged_at <= now < entry.expires_at or state.problem is not None:
         return False
     if state.reset_at is not None and state.reset_at > entry.acknowledged_at:
         return False
-    return not any(k == entry.key and at > entry.acknowledged_at for k, at in state.last_absent_at)
+    key = entry.key
+    return not any(k == key and at > entry.acknowledged_at for k, at in state.last_absent_at)
 
 
 def not_yet_active(issues: KnownIssues, now: datetime) -> tuple[Entry, ...]:
+    _require_aware(now)
     return tuple(e for e in issues.entries if e.acknowledged_at > now)
 
 
@@ -454,13 +496,14 @@ def acknowledge(
     now: datetime,
 ) -> tuple[Acknowledgement, ...]:
     """The reasons of ``source`` that an entry in effect acknowledges, in the order given."""
+    _require_aware(now)
     live = [e for e in issues.entries if e.source == source and in_effect(e, state, now)]
     scoped = [e for e in live if e.kind != "unit_acknowledgement"]
     units = [e for e in live if e.kind == "unit_acknowledgement"]
     result: list[Acknowledgement] = []
     for reason in reasons:
-        if REASON_LEVEL[reason.code] == "info":
-            continue
+        if reason.code in NEVER_ACKNOWLEDGEABLE or REASON_LEVEL[reason.code] == "info":
+            continue  # the loader rejects such entries; a hand-built Entry must not mute them
         until: datetime | None
         if reason.code in UNIT_REASONS:
             until = _unit_until(reason, source, items, units)
@@ -491,16 +534,17 @@ def drop_acceptances(
 ) -> tuple[DropAcceptance, ...]:
     """Each ``accept_drop`` entry in effect, in file order.
 
-    An entry whose source has no state, or whose scope has no page, gives none.
+    An entry whose source has no state gives none (a loosening is never assumed). The loader
+    guarantees every ``accept_drop`` scope has a page.
     """
+    _require_aware(now)
     result: list[DropAcceptance] = []
     for e in issues.entries:
         state = states.get(e.source)
         if e.kind != "accept_drop" or state is None or not in_effect(e, state, now):
             continue
         assert e.scope is not None and e.units_seen_min is not None and e.claims_min is not None
-        if e.scope.page is None:
-            continue
+        assert e.scope.page is not None
         reason: Literal["sudden_drop", "cumulative_drop"] = (
             "sudden_drop" if e.reason == "sudden_drop" else "cumulative_drop"
         )
@@ -538,6 +582,7 @@ def next_health_state(
     now: datetime,
 ) -> HealthState:
     """The state to write after a published generation: only keys that unexpired entries name."""
+    _require_aware(now)
     named = {e.key for e in issues.entries if e.source == source and e.expires_at > now}
     before = dict(previous.last_absent_at)
     pairs: list[tuple[str, datetime]] = []
