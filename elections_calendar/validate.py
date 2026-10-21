@@ -2,7 +2,8 @@
 
 ``validate_feed`` returns every problem it finds, each prefixed by its check: ``json``,
 ``schema``, ``legacy``, ``invariant``, ``size``, ``timestamp`` or ``served``. It never raises on
-the content of the bytes, whatever their shape. ``validate`` is a sibling of ``feed`` and
+the content of the bytes, whatever their shape, and it never passes a value it cannot read: an
+impossible timestamp or day is a problem, not a skip. ``validate`` is a sibling of ``feed`` and
 ``publish``: it imports neither, so its limit on attention items has its own constant (a test
 keeps it equal to the feed's). Nothing here reads the clock: ``wall_clock`` is passed in.
 """
@@ -31,6 +32,7 @@ MAX_PROBLEM: Final = 300
 
 _DAY: Final = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 _STAMP: Final = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z")
+_MONTH: Final = re.compile(r"[0-9]{4}-[0-9]{2}")
 _LEGACY_STATUS: Final = frozenset(get_args(LegacyStatus))
 
 
@@ -141,13 +143,20 @@ def _legacy(doc: Any) -> list[str]:
     return [p[:MAX_PROBLEM] for p in problems]
 
 
+def _month(key: str) -> tuple[int, int] | None:
+    """``(year, month)`` of a ``YYYY-MM`` key naming a real month, else None."""
+    if not _MONTH.fullmatch(key):
+        return None
+    year, month = int(key[:4]), int(key[5:])
+    return (year, month) if year >= 1 and 1 <= month <= 12 else None
+
+
 def _first_window_month(months: list[str], start: date, end: date) -> str | None:
     for key in months:
-        if not re.fullmatch(r"[0-9]{4}-[0-9]{2}", key):
+        parsed = _month(key)
+        if parsed is None:
             continue
-        year, month = int(key[:4]), int(key[5:])
-        if not 1 <= month <= 12:
-            continue
+        year, month = parsed
         first, last = date(year, month, 1), date(year, month, calendar.monthrange(year, month)[1])
         if start <= last and end >= first:
             return key
@@ -172,6 +181,11 @@ def _invariants(doc: Any) -> list[str]:
     months = [m for m in window.get("months", []) if isinstance(m, str)] if isinstance(
         window, dict
     ) and isinstance(window.get("months"), list) else []
+    problems += [
+        f"invariant: window month {m!r} is not a real YYYY-MM month"
+        for m in months
+        if _month(m) is None
+    ]
     cards = list(_cards(doc))
     kids = [(card, c) for _, card in cards for c in _dicts(card.get("children"))]
     listings = _dicts(doc.get("undated"))
@@ -183,8 +197,13 @@ def _invariants(doc: Any) -> list[str]:
 
     for month, card in cards:
         start, end = _day(card.get("date")), _day(card.get("end_date"))
+        if end is None:
+            problems.append(
+                f"invariant: card {_text(card.get('group_id'))} end_date "
+                f"{card.get('end_date')!r} is not a real YYYY-MM-DD day"
+            )
         if start is None or end is None:
-            continue
+            continue  # a bad date is a legacy problem
         expected = _first_window_month(months, start, end)
         if expected != month:
             where = "outside the window" if expected is None else f"belongs in {expected}"
@@ -200,13 +219,13 @@ def _invariants(doc: Any) -> list[str]:
     ):
         matches = record.get("possible_matches")
         for match in matches if isinstance(matches, list) else []:
-            if match not in child_ids:
+            if not isinstance(match, str) or match not in child_ids:
                 problems.append(f"invariant: {owner} has possible_matches {match!r}, not a child")
 
     undated_ids = {_text(u.get("undated_id")) for u in listings}
     for item in items:
         link = item.get("undated_id")
-        if link is not None and link not in undated_ids:
+        if link is not None and (not isinstance(link, str) or link not in undated_ids):
             problems.append(
                 f"invariant: item {_text(item.get('item_id'))} has undated_id {link!r}, "
                 "not in undated"
@@ -217,7 +236,7 @@ def _invariants(doc: Any) -> list[str]:
         for umbrella in _dicts(card.get("umbrellas")):
             listed = umbrella.get("children")
             for child in listed if isinstance(listed, list) else []:
-                if child not in mine:
+                if not isinstance(child, str) or child not in mine:
                     problems.append(
                         f"invariant: umbrella of card {_text(card.get('group_id'))} "
                         f"names child {child!r}, which is not on the card"
@@ -252,7 +271,11 @@ def _timestamps(doc: Any, wall_clock: datetime) -> list[str]:
     problems = []
     for field in ("generated_at", "published_at"):
         moment = _moment(doc.get(field))
-        if moment is not None and moment - wall_clock > MAX_AHEAD:
+        if moment is None:
+            problems.append(
+                f"timestamp: {field} {doc.get(field)!r} is not a real UTC timestamp"[:MAX_PROBLEM]
+            )
+        elif moment - wall_clock > MAX_AHEAD:
             problems.append(
                 f"timestamp: {field} is {doc[field]}, more than 10 minutes ahead of "
                 f"{_utc_iso(wall_clock)}"

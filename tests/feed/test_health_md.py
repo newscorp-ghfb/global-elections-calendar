@@ -364,11 +364,10 @@ def test_health_md_escapes_hostile_text() -> None:
     for line in text.splitlines():
         if line.startswith("#"):
             assert re.fullmatch(r"#{1,3} (.*)", line) and line.lstrip("#")[1:] in titles, line
-    assert not re.search(r"(?<!\\)<script", text)  # escaped, it is plain text
-    assert "](" not in text
-    assert "![" not in text
+    bare = re.sub(r"\\.", "", text.replace("\\\\", ""))  # drop escaped backslashes, then pairs
+    for markup in ("<script", "](", "![", "`"):
+        assert markup not in bare, markup  # escaped, it is plain text
     assert "\x07" not in text
-    assert not re.search(r"(?<!\\)`", text)
     # the hostile text is still there, escaped (it was not dropped)
     assert "\\# H1 \\<script\\>x\\<\\/script\\>" in text
     assert text.count("javascript") >= 3
@@ -490,3 +489,28 @@ def test_health_md_escapes_every_string_of_the_document() -> None:
     leftover = changed.replace(escaped, "")
     assert "<b>" not in leftover and "](" not in leftover and "`" not in leftover
     assert not any(line.startswith("# x") for line in changed.splitlines())
+
+
+def test_health_md_escapes_a_timestamp_followed_by_hostile_text() -> None:
+    """A value that merely starts like a timestamp is escaped whole (anchored match, S4-T19)."""
+    text, parts = render()
+    doc = copy.deepcopy(parts.doc)
+    bad = "2026-10-16T00:00:00Z <script>x</script> [l](u)"
+    doc["generated_at"] = bad
+    doc["data_as_of"] = bad
+    doc["source_health"][0]["snapshot"]["served_fetched_at"] = bad
+    doc["attention_items"][0]["date"] = bad
+    changed = health_md(
+        dataclasses.replace(parts, doc=doc),
+        sources=list(first_run().sources.values()),
+        outcome="published",
+        verdict="red",
+        severity="warning",
+        feed_size=1,
+        budget=2,
+        problems=(),
+        not_yet_active=(),
+    )
+    assert changed.count(md_text(bad)) >= 4
+    bare = re.sub(r"\\.", "", changed.replace("\\\\", ""))
+    assert "<script" not in bare and "](" not in bare
