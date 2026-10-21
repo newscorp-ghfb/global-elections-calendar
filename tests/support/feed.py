@@ -6,9 +6,11 @@ pipeline against the same values, so the two cannot drift apart.
 """
 
 import dataclasses
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from functools import cache
+from types import MappingProxyType
 
 from elections_calendar import ledger
 from elections_calendar.feed import SourceResult
@@ -33,7 +35,7 @@ from tests.support.fixture_claims import fixture_results
 RUN_NOW = datetime(2026, 10, 19, 12, tzinfo=UTC)
 
 # Each source's fetch time, from tests/fixtures/<source>/PROVENANCE.md.
-FIXTURE_FETCHED: dict[str, datetime] = {
+FIXTURE_FETCHED: Mapping[str, datetime] = MappingProxyType({
     "electionguide": datetime(2026, 10, 16, 14, 39, tzinfo=UTC),
     "wikipedia": datetime(2026, 10, 17, 16, 13, tzinfo=UTC),
     "osce": datetime(2026, 10, 18, 11, 18, 37, tzinfo=UTC),
@@ -43,13 +45,13 @@ FIXTURE_FETCHED: dict[str, datetime] = {
     "eeas": datetime(2026, 10, 18, 11, 18, 40, tzinfo=UTC),
     "ndi": datetime(2026, 10, 19, 8, 57, 34, tzinfo=UTC),
     "eisa": datetime(2026, 10, 19, 8, 57, 41, tzinfo=UTC),
-}
+})
 
 
 @dataclass(frozen=True)
 class FirstRun:
     window: Window
-    sources: dict[str, SourceResult]
+    sources: Mapping[str, SourceResult]
     merge: MergeResult
     claims: tuple[Claim, ...]  # every decision's served and provisional claims, in source order
 
@@ -116,4 +118,4 @@ def first_run() -> FirstRun:
             acknowledged=(),
             severity=severity(reasons),
         )
-    return FirstRun(window, sources, merged, claims)
+    return FirstRun(window, MappingProxyType(sources), merged, claims)

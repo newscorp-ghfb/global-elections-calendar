@@ -3,11 +3,17 @@
 import dataclasses
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, get_args
 
 import pytest
 
-from elections_calendar.feed import MAX_SAMPLE_TEXT, MAX_SAMPLES, SourceResult, source_health_entry
+from elections_calendar.feed import (
+    MAX_SAMPLE_TEXT,
+    MAX_SAMPLES,
+    DownloadOutcome,
+    SourceResult,
+    source_health_entry,
+)
 from elections_calendar.health import (
     Acknowledgement,
     HealthState,
@@ -15,10 +21,10 @@ from elections_calendar.health import (
     severity,
     source_reasons,
 )
-from elections_calendar.model import SOURCE_NAMES, SOURCE_ORDER, InputUnit, Reason
+from elections_calendar.model import REASON_STAGE, SOURCE_NAMES, SOURCE_ORDER, InputUnit, Reason
 from elections_calendar.runner import SourceOutcome, SourceRun
 from elections_calendar.snapshots import PageRecord, Snapshot, decide, registry_version, unit_items
-from elections_calendar.sources.base import PARSER_VERSION, PageOutcome, RawPages
+from elections_calendar.sources.base import PAGE_REASONS, PARSER_VERSION, PageOutcome, RawPages
 from elections_calendar.window import window_for
 from tests.support.feed import RUN_NOW, first_run, fixture_snapshot
 from tests.support.snapshots import SynthPage, promoted, report, synth
@@ -547,3 +553,47 @@ def test_timestamps_and_acknowledgements() -> None:
     # A reason without a detail shows its code.
     bare = dataclasses.replace(base, reasons=(Reason("timeout"),))
     assert source_health_entry(bare)["reasons"][0]["text"] == "timeout"
+
+
+def with_download_error(snapshot: Snapshot, key: str, error: str) -> Snapshot:
+    """The snapshot with the page's own download carrying ``error``."""
+    records: list[PageRecord] = []
+    for p in snapshot.pages:
+        if p.key == key:
+            assert p.download is not None
+            p = dataclasses.replace(p, download=dataclasses.replace(p.download, error=error))
+        records.append(p)
+    return dataclasses.replace(snapshot, pages=tuple(records))
+
+
+def test_a_download_shows_its_own_error() -> None:
+    snapshot = with_download_error(pages_of(page("p1"), page("p2", "timeout")), "p2", "boom")
+    d = source_health_entry(result_of(snapshot, detail="a note"))["download"]
+    assert d["outcome"] == "timeout"
+    assert d["error"] == "boom"
+
+    # The page's own error wins over the run detail.
+    snapshot = with_download_error(pages_of(page("p1"), page("p2")), "p1", "boom")
+    d = source_health_entry(result_of(snapshot, outcome="deadline", detail="the run detail"))
+    assert d["download"]["outcome"] == "deadline"
+    assert d["download"]["error"] == "boom"
+
+
+def test_download_outcomes_cover_every_fetch_failure_code() -> None:
+    fetch = {code for code, stage in REASON_STAGE.items() if stage == "fetch"}
+    page_codes = set(PAGE_REASONS.values())
+    assert fetch & page_codes
+    assert fetch & page_codes <= set(get_args(DownloadOutcome))
+
+
+def test_a_failed_worker_with_no_pages() -> None:
+    candidate = synth(pages=(), fetched_at=RUN_NOW)
+    assert candidate.pages == ()
+    e = source_health_entry(result_of(candidate, outcome="worker_failed", detail="parse: boom"))
+    d = e["download"]
+    assert d["outcome"] == "worker_failed"
+    assert d["error"] == "parse: boom"
+    assert (d["stage"], d["http_status"], d["final_url"]) == (None, None, None)
+    assert (d["bytes"], d["elapsed_ms"], d["attempts"]) == (0, 0, 0)
+    assert d["pages"]["requested"] == 0
+    assert e["coverage"]["per_year"] == {}
