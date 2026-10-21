@@ -1,0 +1,557 @@
+"""The feed schema and the checks of spec §11.3 (S4-T06, Review Focus 5)."""
+
+import copy
+import json
+from datetime import UTC, datetime, timedelta, timezone
+from functools import cache
+from pathlib import Path
+from typing import Any, get_args
+
+import pytest
+from jsonschema import Draft202012Validator
+
+from elections_calendar import feed as feed_module
+from elections_calendar import health, model, validate
+from elections_calendar.feed import (
+    MAX_FEED_ITEMS,
+    DownloadOutcome,
+    RunInfo,
+    SourceResult,
+    build_feed,
+)
+from elections_calendar.health import HealthState, match_diagnostic, severity, source_reasons
+from elections_calendar.merge import merge
+from elections_calendar.model import SOURCE_ORDER
+from elections_calendar.places import PlaceRegistry
+from elections_calendar.publish import feed_bytes
+from elections_calendar.runner import SourceRun
+from elections_calendar.snapshots import decide, unit_items
+from elections_calendar.sources.base import PARSER_VERSION
+from elections_calendar.validate import (
+    FEED_MAX_BYTES,
+    FEED_SCHEMA,
+    MAX_AHEAD,
+    STATUS_SCHEMA,
+    ServedCheck,
+    validate_feed,
+)
+from tests.support.feed import FIXTURE_FETCHED, RUN_NOW, first_run, fixture_feed, fixture_snapshot
+from tests.support.snapshots import SynthPage, promoted, report, synth
+
+V1_FEED = Path(__file__).parent.parent / "fixtures" / "feed" / "2026-10-16-ff30417.json"
+WALL = RUN_NOW
+
+
+def feed_doc() -> dict[str, Any]:
+    out: dict[str, Any] = json.loads(fixture_feed()[1])
+    return out
+
+
+def dump(doc: Any) -> bytes:
+    return (json.dumps(doc, ensure_ascii=False, separators=(",", ":")) + "\n").encode()
+
+
+def served_for(doc: dict[str, Any]) -> list[ServedCheck]:
+    return [
+        ServedCheck(e["source"], e["snapshot"]["served_snapshot_id"], True, True)
+        for e in doc["source_health"]
+    ]
+
+
+def check(doc: Any, *, served: list[ServedCheck] | None = None, wall: datetime = WALL) -> tuple[str, ...]:
+    given = served_for(doc) if served is None else served
+    return validate_feed(dump(doc), served=given, wall_clock=wall)
+
+
+def prefixes(problems: tuple[str, ...]) -> set[str]:
+    return {p.split(":")[0] for p in problems}
+
+
+def children(doc: dict[str, Any]) -> list[dict[str, Any]]:
+    return [c for cards in doc["months"].values() for card in cards for c in card["children"]]
+
+
+def cards(doc: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+    return [(m, c) for m, items in doc["months"].items() for c in items]
+
+
+@cache
+def fallback_feed() -> tuple[dict[str, Any], dict[str, str]]:
+    """Every source failed (all pages http_error) and serves its baseline, stamped ``fallback``."""
+    run = first_run()
+    decided = {}
+    versions = {}
+    for source in SOURCE_ORDER:
+        _, _, snapshot, _ = fixture_snapshot(source)
+        version = "1.9" if source == "osce" else PARSER_VERSION
+        versions[source] = version
+        candidate = synth(
+            source,
+            tuple(
+                SynthPage(p.key, outcome="http_error", year=p.year, scope=p.scope or None)
+                for p in snapshot.pages
+            ),
+            fetched_at=FIXTURE_FETCHED[source] + timedelta(days=1),
+            parser_version=version,
+            registry=snapshot.registry_version,
+        )
+        decided[source] = decide(
+            candidate,
+            run_outcome="complete",
+            run_detail="",
+            ledger=report(candidate),
+            baseline=promoted(snapshot),
+            baseline_problem=None,
+            acceptances=(),
+            window=run.window,
+            now=RUN_NOW,
+        )
+        assert decided[source].acceptance == "fallback", source
+    claims = tuple(c for s in SOURCE_ORDER for c in decided[s].claims)
+    merged = merge(claims, now=RUN_NOW, places=PlaceRegistry.load())
+    fresh = frozenset(s for s, d in decided.items() if d.acceptance == "promoted")
+    results = []
+    for source in SOURCE_ORDER:
+        decision = decided[source]
+        items = unit_items(decision)
+        match = match_diagnostic(merged, claims, source, fresh=fresh, window=run.window)
+        reasons = source_reasons(decision.reasons, items, match, HealthState(()))
+        results.append(
+            SourceResult(
+                source=source,
+                run=SourceRun(source, fixture_snapshot(source)[0], "complete", 0),
+                parse_ms=0,
+                ledger=report(decision.candidate),
+                decision=decision,
+                items=items,
+                match=match,
+                reasons=reasons,
+                acknowledged=(),
+                severity=severity(reasons),
+            )
+        )
+    parts = build_feed(
+        merged, results, window=run.window, now=RUN_NOW, run=RunInfo("local", ()), run_reasons=()
+    )
+    return json.loads(feed_bytes(parts.doc, published_at=RUN_NOW)), versions
+
+
+def test_feed_schema() -> None:
+    doc = feed_doc()
+    assert check(doc) == ()
+    assert validate_feed(fixture_feed()[1], served=served_for(doc), wall_clock=WALL) == ()
+
+    fallback, versions = fallback_feed()
+    assert check(fallback) == ()
+    assert [e["snapshot"]["using_fallback"] for e in fallback["source_health"]] == [True] * 9
+    assert [e["snapshot"]["acceptance"] for e in fallback["source_health"]] == ["fallback"] * 9
+    sources = [s for ch in children(fallback) for s in ch["sources"]]
+    assert sources and all(s["fallback"] is True for s in sources)
+    assert fallback["run"]["parser_version"] == PARSER_VERSION
+    assert {e["source"]: e["parse"]["parser_version"] for e in fallback["source_health"]} == versions
+    assert versions["osce"] != PARSER_VERSION
+    assert doc["run"]["parser_version"] == PARSER_VERSION == "2.0"
+
+    schema = json.loads(FEED_SCHEMA.read_text(encoding="utf-8"))
+    Draft202012Validator.check_schema(schema)
+
+    bad = copy.deepcopy(doc)
+    child = children(bad)[0]
+    child["sources"][0]["extra"] = 1
+    problems = check(bad)
+    assert any(p.startswith("schema: ") and "extra" in p for p in problems), problems
+
+    bad = copy.deepcopy(doc)
+    del children(bad)[0]["round"]
+    assert any(p.startswith("schema: ") and "round" in p for p in check(bad))
+
+    bad = copy.deepcopy(doc)
+    cards(bad)[0][1]["status"] = "Ongoing"
+    problems = check(bad)
+    assert any(p.startswith("schema: ") and "Ongoing" in p for p in problems), problems
+
+
+def test_the_schema_accepts_what_the_records_allow() -> None:
+    """Nullable fields follow the record types, not the fixture's narrower values."""
+    doc = feed_doc()
+    child = next(c for c in children(doc) if len(c["sources"]) >= 1)
+    child["round"] = 2
+    child["sources"][0]["date"] = None
+    child["sources"][0]["end_date"] = None
+    child["sources"][0]["date_precision"] = "year"
+    child["sources"][0]["fetched_at"] = None
+    child["sources"][0]["source_event_id"] = None
+    doc["attention_items"][0]["link"] = ""
+    doc["attention_items"][0]["snapshot_id"] = None
+    doc["data_as_of"] = None
+    first = doc["source_health"][0]
+    first["snapshot"].update(
+        acceptance="unavailable", served_snapshot_id=None, served_fetched_at=None,
+        using_fallback=False, baseline_units_seen=None,
+    )  # fmt: skip
+    first["download"].update(http_status=None, final_url=None, content_type=None, error=None)
+    served = served_for(doc)
+    served[0] = ServedCheck(first["source"], None, True, True)
+    assert check(doc, served=served) == ()
+
+
+def test_schema_enums_equal_the_literals() -> None:
+    feed_defs = json.loads(FEED_SCHEMA.read_text(encoding="utf-8"))["$defs"]
+    status_defs = json.loads(STATUS_SCHEMA.read_text(encoding="utf-8"))["$defs"]
+    literals = {
+        "Kind": model.Kind, "OfficeClass": model.OfficeClass, "Level": model.Level,
+        "JurisdictionKind": model.JurisdictionKind, "Precision": model.Precision,
+        "DateMeaning": model.DateMeaning, "DateStatus": model.DateStatus,
+        "StatusClaim": model.StatusClaim, "LegacyStatus": model.LegacyStatus,
+        "EvidenceKind": model.EvidenceKind, "RejectedReason": model.RejectedReason,
+        "ProvisionalDate": model.ProvisionalDate, "AttentionKind": model.AttentionKind,
+        "Relevance": model.Relevance, "Acceptance": model.Acceptance,
+        "DownloadOutcome": DownloadOutcome, "Severity": health.Severity,
+        "ReasonCode": model.ReasonCode, "ReasonLevel": model.ReasonLevel, "Stage": model.Stage,
+    }  # fmt: skip
+    assert len(literals) == 20
+    for name, literal in literals.items():
+        values = list(get_args(literal))
+        assert values and len(set(values)) == len(values)
+        assert sorted(feed_defs[name]["enum"]) == sorted(values), name
+        if name in status_defs:
+            assert sorted(status_defs[name]["enum"]) == sorted(values), name
+    assert sorted(feed_defs["sourceHealth"]["properties"]["source"]["enum"]) == sorted(SOURCE_ORDER)
+    assert status_defs["Outcome"]["enum"] == [
+        "published", "validation_failed", "superseded", "paused", "republished",
+    ]  # fmt: skip
+    status = json.loads(STATUS_SCHEMA.read_text(encoding="utf-8"))
+    Draft202012Validator.check_schema(status)
+
+
+def test_every_schema_object_is_closed_and_complete() -> None:
+    for path in (FEED_SCHEMA, STATUS_SCHEMA):
+        schema = json.loads(path.read_text(encoding="utf-8"))
+        seen = 0
+
+        def walk(node: Any) -> None:
+            nonlocal seen
+            if isinstance(node, dict):
+                if node.get("type") == "object" and "properties" in node:
+                    seen += 1
+                    assert node["additionalProperties"] is False
+                    assert sorted(node["required"]) == sorted(node["properties"])
+                for value in node.values():
+                    walk(value)
+            elif isinstance(node, list):
+                for value in node:
+                    walk(value)
+
+        walk(schema)
+        assert seen >= (10 if path == FEED_SCHEMA else 3)
+
+
+def test_v1_feed_is_not_a_v2_feed() -> None:
+    problems = validate_feed(V1_FEED.read_bytes(), served=[], wall_clock=WALL)
+    assert problems and "schema" in prefixes(problems)
+    assert all(p.split(":")[0] in {"schema", "legacy", "invariant", "served", "timestamp"} for p in problems)
+
+
+@pytest.mark.parametrize(
+    "data", [b"{}", b"[]", b"null", b"3", b'"x"', b'{"months": []}', b'{"months": {"2026-10": 5}}',
+             b'{"months": {"2026-10": [3, {"children": 4, "sources": 5, "umbrellas": [6]}]}}',
+             b'{"attention_items": [1, {"item_id": 2}], "undated": "x", "source_health": [7]}'],
+)  # fmt: skip
+def test_odd_shapes_give_problems_and_never_crash(data: bytes) -> None:
+    problems = validate_feed(data, served=[], wall_clock=WALL)
+    assert problems and "schema" in prefixes(problems)
+
+
+def test_non_json_stops_at_the_json_check() -> None:
+    for data in (b"nope", b"\xff\xfe\x00", b"", b'{"a": 1,}', b"\xef\xbb\xbf{}"):
+        assert validate_feed(data, served=[], wall_clock=WALL) == ("json: not UTF-8 JSON",), data
+
+
+def test_validate_is_unchanged_clean() -> None:
+    assert check(feed_doc()) == ()
+
+
+def corrupt_date(doc: dict[str, Any]) -> None:
+    cards(doc)[0][1]["date"] = "2026-10"
+
+
+def corrupt_names(doc: dict[str, Any]) -> None:
+    cards(doc)[0][1]["source_names"] = ["Nobody"]
+
+
+def corrupt_links(doc: dict[str, Any]) -> None:
+    cards(doc)[1][1]["links"] = []
+
+
+def corrupt_country(doc: dict[str, Any]) -> None:
+    cards(doc)[2][1]["country"] = ""
+
+
+def corrupt_status(doc: dict[str, Any]) -> None:
+    cards(doc)[3][1]["status"] = "Ongoing"
+
+
+def corrupt_bib(doc: dict[str, Any]) -> None:
+    cards(doc)[4][1]["sources"][0]["link"] = 7
+
+
+def corrupt_impossible_date(doc: dict[str, Any]) -> None:
+    cards(doc)[5][1]["date"] = "2026-13-45"
+
+
+LEGACY_ROWS = [
+    ("date", corrupt_date, 0, "is not YYYY-MM-DD"),
+    ("source_names", corrupt_names, 0, "source_names differ"),
+    ("links", corrupt_links, 1, "links differ"),
+    ("country", corrupt_country, 2, "country is empty"),
+    ("status", corrupt_status, 3, "is not a legacy value"),
+    ("sources", corrupt_bib, 4, "sources is not a list of name and link strings"),
+    ("impossible date", corrupt_impossible_date, 5, "is not YYYY-MM-DD"),
+]
+
+
+@pytest.mark.parametrize(
+    ("label", "change", "index", "said"), LEGACY_ROWS, ids=[r[0] for r in LEGACY_ROWS]
+)
+def test_validate_legacy_contract(label: str, change: Any, index: int, said: str) -> None:
+    doc = feed_doc()
+    group = cards(doc)[index][1]["group_id"]
+    change(doc)
+    problems = check(doc)
+    legacy = [p for p in problems if p.startswith("legacy: ")]
+    assert legacy, (label, problems)
+    assert any(said in p for p in legacy), (said, legacy)
+    assert all(p.startswith(f"legacy: {group}: ") for p in legacy), legacy
+    # the other cards are untouched
+    assert len(legacy) == 1 or label in ("status", "sources")
+
+
+def test_validate_source_names_out_of_step_is_only_a_legacy_problem() -> None:
+    doc = feed_doc()
+    corrupt_names(doc)
+    assert prefixes(check(doc)) == {"legacy"}
+
+
+def test_validate_invariants() -> None:
+    base = feed_doc()
+    kids = children(base)
+    kid_a, kid_b = kids[0], next(k for k in kids if k["child_id"] != kids[0]["child_id"])
+    one, two = cards(base)[0][1], cards(base)[1][1]
+
+    def repeat_child(doc: dict[str, Any]) -> None:
+        children(doc)[1]["child_id"] = children(doc)[0]["child_id"]
+
+    def repeat_group(doc: dict[str, Any]) -> None:
+        cards(doc)[1][1]["group_id"] = cards(doc)[0][1]["group_id"]
+
+    def repeat_undated(doc: dict[str, Any]) -> None:
+        doc["undated"][1]["undated_id"] = doc["undated"][0]["undated_id"]
+
+    def repeat_item(doc: dict[str, Any]) -> None:
+        doc["attention_items"][1]["item_id"] = doc["attention_items"][0]["item_id"]
+
+    def dangling_child_match(doc: dict[str, Any]) -> None:
+        children(doc)[0]["possible_matches"] = ["f" * 12]
+
+    def dangling_item_match(doc: dict[str, Any]) -> None:
+        doc["attention_items"][0]["possible_matches"] = ["e" * 12]
+
+    def dangling_listing_match(doc: dict[str, Any]) -> None:
+        doc["undated"][0]["possible_matches"] = ["d" * 12]
+
+    def lost_listing(doc: dict[str, Any]) -> None:
+        doc["attention_items"][0]["undated_id"] = "c" * 12
+
+    def foreign_umbrella_child(doc: dict[str, Any]) -> None:
+        mine = cards(doc)[0][1]
+        other = cards(doc)[1][1]["children"][0]["child_id"]
+        mine["umbrellas"].append(
+            {"name": "x", "link": "", "office_label": "", "date_text": "", "children": [other]}
+        )
+
+    def two_selected(doc: dict[str, Any]) -> None:
+        child = next(c for c in children(doc) if len(c["sources"]) >= 2)
+        for source in child["sources"]:
+            source["selected"] = True
+
+    def none_selected(doc: dict[str, Any]) -> None:
+        for source in children(doc)[0]["sources"]:
+            source["selected"] = False
+
+    def wrong_month(doc: dict[str, Any]) -> None:
+        month, card = cards(doc)[0]
+        other = next(m for m in doc["months"] if m != month)
+        doc["months"][month].remove(card)
+        doc["months"][other].append(card)
+
+    def too_many_items(doc: dict[str, Any]) -> None:
+        template = doc["attention_items"][0]
+        doc["attention_items"] = [
+            {**template, "item_id": f"{n:012x}", "undated_id": None, "kind": "unresolved_evidence"}
+            for n in range(501)
+        ]
+
+    def outside_window(doc: dict[str, Any]) -> None:
+        card = cards(doc)[0][1]
+        card["date"] = card["end_date"] = "2031-01-01"
+
+    rows = [
+        (repeat_child, "child_id"), (repeat_group, "group_id"), (repeat_undated, "undated_id"),
+        (repeat_item, "item_id"), (dangling_child_match, "possible_matches"),
+        (dangling_item_match, "possible_matches"), (dangling_listing_match, "possible_matches"),
+        (lost_listing, "undated_id"), (foreign_umbrella_child, "umbrella"),
+        (two_selected, "selected"), (none_selected, "selected"), (wrong_month, "month"),
+        (too_many_items, "500"), (outside_window, "month"),
+    ]  # fmt: skip
+    assert kid_a["child_id"] != kid_b["child_id"] and one is not two
+    for change, word in rows:
+        doc = copy.deepcopy(base)
+        change(doc)
+        found = [p for p in check(doc) if p.startswith("invariant: ")]
+        assert found, change.__name__
+        assert any(word in p for p in found), (change.__name__, found)
+    # a repeated id names the repeat
+    doc = copy.deepcopy(base)
+    repeat_child(doc)
+    named = children(doc)[0]["child_id"]
+    assert any(named in p for p in check(doc) if p.startswith("invariant: "))
+
+
+def test_max_items_constant_matches_the_feed() -> None:
+    assert validate.MAX_ATTENTION_ITEMS == MAX_FEED_ITEMS == 500
+    schema = json.loads(FEED_SCHEMA.read_text(encoding="utf-8"))
+    assert schema["properties"]["attention_items"]["maxItems"] == MAX_FEED_ITEMS
+    assert feed_module.MAX_FEED_ITEMS == validate.MAX_ATTENTION_ITEMS
+
+
+def test_a_truncated_feed_of_500_items_is_valid() -> None:
+    doc = feed_doc()
+    template = doc["attention_items"][0]
+    doc["attention_items"] = [
+        {**template, "item_id": f"{n:012x}", "undated_id": None, "kind": "unresolved_evidence"}
+        for n in range(500)
+    ]
+    doc["attention_truncated"] = 3
+    assert check(doc) == ()
+    doc["attention_items"].append({**template, "item_id": "a" * 12, "undated_id": None})
+    problems = check(doc)
+    assert {"schema", "invariant"} <= prefixes(problems)
+
+
+def test_validate_size() -> None:
+    doc = feed_doc()
+    data = dump(doc)
+    served = served_for(doc)
+    exact = data + b" " * (FEED_MAX_BYTES - len(data))
+    assert len(exact) == FEED_MAX_BYTES == 2_000_000
+    assert validate_feed(exact, served=served, wall_clock=WALL) == ()
+    over = exact + b" "
+    assert validate_feed(over, served=served, wall_clock=WALL) == (
+        "size: 2000001 bytes is over 2000000",
+    )
+
+
+def test_validate_timestamps_and_served() -> None:
+    doc = feed_doc()
+    late = WALL - timedelta(minutes=11)  # published_at is 11 minutes ahead of this clock
+    problems = check(doc, wall=late)
+    stamped = [p for p in problems if p.startswith("timestamp: ")]
+    assert len(stamped) == 2
+    assert stamped[1] == (
+        "timestamp: published_at is 2026-10-19T12:00:00Z, "
+        "more than 10 minutes ahead of 2026-10-19T11:49:00Z"
+    )
+    assert prefixes(problems) == {"timestamp"}
+
+    served = served_for(doc)
+    wrong = [ServedCheck(served[0].source, "0" * 64, True, True), *served[1:]]
+    found = check(doc, served=wrong)
+    assert len(found) == 1 and found[0].startswith(f"served: {served[0].source}: ")
+
+    for field in ("ledger_ok", "discovery_ok"):
+        bad = [ServedCheck(served[1].source, served[1].snapshot_id, **{
+            "ledger_ok": field != "ledger_ok", "discovery_ok": field != "discovery_ok"})]
+        found = check(doc, served=[served[0], *bad, *served[2:]])
+        assert len(found) == 1 and found[0].startswith(f"served: {served[1].source}: "), found
+        assert field.split("_")[0] in found[0]
+
+    missing = check(doc, served=served[1:])
+    assert len(missing) == 1 and missing[0].startswith(f"served: {served[0].source}: ")
+    stray = check(doc, served=[*served, ServedCheck("nowhere", None, True, True)])
+    assert len(stray) == 1 and stray[0].startswith("served: nowhere: ")
+
+
+def test_an_unavailable_source_is_served_nothing() -> None:
+    doc = feed_doc()
+    entry = doc["source_health"][2]
+    entry["snapshot"].update(
+        acceptance="unavailable", using_fallback=False, served_snapshot_id=None,
+        served_fetched_at=None,
+    )  # fmt: skip
+    served = served_for(doc)
+    assert served[2].snapshot_id is None
+    assert check(doc, served=served) == ()
+    # the same entry against a served snapshot is a mismatch (the check compares null with None)
+    served[2] = ServedCheck(entry["source"], "a" * 64, True, True)
+    found = check(doc, served=served)
+    assert len(found) == 1 and found[0].startswith(f"served: {entry['source']}: ")
+
+
+def ahead(field: str, delta: timedelta) -> tuple[str, ...]:
+    doc = feed_doc()
+    moment = WALL + delta
+    doc[field] = moment.astimezone(UTC).isoformat().replace("+00:00", "Z")
+    return check(doc)
+
+
+@pytest.mark.parametrize("field", ["generated_at", "published_at"])
+def test_timestamps_ahead_of_the_clock_fail(field: str) -> None:
+    assert ahead(field, timedelta(minutes=10)) == ()
+    assert ahead(field, timedelta(minutes=-30)) == ()
+    found = ahead(field, timedelta(minutes=10, seconds=1))
+    assert len(found) == 1 and found[0].startswith(f"timestamp: {field} is ")
+    assert found[0] == (
+        f"timestamp: {field} is 2026-10-19T12:10:01Z, "
+        "more than 10 minutes ahead of 2026-10-19T12:00:00Z"
+    )
+    fractional = ahead(field, timedelta(minutes=10, microseconds=500_000))
+    assert len(fractional) == 1 and fractional[0].startswith("timestamp: ")
+    assert timedelta(minutes=10) == MAX_AHEAD
+
+
+def test_an_offset_timestamp_is_a_schema_problem() -> None:
+    doc = feed_doc()
+    doc["generated_at"] = "2026-10-19T14:00:00+02:00"
+    problems = check(doc)
+    assert any(p.startswith("schema: ") and "generated_at" in p for p in problems), problems
+    doc = feed_doc()
+    doc["published_at"] = "2026-10-19T12:00:00"
+    assert any(p.startswith("schema: ") for p in check(doc))
+
+
+def test_wall_clock_zone_does_not_matter() -> None:
+    doc = feed_doc()
+    zone = timezone(timedelta(hours=-5))
+    assert check(doc, wall=WALL.astimezone(zone)) == ()
+    assert check(doc, wall=(WALL - timedelta(minutes=11)).astimezone(zone))
+
+
+def test_naive_wall_clock_raises() -> None:
+    doc = feed_doc()
+    with pytest.raises(ValueError, match="timezone-aware"):
+        check(doc, wall=datetime(2026, 10, 19, 12))
+    with pytest.raises(ValueError, match="timezone-aware"):
+        validate_feed(b"nope", served=[], wall_clock=datetime(2026, 10, 19, 12))
+
+
+def test_schema_problems_are_sorted_and_cut() -> None:
+    doc = feed_doc()
+    doc["window"]["years"] = "x"
+    doc["current_month"] = "b" * 1000
+    doc["errors"] = [1] * 3
+    problems = [p for p in check(doc) if p.startswith("schema: ")]
+    assert len(problems) >= 5
+    paths = [p.split(": ")[1] for p in problems]
+    assert paths == sorted(paths, key=lambda s: s.split("/"))
+    assert all(len(p) <= 300 for p in problems)
+    assert any(len(p) == 300 for p in problems)

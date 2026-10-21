@@ -1,0 +1,919 @@
+{
+  "generated_at": "2026-10-16T00:02:31Z",
+  "current_month": "2026-10",
+  "months": {
+    "2026-09": [
+      {
+        "date": "2026-09-03",
+        "country": "Canada",
+        "type": "Ontario Hamilton East—Stoney Creek , by-election York—Simcoe , by-election Scarborough Southwest , by-election",
+        "status": "Held",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Canada"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Canada"
+          }
+        ]
+      },
+      {
+        "date": "2026-09-06",
+        "country": "Germany",
+        "type": "Saxony-Anhalt , Landtag",
+        "status": "Held",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Germany"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Germany"
+          }
+        ]
+      },
+      {
+        "date": "2026-09-12",
+        "country": "Australia",
+        "type": "Northern Territory , Mulka , by-election [ 9 ]",
+        "status": "Held",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Australia"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Australia"
+          }
+        ]
+      },
+      {
+        "date": "2026-09-13",
+        "country": "Germany",
+        "type": "Lower Saxony , local elections Sweden , regional and municipal elections Japan , Okinawa Prefecture , Governor",
+        "status": "Held",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Germany"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Germany"
+          }
+        ]
+      },
+      {
+        "date": "2026-09-14",
+        "country": "Philippines",
+        "type": "Bangsamoro Parliament Canada , Alberta , Calgary-Shaw , by-election [ 10 ]",
+        "status": "Held",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_the_Philippines"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_the_Philippines"
+          }
+        ]
+      },
+      {
+        "date": "2026-09-18",
+        "country": "Samoa",
+        "type": "[ 11 ] Falealili 1, Legislative Assembly by-election Vaimauga 3, Legislative Assembly by-election",
+        "status": "Held",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Samoa"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Samoa"
+          }
+        ]
+      },
+      {
+        "date": "2026-09-20",
+        "country": "Germany",
+        "type": "Berlin , Abgeordnetenhaus and Bezirksverordnetenversammlungen Mecklenburg-Vorpommern , Landtag Russia , regional elections",
+        "status": "Held",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Germany"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Germany"
+          }
+        ]
+      },
+      {
+        "date": "2026-09-27",
+        "country": "Switzerland",
+        "type": "Referendum",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5080/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5080/"
+          }
+        ]
+      },
+      {
+        "date": "2026-09-27",
+        "country": "Poland",
+        "type": "Kraków , mayoral by-election (1st round)",
+        "status": "Held",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Poland"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Poland"
+          }
+        ]
+      }
+    ],
+    "2026-10": [
+      {
+        "date": "2026-10-01",
+        "country": "Colombia",
+        "type": "EU Election Observation Mission",
+        "status": "Held",
+        "source_names": [
+          "EEAS"
+        ],
+        "links": [
+          "https://www.eeas.europa.eu/eom-colombia-2026_en"
+        ],
+        "sources": [
+          {
+            "name": "EEAS",
+            "link": "https://www.eeas.europa.eu/eom-colombia-2026_en"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-01",
+        "country": "Peru",
+        "type": "EU Election Observation Mission",
+        "status": "Held",
+        "source_names": [
+          "EEAS"
+        ],
+        "links": [
+          "https://www.eeas.europa.eu/eom-peru-2026_en"
+        ],
+        "sources": [
+          {
+            "name": "EEAS",
+            "link": "https://www.eeas.europa.eu/eom-peru-2026_en"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-01",
+        "country": "Bangladesh",
+        "type": "EU Election Observation Mission",
+        "status": "Held",
+        "source_names": [
+          "EEAS"
+        ],
+        "links": [
+          "https://www.eeas.europa.eu/eom-bangladesh-2026"
+        ],
+        "sources": [
+          {
+            "name": "EEAS",
+            "link": "https://www.eeas.europa.eu/eom-bangladesh-2026"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-01",
+        "country": "Zambia",
+        "type": "EU Election Observation Mission",
+        "status": "Held",
+        "source_names": [
+          "EEAS"
+        ],
+        "links": [
+          "https://www.eeas.europa.eu/eom-zambia-2026_en"
+        ],
+        "sources": [
+          {
+            "name": "EEAS",
+            "link": "https://www.eeas.europa.eu/eom-zambia-2026_en"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-01",
+        "country": "São Tomé e Príncipe",
+        "type": "EU Election Observation Mission",
+        "status": "Held",
+        "source_names": [
+          "EEAS"
+        ],
+        "links": [
+          "https://www.eeas.europa.eu/eom-sao-tome-e-principe-2026_en"
+        ],
+        "sources": [
+          {
+            "name": "EEAS",
+            "link": "https://www.eeas.europa.eu/eom-sao-tome-e-principe-2026_en"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-03",
+        "country": "Latvia",
+        "type": "Latvian Parliament",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5087/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5087/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-04",
+        "country": "Brazil",
+        "type": "Brazilian Chamber of Deputies",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5090/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5090/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-04",
+        "country": "Brazil",
+        "type": "Brazilian Federal Senate",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide",
+          "Wikipedia"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5089/",
+          "https://en.wikipedia.org/wiki/Elections_in_Brazil"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5089/"
+          },
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Brazil"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-04",
+        "country": "Bosnia and Herzegovina",
+        "type": "Bosnia and Herzegovina Presidency",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5095/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5095/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-05",
+        "country": "Canada",
+        "type": "Quebec , National Assembly",
+        "status": "Held",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Canada"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Canada"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-08",
+        "country": "Tonga",
+        "type": "[ 12 ] Niua 17 , Legislative Assembly by-election Tongatapu 2 , Legislative Assembly by-election United Kingdom , Holborn and St Pancras , House of Commons by-election",
+        "status": "Held",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Tonga"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Tonga"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-09",
+        "country": "Czech Republic",
+        "type": "Czech Senate",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5082/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5082/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-11",
+        "country": "Slovenia",
+        "type": "Referendum",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5253/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5253/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-11",
+        "country": "Poland",
+        "type": "Kraków , mayoral election (2nd round)",
+        "status": "Held",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Poland"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Poland"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-16",
+        "country": "Czech Republic",
+        "type": "Czech Senate",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5259/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5259/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-17",
+        "country": "Canada",
+        "type": "British Columbia , municipal elections Vancouver , municipal elections",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Canada"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Canada"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-18",
+        "country": "Japan",
+        "type": "Yokohama , Mayor",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Japan"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Japan"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-19",
+        "country": "Canada",
+        "type": "Alberta , Referendum",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Canada"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Canada"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-24",
+        "country": "Canada",
+        "type": "British Columbia , Legislative Assembly Slovakia , regional and local elections",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Canada"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Canada"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-25",
+        "country": "Bulgaria",
+        "type": "Bulgarian Presidency",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5101/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5101/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-25",
+        "country": "Serbia",
+        "type": "Serbian National Assembly",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5252/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5252/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-25",
+        "country": "Brazil",
+        "type": "Brazilian Presidency",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5254/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5254/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-25",
+        "country": "Brazil",
+        "type": "2026 General Elections (2nd round)",
+        "status": "Upcoming",
+        "source_names": [
+          "A-WEB"
+        ],
+        "links": [
+          "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052"
+        ],
+        "sources": [
+          {
+            "name": "A-WEB",
+            "link": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-25",
+        "country": "Japan",
+        "type": "Fukushima , Governor",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Japan"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Japan"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-26",
+        "country": "Canada",
+        "type": "Ontario , municipal elections Hamilton , municipal elections Ottawa , municipal elections York Region municipal elections Toronto , municipal elections",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Canada"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Canada"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-27",
+        "country": "Israel",
+        "type": "Israeli Knesset",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5092/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5092/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-28",
+        "country": "Canada",
+        "type": "Manitoba , municipal elections",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Canada"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Canada"
+          }
+        ]
+      }
+    ],
+    "2026-11": [
+      {
+        "date": "2026-11-02",
+        "country": "The Philippines",
+        "type": "2026 Barangay and Sangguniang Kabataan Elections (BSKE)",
+        "status": "Upcoming",
+        "source_names": [
+          "A-WEB"
+        ],
+        "links": [
+          "https://pco.gov.ph/news_releases/pbbm-signs-into-law-postponement-of-barangay-sk-polls-until-next-year/"
+        ],
+        "sources": [
+          {
+            "name": "A-WEB",
+            "link": "https://pco.gov.ph/news_releases/pbbm-signs-into-law-postponement-of-barangay-sk-polls-until-next-year/"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-02",
+        "country": "Canada",
+        "type": "Prince Edward Island , municipal elections",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Canada"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Canada"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-03",
+        "country": "United States",
+        "type": "US Senate",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5098/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5098/"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-03",
+        "country": "United States",
+        "type": "midterm elections Alabama , Governor , Lieutenant Governor , Secretary of State , Attorney General , ballot measures, and local elections Alaska , Governor and Lieutenant Governor Arizona , Governor, Lieutenant Governor , Secretary of State , and Attorney General Arkansas , Governor , Lieutenant Governor , Secretary of State , and Attorney General California Governor , Lieutenant Governor , Secretary of State , and Attorney General Anaheim , Mayor Chula Vista , Mayor Irvine , Mayor Los Angeles , Mayor (2nd round) Oakland , Mayor Santa Ana , Mayor Colorado , Governor, Lieutenant Governor , Secretary of State , and Attorney General Connecticut , Governor, Lieutenant Governor , Secretary of the State , Attorney General , Comptroller , and Treasurer District of Columbia , Mayor and Attorney General Florida , Governor, Lieutenant Governor , and Attorney General Georgia , Governor , Lieutenant Governor , Secretary of State , and Attorney General Hawaii , Governor and Lieutenant Governor Idaho , Governor and Lieutenant Governor Illinois , Governor, Lieutenant Governor , Secretary of State , and Attorney General Indiana , Secretary of State Iowa , Governor, Lieutenant Governor , Secretary of State , and Attorney General Kansas , Governor, Lieutenant Governor , Secretary of State , Attorney General , and ballot measure Kentucky Lexington , Mayor Louisville , Mayor Maine , Governor Maryland , Governor, Lieutenant Governor , and Attorney General Massachusetts , Governor, Lieutenant Governor , Secretary of the Commonwealth , and Attorney General Michigan , Governor, Lieutenant Governor , Secretary of State , and Attorney General Minnesota Governor, Lieutenant Governor , Secretary of State , and Attorney General Hennepin County , County Attorney Nebraska , Governor and Lieutenant Governor Nevada Governor , Lieutenant Governor , Secretary of State , and Attorney General Henderson , Mayor (2nd round) North Las Vegas , Mayor (2nd round) Reno , Mayor New Hampshire , Governor New Mexico , Governor, Lieutenant Governor , and Secretary of State New York , Governor, Lieutenant Governor , and Attorney General North Carolina , Raleigh , Mayor Ohio , Governor, Lieutenant Governor , Secretary of State , and Attorney General Oklahoma , Governor , Lieutenant Governor , and Attorney General Oregon , Governor Pennsylvania , Governor and Lieutenant Governor Rhode Island , Governor , Lieutenant Governor , and Attorney General South Carolina , Governor, Lieutenant Governor , and Attorney General South Dakota , Governor, Lieutenant Governor , Secretary of State , Attorney General , and ballot measure Tennessee , Governor and county elections Texas Governor , Lieutenant Governor , and Attorney General Corpus Christi , Mayor Laredo , Mayor Vermont , Governor , Lieutenant Governor , and ballot measure Virginia , ballot measures Wisconsin , Governor, Lieutenant Governor , Secretary of State , and Attorney General Wyoming , Governor and local elections",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_the_United_States"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_the_United_States"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-03",
+        "country": "Northern Mariana Islands",
+        "type": "Northern Mariana Islands Governor",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5105/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5105/"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-03",
+        "country": "American Samoa",
+        "type": "American Samoan House of Representatives",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5214/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5214/"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-04",
+        "country": "South Africa",
+        "type": "municipal elections",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_South_Africa"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_South_Africa"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-06",
+        "country": "Ireland",
+        "type": "Seanad by-election",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_the_Republic_of_Ireland"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_the_Republic_of_Ireland"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-08",
+        "country": "Lithuania",
+        "type": "Northern Nalšia, Seimas by-election",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Lithuania"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Lithuania"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-09",
+        "country": "Canada",
+        "type": "Saskatchewan , municipal elections",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Canada"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Canada"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-15",
+        "country": "Moldova",
+        "type": "Gagauzia , general election",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Moldova"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Moldova"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-22",
+        "country": "Poland",
+        "type": "Senate Constituency no. 20 by-election",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Poland"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Poland"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-28",
+        "country": "Taiwan",
+        "type": "2026 Local Elections",
+        "status": "Upcoming",
+        "source_names": [
+          "A-WEB"
+        ],
+        "links": [
+          "https://focustaiwan.tw/politics/202510310018"
+        ],
+        "sources": [
+          {
+            "name": "A-WEB",
+            "link": "https://focustaiwan.tw/politics/202510310018"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-28",
+        "country": "Australia",
+        "type": "Victoria , Legislative Assembly Philippines , Batanes , at-large congressional district , special election Taiwan , local elections",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Australia"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Australia"
+          }
+        ]
+      }
+    ]
+  },
+  "errors": []
+}

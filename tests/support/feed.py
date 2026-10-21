@@ -13,12 +13,13 @@ from functools import cache
 from types import MappingProxyType
 
 from elections_calendar import ledger
-from elections_calendar.feed import SourceResult
+from elections_calendar.feed import FeedParts, RunInfo, SourceResult, build_feed
 from elections_calendar.health import HealthState, match_diagnostic, severity, source_reasons
 from elections_calendar.ledger import LedgerReport
 from elections_calendar.merge import merge
 from elections_calendar.model import SOURCE_ORDER, Claim, MergeResult
 from elections_calendar.places import PlaceRegistry
+from elections_calendar.publish import feed_bytes
 from elections_calendar.runner import SourceRun
 from elections_calendar.snapshots import (
     Decision,
@@ -119,3 +120,18 @@ def first_run() -> FirstRun:
             severity=severity(reasons),
         )
     return FirstRun(window, MappingProxyType(sources), merged, claims)
+
+
+@cache
+def fixture_feed() -> tuple[FeedParts, bytes]:
+    """The ``first_run()`` feed document and its published bytes (``RUN_NOW`` for both times)."""
+    run = first_run()
+    parts = build_feed(
+        run.merge,
+        [run.sources[s] for s in SOURCE_ORDER],
+        window=run.window,
+        now=RUN_NOW,
+        run=RunInfo("local", ()),
+        run_reasons=(),
+    )
+    return parts, feed_bytes(parts.doc, published_at=RUN_NOW)
