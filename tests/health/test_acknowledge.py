@@ -1,27 +1,35 @@
 """Acknowledgements, accepted drops and recurrence state (§9.6; P91, P94, P95; R16)."""
 
 import json
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 from elections_calendar.health import (
     Acknowledgement,
+    Entry,
     HealthState,
+    KnownIssues,
+    Scope,
     acknowledge,
     drop_acceptances,
     health_state_to_dict,
     in_effect,
     load_health_state,
+    load_known_issues,
     next_health_state,
+    not_yet_active,
+    parse_known_issues,
     present_keys,
     reason_key,
     relevance_reasons,
     state_problem_reason,
     unit_key,
 )
-from elections_calendar.model import DropAcceptance, Reason
+from elections_calendar.model import DropAcceptance, Reason, ReasonCode, RecordError, Stage
 from tests.support.known_issues import NOW, SCOPE_FETCH, entry, issues, ts
 from tests.support.unit_items import fixture_unit_items, item, renumbered
 
@@ -152,6 +160,14 @@ CORRUPT = [
     (b'{"last_absent_at": {"k": 5}, "reset_at": null}', "timestamp of k"),
     (b'{"last_absent_at": {}, "reset_at": "2026-10-20T10:00:00"}', "timestamp of reset_at"),
     (b'{"last_absent_at": {}, "reset_at": 7}', "timestamp of reset_at"),
+    (b'{"last_absent_at": {}, "reset_at": null, "reset_at": null}', "shape"),
+    (
+        b'{"last_absent_at": {"k": "2026-10-20T10:00:00Z", "k": "2026-10-20T11:00:00Z"},'
+        b' "reset_at": null}',
+        "shape",
+    ),
+    (b'{"last_absent_at": {"k": "9999-12-31T23:59:59-05:00"}, "reset_at": null}', "timestamp of k"),
+    (b'{"last_absent_at": {}, "reset_at": "0001-01-01T00:00:00+05:00"}', "timestamp of reset_at"),
 ]
 
 
@@ -169,6 +185,10 @@ CORRUPT = [
         "number-k",
         "naive-reset",
         "number-reset",
+        "repeated-top-key",
+        "repeated-inner-key",
+        "overflow-k",
+        "overflow-reset",
     ],
 )
 def test_a_corrupt_health_state_voids_every_acknowledgement(
@@ -338,12 +358,6 @@ def test_drop_acceptances_follow_file_order_and_carry_the_year() -> None:
     ]
 
 
-def test_an_accept_drop_without_a_page_gives_no_acceptance() -> None:
-    known = issues(_drop(scope="{stage: snapshot, year: null, page: null}"))
-    assert len(known.entries) == 1
-    assert drop_acceptances(known, {"osce": CLEAN}, NOW) == ()
-
-
 def test_an_accept_drop_also_acknowledges_the_drop_warning() -> None:
     known = issues(_drop())
     drop = Reason("cumulative_drop", "x", page="elections")
@@ -507,3 +521,103 @@ def test_the_key_of_a_unit_entry_is_the_key_of_its_item() -> None:
     assert unit_entry.key == unit_key("unparsed_relevant", "t1")
     state = next_health_state(CLEAN, "eisa", issues(_unit_entry("t1")), frozenset(), NOW)
     assert state.last_absent_at == ((unit_entry.key, NOW),)
+
+
+def test_a_corrupt_state_reason_is_one_short_line() -> None:
+    reason = state_problem_reason(HealthState((), "timestamp of " + "k\n" * 400))
+    assert reason is not None
+    assert len(reason.detail) == 300
+    assert "\n" not in reason.detail
+    assert reason.detail.startswith("health_state.json is corrupt: timestamp of k k k")
+
+
+def test_a_reset_at_equal_to_the_acknowledgement_does_not_void_it() -> None:
+    (only,) = issues(entry()).entries
+    assert in_effect(only, HealthState((), None, only.acknowledged_at), NOW)
+    assert not in_effect(
+        only, HealthState((), None, only.acknowledged_at + timedelta(seconds=1)), NOW
+    )
+
+
+def _built(code: ReasonCode, stage: Stage) -> Entry:
+    return Entry(
+        index=1,
+        kind="acknowledgement",
+        source="ipu",
+        reason=code,
+        scope=Scope(stage, None, None),
+        unit_text=None,
+        units_seen_min=None,
+        claims_min=None,
+        explanation="x",
+        owner="y",
+        acknowledged_at=NOW - HOUR,
+        expires_at=NOW + timedelta(days=1),
+    )
+
+
+def test_acknowledge_never_mutes_a_never_acknowledgeable_reason() -> None:
+    built = KnownIssues(
+        (_built("ledger_mismatch", "parse"), _built("count_change", "snapshot")), ()
+    )
+    reasons = [Reason("ledger_mismatch", "x"), Reason("count_change", "y")]
+    assert acknowledge("ipu", reasons, [], built, CLEAN, NOW) == ()
+    ok = KnownIssues((_built("http_error", "fetch"),), ())
+    assert codes(acknowledge("ipu", [*reasons, HTTP], [], ok, CLEAN, NOW)) == ["http_error"]
+
+
+NAIVE = datetime(2026, 10, 20, 12)
+
+
+def _first_entry() -> Entry:
+    return issues(entry()).entries[0]
+
+
+NAIVE_NOW_CALLS = {
+    "parse_known_issues": lambda: parse_known_issues("[]", now=NAIVE),
+    "load_known_issues": lambda: load_known_issues(Path("no-such-file.yml"), now=NAIVE),
+    "in_effect": lambda: in_effect(_first_entry(), CLEAN, NAIVE),
+    "not_yet_active": lambda: not_yet_active(KnownIssues((), ()), NAIVE),
+    "acknowledge": lambda: acknowledge("ipu", (), (), KnownIssues((), ()), CLEAN, NAIVE),
+    "drop_acceptances": lambda: drop_acceptances(KnownIssues((), ()), {}, NAIVE),
+    "next_health_state": lambda: next_health_state(
+        CLEAN, "ipu", KnownIssues((), ()), frozenset(), NAIVE
+    ),
+}
+
+
+@pytest.mark.parametrize("call", NAIVE_NOW_CALLS.values(), ids=NAIVE_NOW_CALLS.keys())
+def test_a_naive_now_raises(call: Callable[[], object]) -> None:
+    with pytest.raises(ValueError, match="now must be timezone-aware"):
+        call()
+
+
+BAD_STATES: dict[str, dict[str, Any]] = {
+    "list-not-tuple": {"last_absent_at": [("a", NOW)]},
+    "pair-as-list": {"last_absent_at": (["a", NOW],)},
+    "pair-of-three": {"last_absent_at": (("a", NOW, 1),)},
+    "key-not-str": {"last_absent_at": ((1, NOW),)},
+    "value-not-datetime": {"last_absent_at": (("a", "x"),)},
+    "value-naive": {"last_absent_at": (("a", NAIVE),)},
+    "problem-not-str": {"last_absent_at": (), "problem": 5},
+    "reset-not-datetime": {"last_absent_at": (), "reset_at": "2026-10-20"},
+    "reset-naive": {"last_absent_at": (), "reset_at": NAIVE},
+}
+
+
+@pytest.mark.parametrize("fields", BAD_STATES.values(), ids=BAD_STATES.keys())
+def test_a_health_state_rejects_odd_fields(fields: dict[str, Any]) -> None:
+    with pytest.raises(RecordError):
+        HealthState(**fields)
+
+
+def test_an_odd_yaml_value_in_a_message_stays_small() -> None:
+    levels = ["- junk: &l0 [x, x, x]"] + [
+        f"  junk{n}: &l{n} [*l{n - 1}, *l{n - 1}, *l{n - 1}]" for n in range(1, 8)
+    ]
+    text = "\n".join(levels) + "\n" + entry(source="*l7") + "\n"
+    result = parse_known_issues(text, now=NOW)
+    assert [p.detail for p in result.problems] == [
+        "known_issues.yml entry 1: missing field source",
+        "known_issues.yml entry 2: unknown source list",
+    ]

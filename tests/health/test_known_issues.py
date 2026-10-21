@@ -286,6 +286,81 @@ ENTRY_CHECKS: list[tuple[str, str, str]] = [
 ]
 
 
+NULL_PAGE = "{stage: snapshot, year: null, page: null}"
+TYPO = "{stage: fecth, year: null, page: null}"
+LATER = NOW + 3 * DAY
+ENTRY_CHECKS += [
+    ("stage typo", entry(scope=TYPO), "scope.stage must be fetch for http_error"),
+    (
+        "bad stage and bad source: source wins",
+        entry(source="cnn", scope=TYPO),
+        "unknown source cnn",
+    ),
+    (
+        "stage a list",
+        entry(scope="{stage: [fetch], year: null, page: null}"),
+        SCOPE_SHAPE,
+    ),
+    ("reason a list", entry(reason="[http_error]"), "unknown reason list"),
+    ("reason a mapping", entry(reason="{a: 1}"), "unknown reason dict"),
+    ("reason a huge int", entry(reason="0x" + "f" * 4000), "unknown reason int"),
+    ("reason a small int", entry(reason="42"), "unknown reason 42"),
+    ("source a list", entry(source="[ipu]"), "unknown source list"),
+    ("source a mapping", entry(source="{a: 1}"), "unknown source dict"),
+    ("an unknown field that is not a string", entry(**{"5": "1"}), "unknown field 5"),
+    ("accept_drop without a page", _drop(scope=NULL_PAGE), "an accept_drop needs scope.page"),
+    (
+        "sudden_drop without a page",
+        _drop(reason="sudden_drop", scope=NULL_PAGE),
+        "an accept_drop needs scope.page",
+    ),
+    (
+        "accept_drop: the stage is checked before the page",
+        _drop(scope="{stage: parse, year: null, page: null}"),
+        "scope.stage must be snapshot for cumulative_drop",
+    ),
+    (
+        "accept_drop: the page is checked before the text",
+        _drop(scope=NULL_PAGE, explanation='" "'),
+        "an accept_drop needs scope.page",
+    ),
+    ("order: shape before source", entry(source="cnn", scope="{stage: fetch}"), SCOPE_SHAPE),
+    ("order: source before reason", entry(source="cnn", reason="oops"), "unknown source cnn"),
+    (
+        "order: never before unit",
+        entry(reason="ledger_mismatch", scope=None, unit_text="x"),
+        "ledger_mismatch can never be acknowledged",
+    ),
+    (
+        "order: ints before stage",
+        _drop(accept_units_seen_min="-1", scope="{stage: parse, year: null, page: elections}"),
+        f"accept_units_seen_min {MIN_INT}",
+    ),
+    (
+        "order: text before timestamp",
+        entry(explanation='" "', expires_at="soon"),
+        "explanation must not be empty",
+    ),
+    (
+        "order: acknowledged_at before expires_at",
+        entry(acknowledged_at="2026-10-20T11:00:00", expires_at="soon"),
+        TS_ACK,
+    ),
+    (
+        "order: length before ahead",
+        entry(acknowledged_at=ts(LATER), expires_at=ts(LATER + 20 * DAY)),
+        "an acknowledgement lasts at most 14 days",
+    ),
+    (
+        "order: after before ahead",
+        entry(acknowledged_at=ts(LATER), expires_at=ts(LATER - DAY)),
+        "expires_at must be after acknowledged_at",
+    ),
+    ("expires_at overflows UTC", entry(expires_at="9999-12-31T23:59:59-05:00"), TS_EXP),
+    ("acknowledged_at overflows UTC", entry(acknowledged_at="0001-01-01T00:00:00+05:00"), TS_ACK),
+]
+
+
 @pytest.mark.parametrize(
     ("text", "problem"), [r[1:] for r in ENTRY_CHECKS], ids=[r[0] for r in ENTRY_CHECKS]
 )

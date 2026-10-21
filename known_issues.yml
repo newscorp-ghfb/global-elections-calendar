@@ -20,9 +20,11 @@
 #     `year` is a whole number or null; `page` is a string or null.
 #   - `expires_at` is after `acknowledged_at`, at most 14 days later; `acknowledged_at` is
 #     at most 1 day ahead of the run.
-#   - Errors that stop a source cannot be hidden for good: ledger_mismatch, discovery_mismatch,
-#     fallback_stale, served_mismatch, attention_truncated, ack_invalid, merge_failed,
-#     validation_failed and every info reason can never be acknowledged.
+#   - Some reasons can never be acknowledged, errors, warnings and info alike:
+#     ledger_mismatch, discovery_mismatch, fallback_stale, served_mismatch,
+#     attention_truncated, ack_invalid, merge_failed, validation_failed, and every info
+#     reason (not_published_yet, count_change, provisional_changes, units_disappeared).
+#   - An accept_drop needs a `scope.page`.
 #   - An acknowledgement ends when the reason goes away and comes back (recurrence).
 #
 # Example (§9.6):
