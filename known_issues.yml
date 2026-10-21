@@ -1,0 +1,37 @@
+# known_issues.yml: acknowledgements and accepted drops (spec §9.6, P95).
+#
+# A YAML list of mappings; an empty list means nothing is acknowledged. A file that is not
+# valid YAML, or an entry that breaks a rule below, gives an `ack_invalid` warning and has
+# no effect. Every timestamp needs a time zone (`2026-10-20T11:00:00Z`); a date alone does not.
+#
+# Kinds (all fields are required, and no others are allowed):
+#
+#   acknowledgement       source, reason, scope: {stage, year, page}, explanation, owner,
+#                         acknowledged_at, expires_at
+#   unit_acknowledgement  the same, with `unit_text` (the unit's full text, whitespace
+#                         collapsed) in place of `scope`; reason is unparsed_relevant or
+#                         partial_relevant; one entry per unit
+#   accept_drop           the acknowledgement fields plus `accept_units_seen_min` and
+#                         `accept_claims_min` (whole numbers, 0 or more); reason is
+#                         sudden_drop or cumulative_drop; the candidate must reach both
+#
+# Rules:
+#   - `scope.stage` must be the reason's stage (fetch, parse, snapshot, match or run);
+#     `year` is a whole number or null; `page` is a string or null.
+#   - `expires_at` is after `acknowledged_at`, at most 14 days later; `acknowledged_at` is
+#     at most 1 day ahead of the run.
+#   - Errors that stop a source cannot be hidden for good: ledger_mismatch, discovery_mismatch,
+#     fallback_stale, served_mismatch, attention_truncated, ack_invalid, merge_failed,
+#     validation_failed and every info reason can never be acknowledged.
+#   - An acknowledgement ends when the reason goes away and comes back (recurrence).
+#
+# Example (§9.6):
+#
+# - source: ipu
+#   reason: http_error
+#   scope: {stage: fetch, year: null, page: null}
+#   explanation: the site is down for maintenance
+#   owner: ops
+#   acknowledged_at: 2026-10-20T11:00:00Z
+#   expires_at: 2026-10-26T12:00:00Z
+[]
