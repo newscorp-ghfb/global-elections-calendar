@@ -477,3 +477,23 @@ def test_split_top_level_when_casefold_changes_length() -> None:
 )
 def test_unnamed_parts(text: str, place_id: str, expected: list[str]) -> None:  # P64
     assert unnamed_parts(text, place_id, REGISTRY) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "place_id", "expected"),
+    [
+        ("Presidential and Vice-Presidential", "iso:PH", []),
+        ("Presidential and Vice Presidential", "iso:NG", []),
+        ("Governor and Lieutenant Governor", "iso:US", []),
+        ("Gubernatorial and Lieutenant Gubernatorial", "iso:US", []),
+        ("Mayoral and Vice-Mayoral", "iso:PH", []),
+        ("National and Provincial", "iso:ZA", ["National"]),
+    ],
+)
+def test_joint_ticket_is_not_unnamed_parts(  # R21, P102
+    text: str, place_id: str, expected: list[str]
+) -> None:
+    assert unnamed_parts(text, place_id, REGISTRY) == expected
+    assert split_offices("Presidential and Vice-Presidential", "iso:PH", REGISTRY) == [
+        "Presidential and Vice-Presidential"
+    ]

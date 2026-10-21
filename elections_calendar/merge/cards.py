@@ -329,6 +329,7 @@ def _pending_item(p: Pending, window: Window, places: PlaceRegistry) -> Attentio
         possible_matches=tuple(sorted(k.child_id for k in p.candidates)),
         merge_ids=(c.merge_id,),
         undated_id=None,
+        date=None if c.span.precision == "year" else c.span.start,
     )
 
 
