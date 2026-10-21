@@ -291,6 +291,10 @@ def corrupt_status(doc: dict[str, Any]) -> None:
     cards(doc)[3][1]["status"] = "Ongoing"
 
 
+def corrupt_status_unhashable(doc: dict[str, Any]) -> None:
+    cards(doc)[3][1]["status"] = []
+
+
 def corrupt_bib(doc: dict[str, Any]) -> None:
     cards(doc)[4][1]["sources"][0]["link"] = 7
 
@@ -305,6 +309,7 @@ LEGACY_ROWS = [
     ("links", corrupt_links, 1, "links differ"),
     ("country", corrupt_country, 2, "country is empty"),
     ("status", corrupt_status, 3, "is not a legacy value"),
+    ("status list", corrupt_status_unhashable, 3, "is not a legacy value"),
     ("sources", corrupt_bib, 4, "sources is not a list of name and link strings"),
     ("impossible date", corrupt_impossible_date, 5, "is not YYYY-MM-DD"),
 ]
@@ -323,7 +328,7 @@ def test_validate_legacy_contract(label: str, change: Any, index: int, said: str
     assert any(said in p for p in legacy), (said, legacy)
     assert all(p.startswith(f"legacy: {group}: ") for p in legacy), legacy
     # the other cards are untouched
-    assert len(legacy) == 1 or label in ("status", "sources")
+    assert len(legacy) == 1 or label in ("status", "status list", "sources")
 
 
 def test_validate_source_names_out_of_step_is_only_a_legacy_problem() -> None:
@@ -623,7 +628,8 @@ def fuzz_paths(doc: dict[str, Any]) -> list[tuple[Any, ...]]:
         (*card, "children", 0, "possible_matches"), (*card, "children", 0, "child_id"),
         (*card, "children", 0, "sources"), (*card, "children", 0, "sources", 0),
         (*card, "children", 0, "sources", 0, "selected"), (*card, "umbrellas"),
-        (*card, "sources"), (*card, "date"), (*card, "end_date"), (*card, "group_id"),
+        (*card, "sources"), (*card, "status"), (*card, "country"), (*card, "type"),
+        (*card, "source_names"), (*card, "links"), (*card, "date"), (*card, "end_date"), (*card, "group_id"),
         ("window",), ("window", "months"), ("window", "months", 0),
         ("attention_items",), ("attention_items", 0), ("attention_items", 0, "undated_id"),
         ("attention_items", 0, "item_id"), ("attention_items", 0, "possible_matches"),
@@ -633,12 +639,24 @@ def fuzz_paths(doc: dict[str, Any]) -> list[tuple[Any, ...]]:
     ]  # fmt: skip
 
 
+def empty_ok_paths(doc: dict[str, Any]) -> set[tuple[Any, ...]]:
+    """Where an empty list is a valid feed: the optional or may-be-empty collections."""
+    month = next(iter(doc["months"]))
+    index = next(i for i, c in enumerate(doc["months"][month]) if c["children"])
+    card = ("months", month, index)
+    return {
+        (*card, "children", 0, "possible_matches"), (*card, "umbrellas"),
+        ("attention_items", 0, "possible_matches"), ("attention_items",), ("undated",),
+    }  # fmt: skip
+
+
 FUZZ_VALUES: list[Any] = [[], {}, [[1]], None, "0000-01"]
 
 
 def test_a_replaced_value_at_any_depth_never_raises() -> None:
     base = feed_doc()
     paths = fuzz_paths(base)
+    empty_ok = empty_ok_paths(base)
     served = served_for(base)
     for path in paths:
         for value in FUZZ_VALUES:
@@ -648,7 +666,10 @@ def test_a_replaced_value_at_any_depth_never_raises() -> None:
             problems = validate_feed(dump(doc), served=served, wall_clock=WALL)  # no raise
             if doc == base:
                 continue
-            assert problems or (value == [] and isinstance(original, list)), (path, value)
+            allowed = value == [] and isinstance(original, list) and path in empty_ok
+            # a free-text card field accepts any other non-empty string
+            allowed = allowed or (value == "0000-01" and path[3:] in (("country",), ("type",)))
+            assert problems or allowed, (path, value)
 
 
 def test_a_second_non_string_in_each_reference_is_a_problem() -> None:
