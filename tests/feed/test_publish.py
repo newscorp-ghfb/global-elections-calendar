@@ -4,12 +4,13 @@ import copy
 import hashlib
 import json
 import os
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 import pytest
 
+from elections_calendar.model import canonical_json
 from elections_calendar.publish import (
     FEED_BUDGET_BYTES,
     content_id,
@@ -177,3 +178,52 @@ def test_manifest_lists_every_file(tmp_path: Path) -> None:
     }
     assert list(manifest["files"]) == ["a.json", "data/sources/osce/baseline.json"]
     assert json.loads((tmp_path / "manifest.json").read_bytes()) == manifest
+
+
+def test_feed_bytes_needs_an_aware_publication_time() -> None:
+    doc = fixture_doc()
+    with pytest.raises(ValueError, match="timezone-aware"):
+        feed_bytes(doc, published_at=datetime(2026, 10, 19, 13, 30))
+    plus_two = datetime(2026, 10, 19, 15, 30, tzinfo=timezone(timedelta(hours=2)))
+    assert json.loads(feed_bytes(doc, published_at=plus_two))["published_at"] == (
+        "2026-10-19T13:30:00Z"
+    )
+
+
+def test_write_atomic_cleans_up_when_the_sync_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "a.json"
+    target.write_bytes(b"old")
+
+    def boom(fd: int) -> None:
+        raise OSError("sync says no")
+
+    monkeypatch.setattr("elections_calendar.publish.os.fsync", boom)
+    with pytest.raises(OSError, match="sync says no"):
+        write_atomic(target, b"new")
+    assert target.read_bytes() == b"old"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["a.json"]
+
+
+def test_content_id_keeps_the_snapshot_order_and_drops_fetched_at() -> None:
+    def entry(source: str, snapshot_id: str) -> dict[str, Any]:
+        return {"source": source, "snapshot": {"served_snapshot_id": snapshot_id}}
+
+    doc: dict[str, Any] = {
+        "months": {"2026-10": [{"date": "2026-10-25", "fetched_at": "2026-10-19T00:00:00Z"}]},
+        "undated": [],
+        "attention_items": [],
+        "source_health": [entry("osce", "id1"), entry("electionguide", "id2")],
+    }
+    expected = hashlib.sha256(
+        canonical_json(
+            {
+                "months": {"2026-10": [{"date": "2026-10-25"}]},
+                "undated": [],
+                "attention_items": [],
+                "snapshots": [["osce", "id1"], ["electionguide", "id2"]],
+            }
+        )
+    ).hexdigest()
+    assert content_id(doc) == expected

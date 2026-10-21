@@ -1,8 +1,14 @@
-"""The feed's per-source health entries (spec §5.6; P96; R11, R15).
+"""The feed document and its per-source health entries (spec §5.6, §5.7; P84-P87, P96; R11, R15).
+
+``build_feed`` assembles the document from the merge result and the sources' runs: the months, the
+undated listings and the attention items capped at ``MAX_FEED_ITEMS``. It also returns the full
+attention list (``attention_full``) and the ``dispositions`` as audit parts beside the feed. A
+source given twice or outside ``SOURCE_ORDER`` raises, so none is dropped silently.
 
 ``SourceResult`` is one source's run as the pipeline assembles it; ``source_health_entry`` turns
 it into the JSON object of ``source_health[]``. Every text in an entry was capped and redacted
-upstream, except a run's detail, which is redacted and cut here. Nothing here reads the clock.
+upstream, except a run's detail, which is redacted and cut here. Nothing here reads the clock:
+``build_feed`` uses only the ``now`` it is given.
 """
 
 from collections.abc import Sequence
@@ -420,7 +426,13 @@ def build_feed(
     """The feed document, the full attention list and the dispositions (§5.7; P84-P87)."""
     if now.utcoffset() is None:
         raise ValueError("now must be timezone-aware")
-    by_source = {s.source: s for s in sources}
+    by_source: dict[str, SourceResult] = {}
+    for s in sources:
+        if s.source not in SOURCE_ORDER:
+            raise ValueError(f"unknown source: {s.source}")
+        if s.source in by_source:
+            raise ValueError(f"a source appears twice: {s.source}")
+        by_source[s.source] = s
     ordered = [by_source[k] for k in SOURCE_ORDER if k in by_source]
     in_window = [c for c in result.cards if window.bucket(c.span) is not None]
     in_feed = frozenset(ch.child_id for c in in_window for ch in c.children)

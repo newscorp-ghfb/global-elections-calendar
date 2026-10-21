@@ -41,6 +41,8 @@ def content_id(doc: Mapping[str, Any]) -> str:
 
 def feed_bytes(doc: Mapping[str, Any], *, published_at: datetime) -> bytes:
     """``elections.json``: the document with its content id and publication time set."""
+    if published_at.utcoffset() is None:
+        raise ValueError("published_at must be timezone-aware")
     out = dict(doc)
     out["content_id"] = content_id(doc)
     out["published_at"] = _utc_iso(published_at)
