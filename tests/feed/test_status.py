@@ -241,3 +241,35 @@ def test_the_v1_fixture_is_the_committed_file() -> None:
         "0e5ca8d5bf1cc90beb2a00081308e5cf2c81220eda2c3d3b2429ee715afef89b"
     )
     assert json.loads(data)["generated_at"] == "2026-10-16T00:02:31Z"
+
+
+@pytest.mark.parametrize(
+    "stamp",
+    [
+        "2026-10-16",  # a bare date is not a status-v1 timestamp
+        "2026-13-01T00:00:00Z",  # impossible month
+        "2026-10-16T00:00:00Z <x>",  # a suffix after a real timestamp
+        "2026-10-16T00:00:00Z\n",
+    ],
+)
+def test_status_echoes_only_a_real_serving_time(stamp: str) -> None:
+    serving = json.dumps({"published_at": stamp, "generated_at": stamp, "content_id": "a" * 64})
+    got = doc(outcome="validation_failed", serving=serving.encode())
+    assert got["serving_published_at"] is None
+    assert got["serving_generated_at"] is None
+    assert got["serving_content_id"] == "a" * 64
+    assert validate_status(json.dumps(got).encode()) == ()
+
+
+def test_status_echoes_a_fractional_serving_time() -> None:
+    stamp = "2026-10-16T00:02:31.5Z"
+    serving = json.dumps({"published_at": stamp, "generated_at": stamp}).encode()
+    got = doc(outcome="validation_failed", serving=serving)
+    assert (got["serving_published_at"], got["serving_generated_at"]) == (stamp, stamp)
+    assert validate_status(json.dumps(got).encode()) == ()
+
+
+def test_status_echoes_only_a_whole_content_id() -> None:
+    for bad in ("a" * 64 + "\n", "a" * 64 + "x", "a" * 63):
+        serving = json.dumps({"content_id": bad}).encode()
+        assert doc(outcome="validation_failed", serving=serving)["serving_content_id"] is None

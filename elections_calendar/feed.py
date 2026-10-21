@@ -236,16 +236,7 @@ def source_health_entry(result: SourceResult) -> dict[str, Any]:
         },
         "severity": result.severity,
         "reasons": [reason_dict(r) for r in result.reasons],
-        "acknowledged": [
-            {
-                "code": a.code,
-                "until": _utc_iso(a.until),
-                "stage": a.stage,
-                "year": a.year,
-                "page": a.page,
-            }
-            for a in result.acknowledged
-        ],
+        "acknowledged": [_acknowledged_dict(a) for a in result.acknowledged],
     }
 
 
@@ -419,6 +410,17 @@ def _cap_key(item: AttentionItem) -> tuple[int, bool, str, str]:
     )
 
 
+def _acknowledged_dict(a: Acknowledgement) -> dict[str, Any]:
+    """One acknowledgement as ``feed`` and ``status.json`` both list it (without its source)."""
+    return {
+        "code": a.code,
+        "until": _utc_iso(a.until),
+        "stage": a.stage,
+        "year": a.year,
+        "page": a.page,
+    }
+
+
 def _errors(sources: Sequence[SourceResult], run_reasons: Sequence[Reason]) -> list[str]:
     groups = [(SOURCE_NAMES[s.source], s.reasons) for s in sources]
     groups.append(("Run", tuple(run_reasons)))
@@ -523,6 +525,7 @@ _CODE_SHA: Final = re.compile(r"[0-9a-f]{40}")
 _STAMP: Final = re.compile(
     r"[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z)?"
 )
+_TIMESTAMP: Final = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z")
 _DIGEST: Final = re.compile(r"[0-9a-f]{64}")
 _ESCAPES: Final = str.maketrans({c: "\\" + c for c in string.punctuation})
 _UNIT_HINT: Final = "acknowledge each unit by its full text (unit_text in attention_full.json)"
@@ -562,6 +565,17 @@ def attempt_of(environ: Mapping[str, str], now: datetime) -> Attempt:
     )
 
 
+def _real_timestamp(value: str) -> bool:
+    """Whether ``value`` is a whole status-v1 timestamp that names a real moment."""
+    if not _TIMESTAMP.fullmatch(value):
+        return False
+    try:
+        datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return True
+
+
 def _serving_fields(serving: bytes | None) -> dict[str, str | None]:
     """The four ``serving_*`` fields of the bytes the repository serves (NM-T04)."""
     fields: dict[str, str | None] = {
@@ -578,13 +592,13 @@ def _serving_fields(serving: bytes | None) -> dict[str, str | None]:
     except (ValueError, RecursionError):
         return fields
     if isinstance(loaded, dict):
-        for field, key, shape in (
-            ("serving_published_at", "published_at", _STAMP),
-            ("serving_generated_at", "generated_at", _STAMP),
-            ("serving_content_id", "content_id", _DIGEST),
+        for field, key, valid in (
+            ("serving_published_at", "published_at", _real_timestamp),
+            ("serving_generated_at", "generated_at", _real_timestamp),
+            ("serving_content_id", "content_id", _DIGEST.fullmatch),
         ):
             value = loaded.get(key)
-            if isinstance(value, str) and shape.fullmatch(value):
+            if isinstance(value, str) and valid(value):
                 fields[field] = value
     return fields
 
@@ -658,14 +672,7 @@ def status_doc(
             for s in ordered
         ],
         "acknowledged": [
-            {
-                "source": s.source,
-                "code": a.code,
-                "until": _utc_iso(a.until),
-                "stage": a.stage,
-                "year": a.year,
-                "page": a.page,
-            }
+            {"source": s.source, **_acknowledged_dict(a)}
             for s in ordered
             for a in s.acknowledged
         ],

@@ -555,3 +555,138 @@ def test_schema_problems_are_sorted_and_cut() -> None:
     assert paths == sorted(paths, key=lambda s: s.split("/"))
     assert all(len(p) <= 300 for p in problems)
     assert any(len(p) == 300 for p in problems)
+
+
+# --- review round 1: never raise on an odd shape, never pass what cannot be read --------------
+
+
+def first_card(doc: dict[str, Any]) -> dict[str, Any]:
+    return next(c for items in doc["months"].values() for c in items if c["children"])
+
+
+def umbrella_card(doc: dict[str, Any]) -> dict[str, Any]:
+    return next(c for items in doc["months"].values() for c in items if c["umbrellas"])
+
+
+def odd_possible_matches(doc: dict[str, Any]) -> None:
+    first_card(doc)["children"][0]["possible_matches"] = [[1]]
+
+
+def odd_undated_id(doc: dict[str, Any]) -> None:
+    doc["attention_items"][0]["undated_id"] = []
+
+
+def odd_umbrella_children(doc: dict[str, Any]) -> None:
+    umbrella_card(doc)["umbrellas"][0]["children"] = [{}]
+
+
+def odd_window_month(doc: dict[str, Any]) -> None:
+    doc["window"]["months"][0] = "0000-01"
+
+
+ODD_ROWS = [
+    ("possible_matches", odd_possible_matches, "invariant"),
+    ("undated_id", odd_undated_id, "invariant"),
+    ("umbrella children", odd_umbrella_children, "invariant"),
+    ("month 0000-01", odd_window_month, "invariant"),
+]
+
+
+@pytest.mark.parametrize(("label", "change", "kind"), ODD_ROWS, ids=[r[0] for r in ODD_ROWS])
+def test_odd_values_are_problems_not_exceptions(label: str, change: Any, kind: str) -> None:
+    doc = feed_doc()
+    change(doc)
+    problems = check(doc)  # must not raise
+    assert any(p.startswith(f"{kind}: ") for p in problems), (label, problems)
+
+
+def test_a_window_month_that_is_not_a_real_month_is_an_invariant_problem() -> None:
+    for bad in ("0000-01", "2026-13", "2026-00", "2026-1x"):
+        doc = feed_doc()
+        doc["window"]["months"][0] = bad
+        problems = check(doc)
+        assert any(p.startswith("invariant: ") and bad in p for p in problems), (bad, problems)
+
+
+def pick(doc: Any, path: tuple[Any, ...]) -> Any:
+    for step in path:
+        doc = doc[step]
+    return doc
+
+
+def fuzz_paths(doc: dict[str, Any]) -> list[tuple[Any, ...]]:
+    month = next(iter(doc["months"]))
+    index = next(i for i, c in enumerate(doc["months"][month]) if c["children"])
+    card = ("months", month, index)
+    return [
+        ("months",), ("months", month), (*card,), (*card, "children"), (*card, "children", 0),
+        (*card, "children", 0, "possible_matches"), (*card, "children", 0, "child_id"),
+        (*card, "children", 0, "sources"), (*card, "children", 0, "sources", 0),
+        (*card, "children", 0, "sources", 0, "selected"), (*card, "umbrellas"),
+        (*card, "sources"), (*card, "date"), (*card, "end_date"), (*card, "group_id"),
+        ("window",), ("window", "months"), ("window", "months", 0),
+        ("attention_items",), ("attention_items", 0), ("attention_items", 0, "undated_id"),
+        ("attention_items", 0, "item_id"), ("attention_items", 0, "possible_matches"),
+        ("undated",), ("source_health",), ("source_health", 0), ("source_health", 0, "source"),
+        ("source_health", 0, "snapshot"), ("source_health", 0, "snapshot", "served_snapshot_id"),
+        ("generated_at",), ("published_at",),
+    ]  # fmt: skip
+
+
+FUZZ_VALUES: list[Any] = [[], {}, [[1]], None, "0000-01"]
+
+
+def test_a_replaced_value_at_any_depth_never_raises() -> None:
+    base = feed_doc()
+    paths = fuzz_paths(base)
+    served = served_for(base)
+    for path in paths:
+        for value in FUZZ_VALUES:
+            doc = copy.deepcopy(base)
+            original = pick(doc, path)
+            pick(doc, path[:-1])[path[-1]] = copy.deepcopy(value)
+            problems = validate_feed(dump(doc), served=served, wall_clock=WALL)  # no raise
+            if doc == base:
+                continue
+            assert problems or (value == [] and isinstance(original, list)), (path, value)
+
+
+def test_a_second_non_string_in_each_reference_is_a_problem() -> None:
+    doc = feed_doc()
+    first_card(doc)["children"][0]["possible_matches"] = [{"a": 1}]
+    assert any(p.startswith("invariant: ") for p in check(doc))
+
+
+def test_an_impossible_timestamp_is_a_problem_not_skipped() -> None:
+    for field, value in (
+        ("generated_at", "2026-13-01T00:00:00Z"),
+        ("published_at", "2027-10-19T12:00:00Z\n"),
+        ("published_at", "2026-02-30T00:00:00Z"),
+    ):
+        doc = feed_doc()
+        doc[field] = value
+        problems = check(doc)
+        assert any(p.startswith(f"timestamp: {field} ") for p in problems), (field, value, problems)
+
+
+def test_a_card_end_date_that_is_not_a_real_day_is_a_problem() -> None:
+    for bad in ("2026-02-30", "2026-10-04\n"):
+        doc = feed_doc()
+        first_card(doc)["end_date"] = bad
+        group = first_card(doc)["group_id"]
+        problems = check(doc)
+        assert any(
+            p.startswith(f"invariant: card {group} ") and "end_date" in p for p in problems
+        ), (bad, problems)
+
+
+def test_a_card_date_with_a_trailing_newline_is_a_legacy_problem() -> None:
+    doc = feed_doc()
+    first_card(doc)["date"] = "2026-10-04\n"
+    assert any(p.startswith("legacy: ") and "is not YYYY-MM-DD" in p for p in check(doc))
+    doc = feed_doc()
+    first_card(doc)["date"] = "2026-02-30"
+    assert any(p.startswith("legacy: ") for p in check(doc))
+    doc = feed_doc()
+    first_card(doc)["date"] = "20261004"  # date.fromisoformat accepts it; the feed does not
+    assert any(p.startswith("legacy: ") for p in check(doc))
