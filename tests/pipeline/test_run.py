@@ -237,7 +237,7 @@ def test_an_invalid_status_blocks_publishing(
     assert reason["text"].startswith("status: ")
     assert load(out, "verdict.json")["outcome"] == "validation_failed"
     assert load(out, "rejected/status.json")["x"] == 1
-    assert (out / "rejected" / "validation.txt").read_text(encoding="utf-8").startswith("schema")
+    assert (out / "rejected" / "validation.txt").read_text(encoding="utf-8").startswith("status: schema")
     assert not (out / "elections.json").exists()
     assert not (out / "data").exists()
     assert "rejected/elections.json" not in files(out)
@@ -254,7 +254,8 @@ def test_an_invalid_status_blocks_publishing(
     manifest = load(out, "manifest.json")["files"]
     assert set(manifest) == files(out) - {"manifest.json"}
     problem = (out / "rejected" / "validation.txt").read_text(encoding="utf-8").splitlines()[0]
-    assert reason["text"] == "status: " + problem
+    assert reason["text"] == problem
+    assert problem.startswith("status: ")
     assert md_text(problem) in (out / "HEALTH.md").read_text(encoding="utf-8")
 
 
@@ -620,3 +621,34 @@ def test_an_out_of_range_time_is_a_usage_error(field: str, tmp_path: Path) -> No
     with pytest.raises(pipeline.UsageError, match="--now is out of range"):
         run(cfg)
     assert not cfg.out.exists()
+
+
+def test_a_baseline_of_another_source_is_never_served(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _, first = go(tmp_path, osce_offline(tmp_path), out="first")
+    commit(first, repo)
+    folder = repo / "data" / "sources"
+    (folder / "ipu").mkdir()
+    for name in ("baseline.json", "health_state.json"):
+        shutil.copyfile(folder / "osce" / name, folder / "ipu" / name)  # IPU's files hold OSCE's
+    _, out = go(tmp_path, offline_dir(tmp_path, [], name="empty"), specs=(IPU,), out="second")
+    (entry,) = load(out, "elections.json")["source_health"]
+    assert entry["source"] == "ipu"
+    assert entry["snapshot"]["acceptance"] == "unavailable"
+    texts = [r["text"] for r in entry["reasons"]]
+    assert any(t.startswith("baseline.json is corrupt: it is of 'osce', not 'ipu'") for t in texts)
+    assert list(children(load(out, "elections.json"))) == []  # nothing of OSCE is served as IPU
+
+
+def test_a_scrape_run_of_another_source_is_a_programming_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fake(specs: Any, window: Any, **kwargs: Any) -> ScrapeRun:
+        raw = RawPages("ipu", (), ())
+        return ScrapeRun((), (SourceRun("ipu", raw, "complete", 0),))
+
+    monkeypatch.setattr(pipeline, "run_sources", fake)
+    cfg = config(tmp_path, None)
+    with pytest.raises(ValueError, match="scrape run of 'ipu'.*for 'osce'"):
+        run(cfg)
+    assert not cfg.out.exists() or files(cfg.out) == set()

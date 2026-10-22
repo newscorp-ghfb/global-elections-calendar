@@ -1120,6 +1120,69 @@ def test_disappeared_units() -> None:
     assert d.disappeared == ()
 
 
+def gone_event(number: int) -> Disappeared:
+    return Disappeared(
+        f"electionguide:{number}",
+        f"{EG}/r{number}",
+        "text",
+        "15 November 2026",
+        date(2026, 11, 15),
+        date(2026, 11, 15),
+        G.link,
+        NOW - DAY,
+    )
+
+
+def test_one_event_id_with_two_baseline_claims_gives_one_disappeared() -> None:
+    """Two claims of one ``source_event_id`` give one record: the first, in the baseline's order."""
+    twin = dataclasses.replace(G, unit_id=f"{EG}/r8", claim_id=f"{EG}/r8#0")
+    texts = ((G.unit_id, "first"), (twin.unit_id, "second"))
+    page = SynthPage("upcoming", claims=(G, twin, OLD), texts=texts)
+    b0 = promoted(synth(source="electionguide", pages=(page,), fetched_at=T0))
+    d = run(listing(*OTHERS, at=NOW), b0)
+    assert d.acceptance == "promoted"
+    (gone,) = d.disappeared
+    assert (gone.source_event_id, gone.unit_id, gone.text) == (
+        "electionguide:5259",
+        G.unit_id,
+        "first",
+    )
+    assert d.baseline is not None and d.baseline.disappeared == (gone,)
+    # carried records are folded the same way
+    stored = promoted(b0.snapshot, disappeared=(gone, dataclasses.replace(gone, unit_id=twin.unit_id)))
+    d = run(listing(*OTHERS, at=NOW), stored)
+    assert d.disappeared == (gone,)
+    d = run(listing(at=NOW, outcome="timeout"), stored)  # and when the baseline is served
+    assert d.acceptance == "fallback"
+    assert d.disappeared == (gone,)
+
+
+def test_gaps_and_disappeared_are_sorted() -> None:
+    later, earlier = gone_event(9), gone_event(1)
+    base = listing(*OTHERS, at=T0)
+    stored = promoted(base, disappeared=(later, earlier))
+    wanted = (earlier, later)
+    assert run(listing(*OTHERS, at=NOW), stored).disappeared == wanted  # promoted
+    fallback = run(listing(at=NOW, outcome="timeout"), stored)
+    assert fallback.acceptance == "fallback"
+    assert fallback.disappeared == wanted
+
+    b0 = promoted(aweb((GAMBIA, *MARCH), 2026, datetime(2026, 12, 20, 6, tzinfo=UTC)))
+    unsorted_gaps = (
+        CoverageGap("calendar", 2026, 2027, R1 + DAY, (GAMBIA,)),
+        CoverageGap("calendar", 2026, 2027, R1, (GAMBIA,)),
+    )
+    edited = dataclasses.replace(b0, coverage_gaps=unsorted_gaps)
+    d = run(aweb(FEBRUARY, 2027, R1), edited, now=R1)
+    assert [g.since for g in d.coverage_gaps] == [R1, R1, R1 + DAY]  # the new gap joins the two
+    served = promoted(
+        aweb(MARCH, 2026, datetime(2026, 12, 20, 6, tzinfo=UTC)), coverage_gaps=unsorted_gaps
+    )
+    d = run(aweb((), 2027, R1, outcome="timeout"), served, now=R1)
+    assert d.acceptance == "fallback"
+    assert d.coverage_gaps == (unsorted_gaps[1], unsorted_gaps[0])
+
+
 def test_a_coverage_gap_is_promoted() -> None:
     note = Reason("coverage_gap", "dated text beside the table: 5 December 2026")
     d = run(one(100, notes=(note,)), promoted(one(100, fetched_at=T0)))
@@ -1177,3 +1240,19 @@ def test_scope_counts() -> None:
         "d": ScopeCount(units=0, claims=0, pages=1, year=None, all_valid_empty=False),
     }
     assert list(scope_counts(snapshot)) == ["a", "b", "c", "d"]
+
+
+@pytest.mark.parametrize("outcome", ["complete", "deadline", "scrape_deadline"])
+def test_no_ledger_is_only_for_a_parse_failure(outcome: SourceOutcome) -> None:
+    candidate = one(100)
+    with pytest.raises(ValueError, match="no ledger report"):
+        run(candidate, ledger=None, outcome=outcome)
+    assert run(candidate, ledger=None, outcome="worker_failed", detail="parse: X").acceptance == (
+        "unavailable"
+    )
+
+
+def test_a_baseline_of_another_source_is_a_programming_error() -> None:
+    baseline = promoted(listing(*OTHERS, at=T0))  # electionguide
+    with pytest.raises(ValueError, match="baseline is of 'electionguide', the candidate of 'osce'"):
+        run(one(100), baseline)

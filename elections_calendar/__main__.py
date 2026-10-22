@@ -2,8 +2,8 @@
 
 Exit 0: a complete artifact was written, whatever the verdict. Exit 1: the run failed before it
 could write one (an untrusted CA bundle, or an unexpected error, which propagates). Exit 2: a
-usage error. Only this module reads the machine clock; ``pipeline`` reads only
-``RunConfig.timer``, for ``parse_ms``.
+usage error. Only this module chooses the clock (``now`` and ``wall_clock`` come in with the
+``RunConfig``); ``pipeline`` reads only ``RunConfig.timer``, for ``parse_ms``.
 """
 
 import argparse

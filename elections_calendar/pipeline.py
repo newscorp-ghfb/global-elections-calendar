@@ -59,6 +59,8 @@ from elections_calendar.health import verdict as verdict_of
 from elections_calendar.ledger import LedgerReport
 from elections_calendar.merge import merge
 from elections_calendar.model import (
+    FIRST_YEAR,
+    LAST_YEAR,
     MAX_DETAIL,
     REASON_LEVEL,
     SOURCE_ORDER,
@@ -311,13 +313,18 @@ def _parse_failure(raw: RawPages) -> ParseResult:
     return ParseResult(raw.source, (), (), tuple(coverage))
 
 
-def _read_baseline(path: Path) -> tuple[Baseline | None, str | None]:
+def _read_baseline(path: Path, source: str) -> tuple[Baseline | None, str | None]:
+    """The committed baseline of ``source``, or why it cannot be used (never one of another)."""
     try:
-        return load_baseline(path), None
+        baseline = load_baseline(path)
     except RecordError as exc:
         return None, str(exc)
     except OSError as exc:
         return None, f"baseline.json is corrupt: cannot be read ({type(exc).__name__})"
+    if baseline is not None and baseline.snapshot.source != source:
+        found = baseline.snapshot.source
+        return None, f"baseline.json is corrupt: it is of {found!r}, not {source!r}"
+    return baseline, None
 
 
 def _read_state(folder: Path) -> HealthState:
@@ -386,7 +393,7 @@ def _parse_source(
         )
         candidate_json = stored_json(snapshot_to_dict(snapshot))
     folder = config.repo / "data" / "sources" / spec.source
-    baseline, problem = _read_baseline(folder / "baseline.json")
+    baseline, problem = _read_baseline(folder / "baseline.json", spec.source)
     return _Parsed(
         spec=spec,
         run=run,
@@ -401,7 +408,12 @@ def _parse_source(
 
 
 def _served_check(decision: Decision) -> ServedCheck:
-    """The served snapshot's id and the two checks its baseline passed (§11.3 check 6)."""
+    """The served snapshot's id and the two checks its baseline passed (§11.3 check 6).
+
+    The id comes from the decision, as the feed's copy does: this checks that the feed carries
+    what was decided, not that the decision was right. The artifact-level check is the end-to-end
+    test's counts; the check after the push is Plan 5's (R29).
+    """
     source = decision.source
     if decision.acceptance == "unavailable" or decision.served is None:
         return ServedCheck(source, None, True, True)
@@ -446,10 +458,12 @@ def _check_usage(config: RunConfig) -> OfflineGetter | None:
     if config.now.utcoffset() is None or config.wall_clock.utcoffset() is None:
         raise UsageError("--now needs a time zone")
     try:
-        config.now.astimezone(UTC)
+        year = config.now.astimezone(UTC).year
         config.wall_clock.astimezone(UTC)
     except OverflowError:
         raise UsageError("--now is out of range") from None
+    if not FIRST_YEAR <= year <= LAST_YEAR:  # the registry's years
+        raise UsageError("--now is out of range")
     if config.out.exists() and (not config.out.is_dir() or any(config.out.iterdir())):
         raise UsageError("--out must be empty")
     return None if config.offline is None else load_offline(config.offline)
@@ -472,6 +486,12 @@ def run(config: RunConfig) -> RunResult:
     )
 
     # Parse, check, snapshot and load what is committed.
+    for spec, source_run in zip(config.specs, scrape.runs, strict=True):
+        if source_run.source != spec.source or source_run.raw.source != spec.source:
+            raise ValueError(
+                f"the scrape run of {source_run.source!r} (pages of {source_run.raw.source!r}) "
+                f"was given for {spec.source!r}"
+            )
     parsed = [
         _parse_source(config, window, registries, registry, spec, source_run)
         for spec, source_run in zip(config.specs, scrape.runs, strict=True)
@@ -581,11 +601,10 @@ def run(config: RunConfig) -> RunResult:
     rejected_status: bytes | None = None
     status_problems = validate_status(status)
     if status_problems:
-        problems += status_problems
+        shown = ["status: " + p for p in status_problems]  # like the other checks' prefixes
+        problems += shown
         rejected_status = status
-        reasons_now.append(
-            Reason("validation_failed", ("status: " + status_problems[0])[:MAX_DETAIL])
-        )
+        reasons_now.append(Reason("validation_failed", shown[0][:MAX_DETAIL]))
         outcome = "validation_failed"
         status = status_for(outcome)
         again = validate_status(status)

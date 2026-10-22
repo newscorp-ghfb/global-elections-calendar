@@ -367,6 +367,10 @@ def test_validate_invariants() -> None:
     def lost_listing(doc: dict[str, Any]) -> None:
         doc["attention_items"][0]["undated_id"] = "c" * 12
 
+    def orphan_listing(doc: dict[str, Any]) -> None:
+        for item in doc["attention_items"]:
+            item["undated_id"] = None
+
     def foreign_umbrella_child(doc: dict[str, Any]) -> None:
         mine = cards(doc)[0][1]
         other = cards(doc)[1][1]["children"][0]["child_id"]
@@ -404,7 +408,8 @@ def test_validate_invariants() -> None:
         (repeat_child, "child_id"), (repeat_group, "group_id"), (repeat_undated, "undated_id"),
         (repeat_item, "item_id"), (dangling_child_match, "possible_matches"),
         (dangling_item_match, "possible_matches"), (dangling_listing_match, "possible_matches"),
-        (lost_listing, "undated_id"), (foreign_umbrella_child, "umbrella"),
+        (lost_listing, "undated_id"), (orphan_listing, "no attention item"),
+        (foreign_umbrella_child, "umbrella"),
         (two_selected, "selected"), (none_selected, "selected"), (wrong_month, "month"),
         (too_many_items, "500"), (outside_window, "month"),
     ]  # fmt: skip
@@ -437,6 +442,7 @@ def test_a_truncated_feed_of_500_items_is_valid() -> None:
         for n in range(500)
     ]
     doc["attention_truncated"] = 3
+    doc["undated"] = []  # the feed keeps a listing only for an item that links it
     assert check(doc) == ()
     doc["attention_items"].append({**template, "item_id": "a" * 12, "undated_id": None})
     problems = check(doc)
@@ -646,7 +652,7 @@ def empty_ok_paths(doc: dict[str, Any]) -> set[tuple[Any, ...]]:
     card = ("months", month, index)
     return {
         (*card, "children", 0, "possible_matches"), (*card, "umbrellas"),
-        ("attention_items", 0, "possible_matches"), ("attention_items",), ("undated",),
+        ("attention_items", 0, "possible_matches"), ("attention_items",),
     }  # fmt: skip
 
 
