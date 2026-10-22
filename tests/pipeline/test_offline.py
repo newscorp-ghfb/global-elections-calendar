@@ -85,6 +85,16 @@ BAD: list[tuple[str, object, str]] = [
     ("bool-status", {"pages": [entry(status=True)]}, "pages.json: shape"),
     ("bad-time", {"pages": [entry(fetched_at="yesterday")]}, "pages.json: shape"),
     ("time-not-text", {"pages": [entry(fetched_at=5)]}, "pages.json: shape"),
+    (
+        "time-too-early",
+        {"pages": [entry(fetched_at="0001-01-01T00:00:00+05:00")]},
+        "pages.json: shape",
+    ),
+    (
+        "time-too-late",
+        {"pages": [entry(fetched_at="9999-12-31T23:59:59-05:00")]},
+        "pages.json: shape",
+    ),
     ("no-file", {"pages": [entry(file="gone.html")]}, "pages.json: no file gone.html"),
     (
         "naive-time",

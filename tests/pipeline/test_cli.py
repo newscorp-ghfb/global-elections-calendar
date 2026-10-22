@@ -33,6 +33,16 @@ def test_now_needs_a_time_zone(
     assert not (tmp_path / "out").exists()
 
 
+@pytest.mark.parametrize("now", ["0001-01-01T00:00:00+05:00", "9999-12-31T23:59:59-05:00"])
+def test_now_must_be_in_range(
+    now: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    offline = osce_offline(tmp_path)
+    assert cli.main(["--offline", str(offline), "--now", now, *args(tmp_path)]) == 2
+    assert "--now is out of range" in capsys.readouterr().err
+    assert not (tmp_path / "out").exists()
+
+
 def test_now_must_be_a_time(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     offline = osce_offline(tmp_path)
     assert cli.main(["--offline", str(offline), "--now", "abc", *args(tmp_path)]) == 2

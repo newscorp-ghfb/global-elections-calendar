@@ -20,7 +20,7 @@ import tempfile
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast, get_args
 
@@ -191,6 +191,10 @@ def _offline_page(entry: object, directory: Path) -> OfflinePage:
         raise UsageError(_SHAPE) from None
     if fetched_at.utcoffset() is None:
         raise UsageError(f"pages.json: {url}: fetched_at needs a time zone")
+    try:
+        fetched_at.astimezone(UTC)  # stored as UTC, so it must convert
+    except OverflowError:
+        raise UsageError(_SHAPE) from None
     path = directory / file
     if not path.is_file():
         raise UsageError(f"pages.json: no file {file}")
@@ -433,6 +437,11 @@ def _verdict_rows(
 def _check_usage(config: RunConfig) -> OfflineGetter | None:
     if config.now.utcoffset() is None or config.wall_clock.utcoffset() is None:
         raise UsageError("--now needs a time zone")
+    try:
+        config.now.astimezone(UTC)
+        config.wall_clock.astimezone(UTC)
+    except OverflowError:
+        raise UsageError("--now is out of range") from None
     if config.out.exists() and (not config.out.is_dir() or any(config.out.iterdir())):
         raise UsageError("--out must be empty")
     return None if config.offline is None else load_offline(config.offline)
