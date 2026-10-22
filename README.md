@@ -123,8 +123,10 @@ existing scraper keeps running until Plan 5 replaces it.
   end-to-end test uses.
 - `--live` fetches the nine sources.
 - Give exactly one of the two.
-- `--now ISO` is the time to judge the data at. It needs a time zone. The default is the
-  machine clock.
+- `--now ISO` is the time to judge the data at. It needs a time zone, and its UTC year must be
+  1900 to 2199. The default is the machine clock. With `--live` it judges the real fetch times
+  at the given moment. That is for tests: a `--now` before the fetch makes the fetch times lie
+  in the future.
 - `--out DIR` is required. It must be new or empty.
 - `--repo DIR` is the checkout that holds the last published files (`elections.json`,
   `status.json`, `data/sources/`, `known_issues.yml`). The default is the current directory.
@@ -146,12 +148,12 @@ acknowledged. The feed is still published.
 
 | File | When | What it is |
 |---|---|---|
-| `elections.json` | published | The feed. At most 524,288 bytes. |
-| `status.json` | always | What the feed served now is, and why. |
+| `elections.json` | published | The feed. 524,288 bytes is the budget: a feed over it is published, and `HEALTH.md` says "over budget". Over 2,000,000 bytes it fails validation. |
+| `status.json` | always | What the feed serves now, and why. |
 | `HEALTH.md` | always | The run, each source and the attention items, for people. |
 | `data/sources/<source>/baseline.json` | published, when there is one | The last accepted snapshot of the source. |
 | `data/sources/<source>/candidate.json` | published | This run's snapshot of the source. |
-| `data/sources/<source>/health_state.json` | published | Open reasons, their history and the acknowledgements' reset time. |
+| `data/sources/<source>/health_state.json` | published | `last_absent_at`: when each reason that a `known_issues.yml` entry names was last absent, each pair kept until it is 14 days old; and `reset_at`, the acknowledgements' reset time. |
 | `verdict.json` | always | The verdict, its reasons, and the feed's length and budget. |
 | `attention_full.json` | always | Every attention item, uncapped, with the text to acknowledge it by. |
 | `dispositions.json` | always | What the merge did with every claim. |
@@ -185,11 +187,13 @@ Rules that hold for every entry:
 - It lasts at most 14 days: `expires_at` is after `acknowledged_at`, and at most 14 days
   later.
 - It ends when its reason goes away and comes back (recurrence). A new occurrence needs a new
-  entry.
+  entry. Absence is recorded by published runs only, for the reasons that an unexpired entry
+  names, in `health_state.json`.
 - A `coverage_gap` stays listed in `HEALTH.md` while it is acknowledged. An entry made before
   the gap began never covers it.
-- If `health_state.json` of a source is corrupt, every acknowledgement of that source stops
-  counting. The next run records a reset time. Only acknowledgements made after it count, so
+- If `health_state.json` of a source is corrupt, or is missing while the source has a
+  `baseline.json`, every acknowledgement of that source stops counting. The run that reads it
+  records a reset time, if that run publishes. Only acknowledgements made after it count, so
   renew them.
 - These can never be acknowledged: `ledger_mismatch`, `discovery_mismatch`, `fallback_stale`,
   `served_mismatch`, `attention_truncated`, `ack_invalid`, `merge_failed`,
