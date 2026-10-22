@@ -1,0 +1,1031 @@
+# SC1 (spec 13.2): the contests a person reading the 2026-10-16 fixture pages would expect in the feed.
+# Written by hand from the pages, never from the program output. `quote` is text from the named
+# source's page. `date` is YYYY-MM-DD, YYYY-MM (month precision) or YYYY-MM-DD to YYYY-MM-DD.
+# `jurisdiction` is given only where the page names one. Scope: every national and unknown-level
+# contest, and every subnational contest of October 2026 (the other subnational ones are not listed).
+
+- place: "iso:EE"
+  office: "President"
+  round: null
+  date: "2026-09-02"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "2 September: Estonia , President"
+- place: "iso:CA"
+  office: "by-election"
+  jurisdiction: "Ontario, Hamilton East—Stoney Creek"
+  round: null
+  date: "2026-09-03"
+  level: unknown
+  status: Held
+  source: wikipedia
+  quote: "3 September: Canada , Ontario Hamilton East—Stoney Creek , by-election"
+- place: "iso:CA"
+  office: "by-election"
+  jurisdiction: "Ontario, Scarborough Southwest"
+  round: null
+  date: "2026-09-03"
+  level: unknown
+  status: Held
+  source: wikipedia
+  quote: "3 September: Canada , Ontario Hamilton East—Stoney Creek , by-election York—Simcoe , by-election Scarborough Southwest , by-election"
+- place: "iso:CA"
+  office: "by-election"
+  jurisdiction: "Ontario, York—Simcoe"
+  round: null
+  date: "2026-09-03"
+  level: unknown
+  status: Held
+  source: wikipedia
+  quote: "3 September: Canada , Ontario Hamilton East—Stoney Creek , by-election York—Simcoe , by-election"
+- place: "iso:AU"
+  office: "by-election"
+  jurisdiction: "Northern Territory, Mulka"
+  round: null
+  date: "2026-09-12"
+  level: unknown
+  status: Held
+  source: wikipedia
+  quote: "12 September: Australia , Northern Territory , Mulka , by-election"
+- place: "iso:SE"
+  office: "Swedish Parliament"
+  round: null
+  date: "2026-09-13"
+  level: national
+  status: Held
+  source: electionguide
+  quote: "Sep 13 2026 (d) Swedish Parliament Sweden"
+- place: "iso:CA"
+  office: "by-election"
+  jurisdiction: "Alberta, Calgary-Shaw"
+  round: null
+  date: "2026-09-14"
+  level: unknown
+  status: Held
+  source: wikipedia
+  quote: "14 September: Philippines , Bangsamoro Parliament Canada , Alberta , Calgary-Shaw , by-election"
+- place: "iso:PH"
+  office: "2026 Philippines (BARMM) Parliamentary Elections"
+  round: null
+  date: "2026-09-14"
+  level: unknown
+  status: Held
+  source: ndi
+  quote: "2026 Philippines (BARMM) Parliamentary Elections September 14, 2026 (ALL DAY)"
+- place: "iso:RU"
+  office: "State Duma"
+  round: null
+  date: "2026-09-18 to 2026-09-20"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "18–20 September: Russia , State Duma"
+- place: "iso:WS"
+  office: "Legislative Assembly by-election"
+  jurisdiction: "Falealili 1"
+  round: null
+  date: "2026-09-18"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "18 September: Samoa [ 11 ] Falealili 1, Legislative Assembly by-election"
+- place: "iso:WS"
+  office: "Legislative Assembly by-election"
+  jurisdiction: "Vaimauga 3"
+  round: null
+  date: "2026-09-18"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "18 September: Samoa [ 11 ] Falealili 1, Legislative Assembly by-election Vaimauga 3, Legislative Assembly by-election"
+- place: "x:south-ossetia"
+  office: "President"
+  round: null
+  date: "2026-09-18"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "18 September: South Ossetia , President"
+- place: "iso:MA"
+  office: "Moroccan Chamber of Representatives"
+  round: null
+  date: "2026-09-23"
+  level: national
+  status: Held
+  source: electionguide
+  quote: "Sep 23 2026 (d) Moroccan Chamber of Representatives Morocco"
+- place: "iso:IM"
+  office: "House of Keys"
+  round: null
+  date: "2026-09-24"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "24 September: Isle of Man , House of Keys"
+- place: "iso:CH"
+  office: "Referendum"
+  round: null
+  date: "2026-09-27"
+  level: national
+  status: Held
+  source: electionguide
+  quote: "Sep 27 2026 (d) Referendum Switzerland"
+- place: "iso:FR"
+  office: "Senate (series 2)"
+  round: null
+  date: "2026-09-27"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "27 September: France , Senate (series 2)"
+- place: "iso:IT"
+  office: "by-election"
+  jurisdiction: "Reggio Calabria"
+  round: null
+  date: "2026-09-27 to 2026-09-28"
+  level: unknown
+  status: Held
+  source: wikipedia
+  quote: "27–28 September: Italy , Reggio Calabria , by-election"
+- place: "iso:ST"
+  office: "Sao Tomean National Assembly"
+  round: null
+  date: "2026-09-27"
+  level: national
+  status: Held
+  source: electionguide
+  quote: "Sep 27 2026 (d) Sao Tomean National Assembly Sao Tome and Principe"
+- place: "iso:LV"
+  office: "Latvian Parliament"
+  round: null
+  date: "2026-10-03"
+  level: national
+  status: Held
+  source: electionguide
+  quote: "Oct 3 2026 (d) Latvian Parliament Latvia"
+- place: "iso:BA"
+  office: "Bosnia and Herzegovina Presidency"
+  round: null
+  date: "2026-10-04"
+  level: national
+  status: Held
+  source: electionguide
+  quote: "Oct 4 2026 (d) Bosnia and Herzegovina Presidency Bosnia and Herzegovina"
+- place: "iso:BA"
+  office: "Bosnia and Herzegovina House of Representatives"
+  round: null
+  date: "2026-10-04"
+  level: national
+  status: Held
+  source: electionguide
+  quote: "Oct 4 2026 (d) Bosnia and Herzegovina House of Representatives Bosnia and Herzegovina"
+- place: "iso:BA"
+  office: "entity president"
+  jurisdiction: "Republika Srpska"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor Paraná , Governor Pernambuco , Governor Rio de Janeiro , Governor Rio Grande do Norte , Governor Rio Grande do Sul , Governor Santa Catarina , Governor São Paulo , Governor Bosnia and Herzegovina Federation of Bosnia and Herzegovina , entity parliament and canton assemblies Republika Srpska , entity president and parliament"
+- place: "iso:BA"
+  office: "entity parliament and canton assemblies"
+  jurisdiction: "Federation of Bosnia and Herzegovina"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor Paraná , Governor Pernambuco , Governor Rio de Janeiro , Governor Rio Grande do Norte , Governor Rio Grande do Sul , Governor Santa Catarina , Governor São Paulo , Governor Bosnia and Herzegovina Federation of Bosnia and Herzegovina , entity parliament and canton assemblies"
+- place: "iso:BA"
+  office: "parliament"
+  jurisdiction: "Republika Srpska"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor Paraná , Governor Pernambuco , Governor Rio de Janeiro , Governor Rio Grande do Norte , Governor Rio Grande do Sul , Governor Santa Catarina , Governor São Paulo , Governor Bosnia and Herzegovina Federation of Bosnia and Herzegovina , entity parliament and canton assemblies Republika Srpska , entity president and parliament"
+- place: "iso:BR"
+  office: "Presidency"
+  round: 1
+  date: "2026-10-04"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "4 October: Bosnia and Herzegovina , Presidency and House of Representatives [ 58 ] Brazil , President (1st round), Chamber of Deputies and Senate"
+- place: "iso:BR"
+  office: "Brazilian Chamber of Deputies"
+  round: null
+  date: "2026-10-04"
+  level: national
+  status: Held
+  source: electionguide
+  quote: "Oct 4 2026 (d) Brazilian Chamber of Deputies Brazil"
+- place: "iso:BR"
+  office: "Brazilian Federal Senate"
+  round: null
+  date: "2026-10-04"
+  level: national
+  status: Held
+  source: electionguide
+  quote: "Oct 4 2026 (d) Brazilian Federal Senate Brazil"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Alagoas"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Amazonas"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Bahia"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Ceará"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Espírito Santo"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Federal District"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Goiás"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Maranhão"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Minas Gerais"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Pará"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Paraíba"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Paraná"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor Paraná , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Pernambuco"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor Paraná , Governor Pernambuco , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Rio de Janeiro"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor Paraná , Governor Pernambuco , Governor Rio de Janeiro , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Rio Grande do Norte"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor Paraná , Governor Pernambuco , Governor Rio de Janeiro , Governor Rio Grande do Norte , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Rio Grande do Sul"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor Paraná , Governor Pernambuco , Governor Rio de Janeiro , Governor Rio Grande do Norte , Governor Rio Grande do Sul , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "Santa Catarina"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor Paraná , Governor Pernambuco , Governor Rio de Janeiro , Governor Rio Grande do Norte , Governor Rio Grande do Sul , Governor Santa Catarina , Governor"
+- place: "iso:BR"
+  office: "Governor"
+  jurisdiction: "São Paulo"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor Paraná , Governor Pernambuco , Governor Rio de Janeiro , Governor Rio Grande do Norte , Governor Rio Grande do Sul , Governor Santa Catarina , Governor São Paulo , Governor"
+- place: "iso:PE"
+  office: "Mayor"
+  jurisdiction: "Lima"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor Paraná , Governor Pernambuco , Governor Rio de Janeiro , Governor Rio Grande do Norte , Governor Rio Grande do Sul , Governor Santa Catarina , Governor São Paulo , Governor Bosnia and Herzegovina Federation of Bosnia and Herzegovina , entity parliament and canton assemblies Republika Srpska , entity president and parliament Paraguay , municipal elections [ es ] Peru , regional and municipal elections [ es ] Lima , Mayor"
+- place: "iso:PY"
+  office: "municipal elections"
+  round: null
+  date: "2026-10-04"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor Paraná , Governor Pernambuco , Governor Rio de Janeiro , Governor Rio Grande do Norte , Governor Rio Grande do Sul , Governor Santa Catarina , Governor São Paulo , Governor Bosnia and Herzegovina Federation of Bosnia and Herzegovina , entity parliament and canton assemblies Republika Srpska , entity president and parliament Paraguay , municipal elections"
+- place: "iso:CA"
+  office: "National Assembly"
+  jurisdiction: "Quebec"
+  round: null
+  date: "2026-10-05"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "5 October: Canada , Quebec , National Assembly"
+- place: "x:kosovo"
+  office: "President"
+  round: null
+  date: "2026-10-06"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "6 October: Kosovo , President"
+- place: "iso:GB"
+  office: "House of Commons by-election"
+  jurisdiction: "Holborn and St Pancras"
+  round: null
+  date: "2026-10-08"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "8 October: Tonga [ 12 ] Niua 17 , Legislative Assembly by-election Tongatapu 2 , Legislative Assembly by-election United Kingdom , Holborn and St Pancras , House of Commons by-election"
+- place: "iso:TO"
+  office: "Legislative Assembly by-election"
+  jurisdiction: "Niua 17"
+  round: null
+  date: "2026-10-08"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "8 October: Tonga [ 12 ] Niua 17 , Legislative Assembly by-election"
+- place: "iso:TO"
+  office: "Legislative Assembly by-election"
+  jurisdiction: "Tongatapu 2"
+  round: null
+  date: "2026-10-08"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "8 October: Tonga [ 12 ] Niua 17 , Legislative Assembly by-election Tongatapu 2 , Legislative Assembly by-election"
+- place: "iso:CZ"
+  office: "Senate"
+  round: 1
+  date: "2026-10-09 to 2026-10-10"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "9–10 October: Czech Republic , Senate (1st round)"
+- place: "iso:CZ"
+  office: "municipal elections"
+  round: null
+  date: "2026-10-09 to 2026-10-10"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "9–10 October: Czech Republic , municipal elections"
+- place: "iso:PL"
+  office: "mayoral election"
+  jurisdiction: "Kraków"
+  round: 2
+  date: "2026-10-11"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "11 October: Poland , Kraków , mayoral election (2nd round)"
+- place: "iso:SI"
+  office: "Referendum"
+  round: null
+  date: "2026-10-11"
+  level: national
+  status: Held
+  source: electionguide
+  quote: "Oct 11 2026 (d) Referendum Slovenia"
+- place: "iso:CZ"
+  office: "Senate"
+  round: 2
+  date: "2026-10-16 to 2026-10-17"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "16–17 October: Czech Republic , Senate (2nd round)"
+- place: "iso:IN"
+  office: "Council of States"
+  round: null
+  date: "2026-10-16"
+  level: national
+  status: Held
+  source: wikipedia
+  quote: "16 March, 18 June, and 16 October: India , Council of States"
+- place: "iso:CA"
+  office: "municipal elections"
+  jurisdiction: "British Columbia"
+  round: null
+  date: "2026-10-17"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "17 October: Canada , British Columbia , municipal elections"
+- place: "iso:CA"
+  office: "municipal elections"
+  jurisdiction: "British Columbia, Vancouver"
+  round: null
+  date: "2026-10-17"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "17 October: Canada , British Columbia , municipal elections Vancouver , municipal elections"
+- place: "iso:JP"
+  office: "Mayor"
+  jurisdiction: "Yokohama"
+  round: null
+  date: "2026-10-18"
+  level: subnational
+  status: Held
+  source: wikipedia
+  quote: "18 October: Japan , Yokohama , Mayor"
+- place: "iso:CA"
+  office: "Referendum"
+  jurisdiction: "Alberta"
+  round: null
+  date: "2026-10-19"
+  level: subnational
+  status: Upcoming
+  source: wikipedia
+  quote: "19 October: Canada , Alberta , Referendum"
+- place: "iso:CA"
+  office: "Legislative Assembly"
+  jurisdiction: "British Columbia"
+  round: null
+  date: "2026-10-24"
+  level: subnational
+  status: Upcoming
+  source: wikipedia
+  quote: "24 October: Canada , British Columbia , Legislative Assembly"
+- place: "iso:SK"
+  office: "regional and local elections"
+  round: null
+  date: "2026-10-24"
+  level: subnational
+  status: Upcoming
+  source: wikipedia
+  quote: "24 October: Canada , British Columbia , Legislative Assembly Slovakia , regional and local elections"
+- place: "iso:BG"
+  office: "Bulgarian Presidency"
+  round: null
+  date: "2026-10-25"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Oct 25 2026 (d) Bulgarian Presidency Bulgaria"
+- place: "iso:BG"
+  office: "2026 Bulgaria Parliamentary Elections"
+  round: null
+  date: "2026-10-25"
+  level: national
+  status: Upcoming
+  source: ndi
+  quote: "2026 Bulgaria Parliamentary Elections October 25, 2026 (ALL DAY)"
+- place: "iso:BR"
+  office: "Presidency"
+  round: 2
+  date: "2026-10-25"
+  level: national
+  status: Upcoming
+  source: wikipedia
+  quote: "25 October: Bulgaria , President [ 61 ] Serbia , Parliament [ 62 ] Brazil , President (2nd round)"
+- place: "iso:JP"
+  office: "Governor"
+  jurisdiction: "Fukushima"
+  round: null
+  date: "2026-10-25"
+  level: subnational
+  status: Upcoming
+  source: wikipedia
+  quote: "25 October: Japan , Fukushima , Governor"
+- place: "iso:RS"
+  office: "Serbian National Assembly"
+  round: null
+  date: "2026-10-25"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Oct 25 2026 (d) Serbian National Assembly Serbia"
+- place: "iso:CA"
+  office: "municipal elections"
+  jurisdiction: "Ontario"
+  round: null
+  date: "2026-10-26"
+  level: subnational
+  status: Upcoming
+  source: wikipedia
+  quote: "26 October: Canada , Ontario , municipal elections"
+- place: "iso:CA"
+  office: "York Region municipal elections"
+  jurisdiction: "Ontario"
+  round: null
+  date: "2026-10-26"
+  level: subnational
+  status: Upcoming
+  source: wikipedia
+  quote: "26 October: Canada , Ontario , municipal elections Hamilton , municipal elections Ottawa , municipal elections York Region municipal elections"
+- place: "iso:CA"
+  office: "municipal elections"
+  jurisdiction: "Ontario, Hamilton"
+  round: null
+  date: "2026-10-26"
+  level: subnational
+  status: Upcoming
+  source: wikipedia
+  quote: "26 October: Canada , Ontario , municipal elections Hamilton , municipal elections"
+- place: "iso:CA"
+  office: "municipal elections"
+  jurisdiction: "Ontario, Ottawa"
+  round: null
+  date: "2026-10-26"
+  level: subnational
+  status: Upcoming
+  source: wikipedia
+  quote: "26 October: Canada , Ontario , municipal elections Hamilton , municipal elections Ottawa , municipal elections"
+- place: "iso:CA"
+  office: "municipal elections"
+  jurisdiction: "Ontario, Toronto"
+  round: null
+  date: "2026-10-26"
+  level: subnational
+  status: Upcoming
+  source: wikipedia
+  quote: "26 October: Canada , Ontario , municipal elections Hamilton , municipal elections Ottawa , municipal elections York Region municipal elections Toronto , municipal elections"
+- place: "iso:IL"
+  office: "Israeli Knesset"
+  round: null
+  date: "2026-10-27"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Oct 27 2026 (d) Israeli Knesset Israel"
+- place: "iso:CA"
+  office: "municipal elections"
+  jurisdiction: "Manitoba"
+  round: null
+  date: "2026-10-28"
+  level: subnational
+  status: Upcoming
+  source: wikipedia
+  quote: "28 October: Canada , Manitoba , municipal elections"
+- place: "iso:PH"
+  office: "Barangay and Sangguniang Kabataan Elections"
+  round: null
+  date: "2026-11-02"
+  level: unknown
+  status: Upcoming
+  source: aweb
+  quote: "The Philippines 2026 Barangay and Sangguniang Kabataan Elections (BSKE) 02 Nov 2026"
+- place: "iso:AS"
+  office: "American Samoan House of Representatives"
+  round: null
+  date: "2026-11-03"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Nov 3 2026 (d) American Samoan House of Representatives American Samoa"
+- place: "iso:GU"
+  office: "Guamanian Legislature"
+  round: null
+  date: "2026-11-03"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Nov 3 2026 (d) Guamanian Legislature Guam"
+- place: "iso:MP"
+  office: "Northern Mariana Islands House of Representatives"
+  round: null
+  date: "2026-11-03"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Nov 3 2026 (d) Northern Mariana Islands House of Representatives Northern Mariana Islands"
+- place: "iso:MP"
+  office: "Northern Mariana Islands Senate"
+  round: null
+  date: "2026-11-03"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Nov 3 2026 (d) Northern Mariana Islands Senate Northern Mariana Islands"
+- place: "iso:US"
+  office: "US House of Representatives"
+  round: null
+  date: "2026-11-03"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Nov 3 2026 (d) US House of Representatives United States of America"
+- place: "iso:US"
+  office: "US Senate"
+  round: null
+  date: "2026-11-03"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Nov 3 2026 (d) US Senate United States of America"
+- place: "iso:US"
+  office: "midterm elections"
+  round: null
+  date: "2026-11-03"
+  level: unknown
+  status: Upcoming
+  source: wikipedia
+  quote: "3 November: United States , midterm elections"
+- place: "iso:VI"
+  office: "U.S. Virgin Islands Legislature"
+  round: null
+  date: "2026-11-03"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Nov 3 2026 (d) U.S. Virgin Islands Legislature Virgin Islands, U.S."
+- place: "iso:GD"
+  office: "House of Representatives"
+  round: null
+  date: "2026-11-05"
+  level: national
+  status: Upcoming
+  source: ipu
+  quote: "Grenada House of Representatives Bicameral Lower chamber Directly elected 23 Jun 2022 31 Aug 2022 05 Nov 2026"
+- place: "iso:IE"
+  office: "Seanad by-election"
+  round: null
+  date: "2026-11-06"
+  level: national
+  status: Upcoming
+  source: wikipedia
+  quote: "6 November: Ireland , Seanad by-election"
+- place: "iso:NZ"
+  office: "New Zealand House of Representatives"
+  round: null
+  date: "2026-11-07"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Nov 7 2026 (d) New Zealand House of Representatives New Zealand"
+- place: "iso:LT"
+  office: "Seimas by-election"
+  jurisdiction: "Northern Nalšia"
+  round: null
+  date: "2026-11-08"
+  level: national
+  status: Upcoming
+  source: wikipedia
+  quote: "8 November: Lithuania , Northern Nalšia, Seimas by-election"
+- place: "iso:CV"
+  office: "Cabo Verdean Presidency"
+  round: null
+  date: "2026-11-15"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Nov 15 2026 (d) Cabo Verdean Presidency Cabo Verde"
+- place: "iso:PL"
+  office: "Senate Constituency no. 20 by-election"
+  round: null
+  date: "2026-11-22"
+  level: national
+  status: Upcoming
+  source: wikipedia
+  quote: "22 November: Poland , Senate Constituency no. 20 by-election"
+- place: "iso:PH"
+  office: "at-large congressional district"
+  jurisdiction: "Batanes"
+  round: null
+  date: "2026-11-28"
+  level: national
+  status: Upcoming
+  source: wikipedia
+  quote: "28 November: Australia , Victoria , Legislative Assembly Philippines , Batanes , at-large congressional district , special election"
+- place: "iso:CH"
+  office: "Referendum"
+  round: null
+  date: "2026-11-29"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Nov 29 2026 (d) Referendum Switzerland"
+- place: "iso:ES"
+  office: "Spanish Congress of Deputies"
+  round: null
+  date: "2026-11-29"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Nov 29 2026 (d) Spanish Congress of Deputies Spain"
+- place: "iso:ES"
+  office: "Spanish Senate"
+  round: null
+  date: "2026-11-29"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Nov 29 2026 (d) Spanish Senate Spain"
+- place: "iso:CM"
+  office: "National Assembly"
+  round: null
+  date: "2026-12"
+  level: national
+  status: Upcoming
+  source: eisa
+  quote: "Cameroon National Assembly December 2026"
+- place: "iso:LY"
+  office: "House of Representatives"
+  round: null
+  date: "2026-12"
+  level: national
+  status: Upcoming
+  source: ipu
+  quote: "Libya House of Representatives Unicameral Directly elected 25 Jun 2014 04 Aug 2014 31 Dec 2026"
+- place: "iso:MG"
+  office: "Senate"
+  round: null
+  date: "2026-12"
+  level: national
+  status: Upcoming
+  source: ipu
+  quote: "Madagascar Senate Bicameral Upper chamber Indirectly elected 11 Dec 2020 19 Jan 2021 31 Dec 2026"
+- place: "iso:SO"
+  office: "Upper House"
+  round: null
+  date: "2026-12"
+  level: national
+  status: Upcoming
+  source: ipu
+  quote: "Somalia Upper House Bicameral Upper chamber Indirectly elected 27 Jul 2021 - 13 Nov 2021 16 Apr 2022 31 Dec 2026"
+- place: "iso:GM"
+  office: "Gambian Presidency"
+  round: null
+  date: "2026-12-05"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Dec 5 2026 (d) Gambian Presidency Gambia, The"
+- place: "iso:GW"
+  office: "Bissau-Guinean Presidency"
+  round: null
+  date: "2026-12-06"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Dec 6 2026 (t) Bissau-Guinean Presidency Guinea-Bissau"
+- place: "iso:GW"
+  office: "Bissau-Guinean People's National Assembly"
+  round: null
+  date: "2026-12-06"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Dec 6 2026 (t) Bissau-Guinean People's National Assembly Guinea-Bissau"
+- place: "iso:CH"
+  office: "Federal Council"
+  round: null
+  date: "2026-12-09"
+  level: national
+  status: Upcoming
+  source: wikipedia
+  quote: "9 December: Switzerland , Federal Council"
+- place: "iso:FJ"
+  office: "Referendum"
+  round: null
+  date: "2026-12-09"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Dec 9 2026 (t) Referendum Fiji"
+- place: "iso:HT"
+  office: "Haitian Presidency"
+  round: null
+  date: "2026-12-13"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Dec 13 2026 (d) Haitian Presidency Haiti"
+- place: "iso:HT"
+  office: "Haitian Chamber of Deputies"
+  round: null
+  date: "2026-12-13"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Dec 13 2026 (d) Haitian Chamber of Deputies Haiti"
+- place: "iso:HT"
+  office: "Haitian Senate"
+  round: null
+  date: "2026-12-13"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Dec 13 2026 (d) Haitian Senate Haiti"
+- place: "x:transnistria"
+  office: "President"
+  round: null
+  date: "2026-12-13"
+  level: national
+  status: Upcoming
+  source: wikipedia
+  quote: "13 December: Transnistria , President"
+- place: "iso:SS"
+  office: "South Sudanese Presidency"
+  round: null
+  date: "2026-12-22"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Dec 22 2026 (t) South Sudanese Presidency South Sudan"
+- place: "iso:SS"
+  office: "South Sudanese Transitional National Legislative Assembly"
+  round: null
+  date: "2026-12-22"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Dec 22 2026 (t) South Sudanese Transitional National Legislative Assembly South Sudan"
+- place: "iso:SS"
+  office: "South Sudanese Council of States"
+  round: null
+  date: "2026-12-22"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Dec 22 2026 (t) South Sudanese Council of States South Sudan"
+- place: "iso:FJ"
+  office: "Fijian Parliament"
+  round: null
+  date: "2026-12-24 to 2027-02-06"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Fiji Fijian Parliament 2026-12-24 (t) 2027-02-06 (t)"
+- place: "iso:RS"
+  office: "President"
+  round: null
+  date: "2026-12-25"
+  level: national
+  status: Upcoming
+  source: wikipedia
+  quote: "25 December: Serbia , President"
+- place: "iso:SO"
+  office: "Somali Presidency"
+  round: null
+  date: "2026-12-31"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Dec 31 2026 (t) Somali Presidency Somalia"
+- place: "iso:SO"
+  office: "Somali House of the People"
+  round: null
+  date: "2026-12-31"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Dec 31 2026 (t) Somali House of the People Somalia"
+- place: "iso:CM"
+  office: "National Assembly"
+  round: null
+  date: "2027-01"
+  level: national
+  status: Upcoming
+  source: ipu
+  quote: "Cameroon National Assembly Bicameral Lower chamber Directly elected 09 Feb 2020 - 22 Mar 2020 10 Mar 2020 31 Jan 2027"
+- place: "iso:NG"
+  office: "Nigerien Presidency"
+  round: null
+  date: "2027-01-16"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Jan 16 2027 (d) Nigerien Presidency Nigeria"
+- place: "iso:NG"
+  office: "Nigerian House of Representatives"
+  round: null
+  date: "2027-01-16"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Jan 16 2027 (d) Nigerian House of Representatives Nigeria"
+- place: "iso:NG"
+  office: "Nigerian Senate"
+  round: null
+  date: "2027-01-16"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Jan 16 2027 (d) Nigerian Senate Nigeria"
+- place: "iso:KG"
+  office: "2027 Kyrgyzstan Presidential Election"
+  round: null
+  date: "2027-01-24"
+  level: national
+  status: Upcoming
+  source: ndi
+  quote: "2027 Kyrgyzstan Presidential Election January 24, 2027 (ALL DAY)"
+- place: "iso:KG"
+  office: "Kyrgyz Presidency"
+  round: null
+  date: "2027-01-27"
+  level: national
+  status: Upcoming
+  source: electionguide
+  quote: "Jan 27 2027 (t) Kyrgyz Presidency Kyrgyzstan"
+- place: "iso:DE"
+  office: "President"
+  round: null
+  date: "2027-01-30"
+  level: national
+  status: Upcoming
+  source: wikipedia
+  quote: "30 January: Germany , President"

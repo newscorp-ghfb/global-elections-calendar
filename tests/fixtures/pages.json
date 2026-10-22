@@ -1,0 +1,116 @@
+{
+ "pages": [
+  {
+   "url": "https://www.electionguide.org/elections/type/upcoming/",
+   "file": "electionguide/2026-10-16/upcoming.html",
+   "fetched_at": "2026-10-16T14:39:00Z",
+   "content_type": "text/html; charset=utf-8",
+   "status": 200
+  },
+  {
+   "url": "https://www.electionguide.org/elections/type/past/",
+   "file": "electionguide/2026-10-16/past.html",
+   "fetched_at": "2026-10-16T14:39:00Z",
+   "content_type": "text/html; charset=utf-8",
+   "status": 200
+  },
+  {
+   "url": "https://www.electionguide.org/elections/type/anticipated/",
+   "file": "electionguide/2026-10-16/anticipated.html",
+   "fetched_at": "2026-10-16T14:39:00Z",
+   "content_type": "text/html; charset=utf-8",
+   "status": 200
+  },
+  {
+   "url": "https://odihr.osce.org/odihr/elections",
+   "file": "osce/2026-10-18/elections.html",
+   "fetched_at": "2026-10-18T11:18:37Z",
+   "content_type": "text/html; charset=utf-8",
+   "status": 200
+  },
+  {
+   "url": "https://en.wikipedia.org/w/api.php?action=parse&page=2026_national_electoral_calendar&prop=text%7Crevid&format=json&formatversion=2&maxlag=5",
+   "file": "wikipedia/2026-10-16/national-2026.json",
+   "fetched_at": "2026-10-17T16:13:00Z",
+   "content_type": "application/json; charset=utf-8",
+   "status": 200
+  },
+  {
+   "url": "https://en.wikipedia.org/w/api.php?action=parse&page=2027_national_electoral_calendar&prop=text%7Crevid&format=json&formatversion=2&maxlag=5",
+   "file": "wikipedia/2026-10-16/national-2027.json",
+   "fetched_at": "2026-10-17T16:13:00Z",
+   "content_type": "application/json; charset=utf-8",
+   "status": 200
+  },
+  {
+   "url": "https://en.wikipedia.org/w/api.php?action=parse&page=2026_local_electoral_calendar&prop=text%7Crevid&format=json&formatversion=2&maxlag=5",
+   "file": "wikipedia/2026-10-16/local-2026.json",
+   "fetched_at": "2026-10-17T16:13:00Z",
+   "content_type": "application/json; charset=utf-8",
+   "status": 200
+  },
+  {
+   "url": "https://en.wikipedia.org/w/api.php?action=parse&page=2027_local_electoral_calendar&prop=text%7Crevid&format=json&formatversion=2&maxlag=5",
+   "file": "wikipedia/2026-10-16/local-2027.json",
+   "fetched_at": "2026-10-17T16:13:00Z",
+   "content_type": "application/json; charset=utf-8",
+   "status": 200
+  },
+  {
+   "url": "https://www.ndi.org/elections-calendar?page=0",
+   "file": "ndi/2026-10-19/p0.html",
+   "fetched_at": "2026-10-19T08:57:34Z",
+   "content_type": "text/html; charset=UTF-8",
+   "status": 200
+  },
+  {
+   "url": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052&option=all",
+   "file": "aweb/2026-10-18/calendar.html",
+   "fetched_at": "2026-10-18T11:18:38Z",
+   "content_type": "text/html;charset=utf-8",
+   "status": 200
+  },
+  {
+   "url": "https://www.eisa.org/election-calendar/",
+   "file": "eisa/2026-10-19/calendar.html",
+   "fetched_at": "2026-10-19T08:57:41Z",
+   "content_type": "text/html; charset=UTF-8",
+   "status": 200
+  },
+  {
+   "url": "https://data.ipu.org/elections/",
+   "file": "ipu/2026-10-18/elections.html",
+   "fetched_at": "2026-10-18T11:18:37Z",
+   "content_type": "text/html; charset=UTF-8",
+   "status": 200
+  },
+  {
+   "url": "https://www.cartercenter.org/programs/democracy/elections-observed/",
+   "file": "carter/2026-10-18/observed.html",
+   "fetched_at": "2026-10-18T11:18:40Z",
+   "content_type": "text/html; charset=UTF-8",
+   "status": 200
+  },
+  {
+   "url": "https://www.eeas.europa.eu/eeas/eu-election-observation-missions-1_en",
+   "file": "eeas/2026-10-18/missions.html",
+   "fetched_at": "2026-10-18T11:18:40Z",
+   "content_type": "text/html; charset=utf-8",
+   "status": 200
+  },
+  {
+   "url": "https://www.ndi.org/elections-calendar?page=1",
+   "file": "ndi/2026-10-19/p1.html",
+   "fetched_at": "2026-10-19T08:57:36Z",
+   "content_type": "text/html; charset=UTF-8",
+   "status": 200
+  },
+  {
+   "url": "https://www.eisa.org/wp-admin/admin-ajax.php?action=wp_ajax_ninja_tables_public_action&table_id=38978&target_action=get-all-data",
+   "file": "eisa/2026-10-19/y2026.json",
+   "fetched_at": "2026-10-19T08:57:53Z",
+   "content_type": "application/json; charset=UTF-8",
+   "status": 200
+  }
+ ]
+}
