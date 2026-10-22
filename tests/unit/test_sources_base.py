@@ -10,7 +10,7 @@ from elections_calendar.fetch import Deadline, FetchResult
 from elections_calendar.model import MAX_DETAIL, Reason, ReasonCode, RecordError
 from elections_calendar.offices import InstitutionRegistry
 from elections_calendar.places import Place, PlaceRegistry, SubdivisionIndex
-from elections_calendar.runner import DEFAULT_ADAPTERS, _load
+from elections_calendar.runner import DEFAULT_ADAPTERS, load_adapter
 from elections_calendar.sources.base import (
     PAGE_REASONS,
     PageCoverage,
@@ -487,7 +487,7 @@ def test_page_request_scope_and_link() -> None:
     assert request(3).scope_name == "pages"
     wiki = next(
         r
-        for r in _load(DEFAULT_ADAPTERS[2]).requests(window_for(datetime(2026, 10, 19, tzinfo=UTC)))
+        for r in load_adapter(DEFAULT_ADAPTERS[2]).requests(window_for(datetime(2026, 10, 19, tzinfo=UTC)))
         if r.key == "national-2026"
     )
     assert wiki.page_link == "https://en.wikipedia.org/wiki/2026_national_electoral_calendar"
@@ -495,7 +495,7 @@ def test_page_request_scope_and_link() -> None:
 
 
 def test_every_adapter_declares_its_parser_version() -> None:
-    assert [_load(spec).parser_version for spec in DEFAULT_ADAPTERS] == ["2.0"] * 9
+    assert [load_adapter(spec).parser_version for spec in DEFAULT_ADAPTERS] == ["2.0"] * 9
 
 
 def test_eisa_year_notes_have_a_year() -> None:

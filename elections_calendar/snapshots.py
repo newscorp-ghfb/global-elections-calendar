@@ -603,6 +603,10 @@ def load_baseline(path: Path) -> Baseline | None:
     problems = record_problems(result)
     if problems:
         raise corrupt(f"ledger: {'; '.join(problems[:3])}")
+    prefixes = [p.unit_prefix for p in baseline.snapshot.pages if p.unit_prefix is not None]
+    for unit in baseline.snapshot.units:
+        if sum(unit.unit_id.startswith(prefix) for prefix in prefixes) != 1:
+            raise corrupt(f"ledger: unit {unit.unit_id} is not on exactly one page")
     return baseline
 
 
@@ -1092,7 +1096,7 @@ def decide(
             provisional = _stamp(changed, candidate, fallback=False, provisional=True)
 
     tail = [
-        Reason(
+        _reason(
             "coverage_gap",
             f"{g.scope}: the {g.old_year} list was replaced by {g.new_year}; "
             f"in-window claims no longer listed: {len(g.claims)}",
