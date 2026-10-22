@@ -606,3 +606,17 @@ def test_drop_acceptances_reach_decide(tmp_path: Path, monkeypatch: pytest.Monke
     go(tmp_path, osce_offline(tmp_path))
     assert asked == [(["osce"], NOW)]
     assert given == [sentinel]
+
+
+@pytest.mark.parametrize("field", ["now", "wall_clock"])
+def test_an_out_of_range_time_is_a_usage_error(field: str, tmp_path: Path) -> None:
+    bad = datetime.fromisoformat("0001-01-01T00:00:00+05:00")
+    base = config(tmp_path, osce_offline(tmp_path))
+    cfg = (
+        dataclasses.replace(base, now=bad)
+        if field == "now"
+        else dataclasses.replace(base, wall_clock=bad)
+    )
+    with pytest.raises(pipeline.UsageError, match="--now is out of range"):
+        run(cfg)
+    assert not cfg.out.exists()
