@@ -320,8 +320,16 @@ def _read_baseline(path: Path) -> tuple[Baseline | None, str | None]:
         return None, f"baseline.json is corrupt: cannot be read ({type(exc).__name__})"
 
 
-def _read_state(path: Path) -> HealthState:
+def _read_state(folder: Path) -> HealthState:
+    """The source's recurrence state; a state file gone from beside a baseline is a lost one.
+
+    A published run writes ``health_state.json`` with every ``baseline.json``, so a baseline
+    without it means the history was deleted: the same reason and ``reset_at`` as a corrupt file.
+    """
+    path = folder / "health_state.json"
     try:
+        if not path.exists() and (folder / "baseline.json").exists():
+            return HealthState((), "missing beside a baseline")
         return load_health_state(path)
     except OSError as exc:
         return HealthState((), f"cannot be read ({type(exc).__name__})")
@@ -388,7 +396,7 @@ def _parse_source(
         candidate_json=candidate_json,
         baseline=baseline,
         baseline_problem=problem,
-        state=_read_state(folder / "health_state.json"),
+        state=_read_state(folder),
     )
 
 

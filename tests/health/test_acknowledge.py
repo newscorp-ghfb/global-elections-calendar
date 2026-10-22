@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 
 from elections_calendar.health import (
+    MAX_ACK_LENGTH,
     Acknowledgement,
     Entry,
     HealthState,
@@ -113,17 +114,31 @@ def test_recurrence_voids_an_acknowledgement() -> None:
     first_seen = next_health_state(CLEAN, "ipu", known, frozenset({only.key}), NOW)
     assert first_seen.last_absent_at == ()
 
-    stale = HealthState(((only.key, NOW - 2 * HOUR), ("old|fetch||", NOW - HOUR)))
-    assert next_health_state(stale, "ipu", known, frozenset({only.key}), NOW).last_absent_at == (
+    unnamed = HealthState(((only.key, NOW - 2 * HOUR), ("old|fetch||", NOW - HOUR)))
+    assert next_health_state(unnamed, "ipu", known, frozenset({only.key}), NOW).last_absent_at == (
         (only.key, NOW - 2 * HOUR),
-    )
+        ("old|fetch||", NOW - HOUR),
+    )  # a pair no entry names is carried until it is 14 days old (final review I4)
 
     expired = issues(entry(expires_at=ts(NOW + timedelta(days=1))))
     later = NOW + timedelta(days=2)
     gone = next_health_state(previous, "ipu", expired, frozenset(), later)
-    assert gone.last_absent_at == ()
+    assert gone.last_absent_at == previous.last_absent_at  # 2 days old: still carried
     other_source = next_health_state(previous, "aweb", known, frozenset(), NOW)
-    assert other_source.last_absent_at == ()
+    assert other_source.last_absent_at == previous.last_absent_at
+
+
+def test_a_pair_is_carried_until_it_is_fourteen_days_old() -> None:
+    just_in = NOW - MAX_ACK_LENGTH + timedelta(seconds=1)
+    old = NOW - MAX_ACK_LENGTH
+    previous = HealthState((("a|fetch||", old), ("b|fetch||", just_in), ("c|fetch||", NOW)))
+    state = next_health_state(previous, "ipu", issues(), frozenset(), NOW)
+    assert state.last_absent_at == (("b|fetch||", just_in), ("c|fetch||", NOW))
+    # A named key is the exception: absent now gives (key, now) however old its pair was.
+    (named,) = issues(entry()).entries
+    stale = HealthState(((named.key, old),))
+    again = next_health_state(stale, "ipu", issues(entry()), frozenset(), NOW)
+    assert again.last_absent_at == ((named.key, NOW),)
 
 
 def test_next_state_keeps_keys_of_not_yet_active_entries_and_sorts() -> None:
@@ -156,8 +171,8 @@ CORRUPT = [
     (b'{"last_absent_at": {}}', "shape"),
     (b'{"last_absent_at": [], "reset_at": null}', "shape"),
     (b'{"last_absent_at": {}, "reset_at": null, "x": 1}', "shape"),
-    (b'{"last_absent_at": {"k": "2026-10-20T10:00:00"}, "reset_at": null}', "timestamp of k"),
-    (b'{"last_absent_at": {"k": 5}, "reset_at": null}', "timestamp of k"),
+    (b'{"last_absent_at": {"k": "2026-10-20T10:00:00"}, "reset_at": null}', 'timestamp of "k"'),
+    (b'{"last_absent_at": {"k": 5}, "reset_at": null}', 'timestamp of "k"'),
     (b'{"last_absent_at": {}, "reset_at": "2026-10-20T10:00:00"}', "timestamp of reset_at"),
     (b'{"last_absent_at": {}, "reset_at": 7}', "timestamp of reset_at"),
     (b'{"last_absent_at": {}, "reset_at": null, "reset_at": null}', "shape"),
@@ -166,8 +181,11 @@ CORRUPT = [
         b' "reset_at": null}',
         "shape",
     ),
-    (b'{"last_absent_at": {"k": "9999-12-31T23:59:59-05:00"}, "reset_at": null}', "timestamp of k"),
+    (b'{"last_absent_at": {"k": "9999-12-31T23:59:59-05:00"}, "reset_at": null}', 'timestamp of "k"'),
     (b'{"last_absent_at": {}, "reset_at": "0001-01-01T00:00:00+05:00"}', "timestamp of reset_at"),
+    (rb'{"last_absent_at": {"\ud800": "2026-10-20T10:00:00Z"}, "reset_at": null}', "shape"),
+    (rb'{"last_absent_at": {"\ud800": "x"}, "reset_at": null}', "shape"),
+    (rb'{"last_absent_at": {"k\nl": "x"}, "reset_at": null}', 'timestamp of "k\\nl"'),
 ]
 
 
@@ -189,6 +207,9 @@ CORRUPT = [
         "repeated-inner-key",
         "overflow-k",
         "overflow-reset",
+        "surrogate-key",
+        "surrogate-key-bad-time",
+        "newline-key-is-escaped",
     ],
 )
 def test_a_corrupt_health_state_voids_every_acknowledgement(
@@ -621,3 +642,26 @@ def test_an_odd_yaml_value_in_a_message_stays_small() -> None:
         "known_issues.yml entry 1: missing field source",
         "known_issues.yml entry 2: unknown source list",
     ]
+
+
+SURROGATE = r'"\ud83d\ude00"'  # PyYAML reads an escaped pair as two lone surrogates
+
+
+@pytest.mark.parametrize(
+    "entry_text",
+    [
+        entry(source=SURROGATE),
+        entry(scope="{stage: fetch, year: null, page: " + SURROGATE + "}"),
+        entry(explanation=SURROGATE),
+        entry(owner=SURROGATE),
+        entry(reason="unparsed_relevant", scope=None, unit_text=SURROGATE),
+        entry(**{SURROGATE: "x"}),
+    ],
+    ids=["source", "page", "explanation", "owner", "unit_text", "field-name"],
+)
+def test_text_that_does_not_write_as_utf8_is_an_invalid_entry(entry_text: str) -> None:
+    result = parse_known_issues(entry_text + "\n", now=NOW)
+    assert result.entries == ()
+    (problem,) = result.problems
+    assert problem.code == "ack_invalid"
+    problem.detail.encode("utf-8")  # a lone surrogate would raise here

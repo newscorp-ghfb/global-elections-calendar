@@ -130,6 +130,14 @@ def test_md_text() -> None:
     assert md_text("São Tomé – 東京") == "São Tomé – 東京"  # letters and non-ASCII are left alone
 
 
+def test_md_text_drops_format_and_surrogate_characters() -> None:
+    assert md_text("a\u202eb\u2066c\ufeffd\ud800e") == "abcde"  # bidi controls, BOM, surrogate
+    assert md_text("\u200bz\u2060") == "z"  # zero-width space and word joiner
+    names = "\u0645\u06cc\u200c\u062e\u0648\u0627\u0647\u062f \u0915\u200d\u0937"  # Persian with a ZWNJ, Devanagari with a ZWJ
+    assert md_text(names) == names  # the joiners stay
+    md_text("\ud83d\ude00").encode("utf-8")  # a lone surrogate pair is dropped, so this writes
+
+
 def test_health_md_sections() -> None:
     text = first_text()
     assert text.splitlines()[0] == "# Elections calendar health"
