@@ -187,7 +187,43 @@ def overlap_two_pages(data: dict[str, Any]) -> None:
     pages.append({**pages[0], "key": "second"})
 
 
+def move_the_top_time(data: dict[str, Any]) -> None:
+    data["fetched_at"] = "2026-12-01T00:00:00Z"
+
+
+def null_the_top_time(data: dict[str, Any]) -> None:
+    data["fetched_at"] = None
+
+
+def zero_units_seen(data: dict[str, Any]) -> None:
+    data["scope"]["pages"][0]["units_seen"] = 0
+
+
+def multiply_units_seen(data: dict[str, Any]) -> None:
+    data["scope"]["pages"][0]["units_seen"] *= 10
+
+
+def units_seen_on_a_failed_page(data: dict[str, Any]) -> None:
+    pages = data["scope"]["pages"]
+    pages.append(
+        {
+            **pages[0],
+            "key": "second",
+            "outcome": "unfinished",
+            "unit_prefix": None,
+            "units_seen": 3,
+            "fetched_at": None,
+            "download": None,
+        }
+    )
+
+
 CORRUPT: list[tuple[str, Any, str]] = [
+    ("top-time-moved", move_the_top_time, "record: Snapshot: fetched_at is not the earliest page"),
+    ("top-time-null", null_the_top_time, "record: Snapshot: fetched_at is not the earliest page"),
+    ("units-seen-zero", zero_units_seen, "ledger: page "),
+    ("units-seen-x10", multiply_units_seen, "ledger: page "),
+    ("units-seen-failed-page", units_seen_on_a_failed_page, "ledger: page "),
     ("open-brace", b"{", "not JSON"),
     ("not-utf-8", b"\xff", "not JSON"),
     ("list", b"[]", "shape: "),
@@ -287,6 +323,56 @@ def test_coverage_gaps_round_trip(tmp_path: Path) -> None:
         Baseline(snapshot, (), (), (foreign,), True, True)
     with pytest.raises(RecordError, match=r"^Baseline: a baseline passed its ledger"):
         Baseline(snapshot, (), (), (), True, False)
+
+
+def full_baseline() -> Baseline:
+    """A baseline that holds one history entry, one disappeared unit and one coverage gap."""
+    snapshot = snapshot_of("aweb")
+    day = date(2026, 11, 1)
+    gone = Disappeared("e", "aweb:calendar/1", "t", "d", day, day, "https://e.test/", SINCE)
+    history = HistoryEntry("calendar", SINCE, 32, 40)
+    return Baseline(snapshot, (history,), (gone,), (a_gap(),), True, True)
+
+
+def _page_time(data: dict[str, Any], value: str) -> None:
+    data["scope"]["pages"][0]["fetched_at"] = value
+
+
+def _history_time(data: dict[str, Any], value: str) -> None:
+    data["units_seen_history"][0]["fetched_at"] = value
+
+
+def _gone_time(data: dict[str, Any], value: str) -> None:
+    data["disappeared"][0]["since"] = value
+
+
+def _gap_time(data: dict[str, Any], value: str) -> None:
+    data["coverage_gaps"][0]["since"] = value
+
+
+BAD_MOMENTS = [
+    ("naive", "2026-10-19T06:00:00"),
+    ("year-9999-west", "9999-12-31T23:59:59-05:00"),
+    ("year-1-east", "0001-01-01T00:00:00+05:00"),
+]
+
+
+@pytest.mark.parametrize("put", [_page_time, _history_time, _gone_time, _gap_time])
+@pytest.mark.parametrize(("name", "value"), BAD_MOMENTS, ids=[n for n, _ in BAD_MOMENTS])
+def test_a_stored_time_that_is_no_utc_moment_is_corrupt(
+    put: Callable[[dict[str, Any], str], None], name: str, value: str, tmp_path: Path
+) -> None:
+    data = baseline_to_dict(full_baseline())
+    put(data, value)
+    path = write(tmp_path / "baseline.json", data)
+    with pytest.raises(RecordError) as caught:
+        load_baseline(path)
+    assert str(caught.value).startswith("baseline.json is corrupt: ")
+
+
+def test_the_full_baseline_loads(tmp_path: Path) -> None:
+    path = write(tmp_path / "baseline.json", baseline_to_dict(full_baseline()))
+    assert load_baseline(path) == full_baseline()
 
 
 def test_page_download_redacts_and_cuts() -> None:
