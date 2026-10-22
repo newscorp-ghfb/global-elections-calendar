@@ -33,7 +33,17 @@ def test_now_needs_a_time_zone(
     assert not (tmp_path / "out").exists()
 
 
-@pytest.mark.parametrize("now", ["0001-01-01T00:00:00+05:00", "9999-12-31T23:59:59-05:00"])
+@pytest.mark.parametrize(
+    "now",
+    [
+        "0001-01-01T00:00:00+05:00",
+        "9999-12-31T23:59:59-05:00",
+        "1899-12-31T23:59:59+00:00",
+        "1900-01-01T00:00:00+05:00",  # UTC year 1899
+        "2200-01-01T00:00:00+00:00",
+        "2199-12-31T23:59:59-05:00",  # UTC year 2200
+    ],
+)
 def test_now_must_be_in_range(
     now: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -63,6 +73,17 @@ def test_out_must_be_empty(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
     assert cli.main(both) == 2
     assert cli.main(args(tmp_path, out="other")) == 2
     assert cli.main(["--live"]) == 2
+
+
+def test_out_naming_a_file_is_a_usage_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    offline = osce_offline(tmp_path)
+    out = tmp_path / "out"
+    out.write_text("a file", encoding="utf-8")
+    assert cli.main(["--offline", str(offline), "--now", NOW, *args(tmp_path)]) == 2
+    assert "--out must be empty" in capsys.readouterr().err
+    assert out.read_text(encoding="utf-8") == "a file"
 
 
 def test_a_missing_pages_json_is_a_usage_error(

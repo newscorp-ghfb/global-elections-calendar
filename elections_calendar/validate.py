@@ -231,6 +231,12 @@ def _invariants(doc: Any) -> list[str]:
                 f"invariant: item {_text(item.get('item_id'))} has undated_id {link!r}, "
                 "not in undated"
             )
+    linked = {i.get("undated_id") for i in items if isinstance(i.get("undated_id"), str)}
+    for listing in listings:  # the feed keeps a listing only for an attention item that links it
+        if listing.get("undated_id") not in linked:
+            problems.append(
+                f"invariant: listing {_text(listing.get('undated_id'))} has no attention item"
+            )
 
     for _, card in cards:
         mine = {_text(c.get("child_id")) for c in _dicts(card.get("children"))}

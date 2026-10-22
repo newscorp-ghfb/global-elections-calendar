@@ -930,7 +930,10 @@ def _gaps(
 def _disappeared(
     promoting: bool, baseline: Baseline | None, candidate: Snapshot, now: datetime
 ) -> tuple[Disappeared, ...]:
-    """Rule 7: events no longer listed, found through ``source_event_id``; by that id."""
+    """Rule 7: events no longer listed, found through ``source_event_id``; by that id.
+
+    One record per id: the first claim in the baseline's order (two claims may share an id).
+    """
     if baseline is None:
         return ()
     today = now.astimezone(UTC).date()
@@ -939,21 +942,26 @@ def _disappeared(
         return now - d.since < DISAPPEARED_DAYS and d.end >= today
 
     if not promoting:
-        shown = [d for d in baseline.disappeared if in_effect(d)]
-        return tuple(sorted(shown, key=lambda d: d.source_event_id))
+        shown: dict[str, Disappeared] = {}
+        for d in baseline.disappeared:
+            if in_effect(d):
+                shown.setdefault(d.source_event_id, d)
+        return tuple(sorted(shown.values(), key=lambda d: d.source_event_id))
     listed = {c.source_event_id for c in candidate.claims if c.source_event_id is not None}
-    carried = [d for d in baseline.disappeared if in_effect(d) and d.source_event_id not in listed]
+    carried: dict[str, Disappeared] = {}
+    for d in baseline.disappeared:
+        if in_effect(d) and d.source_event_id not in listed:
+            carried.setdefault(d.source_event_id, d)
     texts = {u.unit_id: u.text for u in baseline.snapshot.units}
-    new: list[Disappeared] = []
     for c in baseline.snapshot.claims:
         start, end = c.span.start, c.span.end
-        if c.source_event_id is None or start is None or end is None:
+        sei = c.source_event_id
+        if sei is None or start is None or end is None:
             continue
-        if end >= today and c.source_event_id not in listed:
+        if end >= today and sei not in listed and sei not in carried:
             text = collapse_ws(texts.get(c.unit_id, ""))[:MAX_ATTENTION_TEXT]
-            sei = c.source_event_id
-            new.append(Disappeared(sei, c.unit_id, text, c.date_text, start, end, c.link, now))
-    return tuple(sorted(carried + new, key=lambda d: d.source_event_id))
+            carried[sei] = Disappeared(sei, c.unit_id, text, c.date_text, start, end, c.link, now)
+    return tuple(sorted(carried.values(), key=lambda d: d.source_event_id))
 
 
 def _history(
@@ -974,7 +982,7 @@ def _history(
         if baseline is not None and comparable
         else []
     )
-    when = candidate.fetched_at  # None only when no page was fetched, so there is no scope
+    when = candidate.fetched_at  # None when no page has a fetch time: scopes may exist, no entry
     new = (
         []
         if when is None
@@ -1052,7 +1060,8 @@ def decide(
 ) -> Decision:
     """Spec §9.3: promote, quarantine or fall back, and stamp what is served.
 
-    ``ledger`` is None when parsing failed; ``baseline_problem`` is ``load_baseline``'s
+    ``ledger`` is None when parsing failed, and then ``run_outcome`` is ``worker_failed``
+    (anything else is a ValueError); ``baseline_problem`` is ``load_baseline``'s
     message when the file was corrupt (``baseline`` is then None); ``acceptances`` are the
     ``accept_drop`` entries in effect, of any source. ``now`` is timezone-aware: nothing
     here reads the clock. Only a promotion gives a new baseline; otherwise
@@ -1060,6 +1069,13 @@ def decide(
     """
     if now.utcoffset() is None:
         raise ValueError("decide: now must be timezone-aware")
+    if ledger is None and run_outcome != "worker_failed":
+        raise ValueError(f"decide: no ledger report for a run that is {run_outcome}")
+    if baseline is not None and baseline.snapshot.source != candidate.source:
+        raise ValueError(
+            f"decide: the baseline is of {baseline.snapshot.source!r}, "
+            f"the candidate of {candidate.source!r}"
+        )
     base = None if baseline is None else baseline.snapshot
     own = _own_reasons(candidate, run_outcome, run_detail, ledger, base)
     valid = all(REASON_LEVEL[r.code] != "error" for r in own)
