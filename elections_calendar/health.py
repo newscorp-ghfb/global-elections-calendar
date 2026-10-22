@@ -236,10 +236,24 @@ def _show(value: object) -> str:
     Never calls ``str`` or ``repr`` on a huge int or an alias-heavy container.
     """
     if isinstance(value, str):
-        return value
+        return value if _encodable(value) else _escaped(value)
     if type(value) is int and abs(value) < 10**20:
         return str(value)
     return type(value).__name__
+
+
+def _encodable(text: str) -> bool:
+    """Whether ``text`` writes as UTF-8; a lone surrogate (YAML can escape one) does not."""
+    try:
+        text.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
+def _escaped(text: str) -> str:
+    """``text`` as ASCII JSON cut to 80 characters: safe to echo in a message."""
+    return json.dumps(text)[:80]
 
 
 def _require_aware(now: datetime) -> None:
@@ -252,7 +266,7 @@ def _whole_number(value: object) -> bool:
 
 
 def _text(value: object) -> str | None:
-    return collapse_ws(value) or None if isinstance(value, str) else None
+    return collapse_ws(value) or None if isinstance(value, str) and _encodable(value) else None
 
 
 def _scope(value: object) -> tuple[str, int | None, str | None] | None:
@@ -262,7 +276,7 @@ def _scope(value: object) -> tuple[str, int | None, str | None] | None:
     stage, year, page = value["stage"], value["year"], value["page"]
     if year is not None and type(year) is not int:
         return None
-    if page is not None and not isinstance(page, str):
+    if page is not None and not (isinstance(page, str) and _encodable(page)):
         return None
     if not isinstance(stage, str):
         return None
@@ -326,6 +340,8 @@ def _entry(index: int, raw: object, now: datetime) -> Entry | str:
         if name in raw:
             text = _text(raw[name])
             if text is None:
+                if isinstance(raw[name], str) and not _encodable(raw[name]):
+                    return f"{name} must be text that writes as UTF-8"
                 return f"{name} must not be empty"
             texts[name] = text
     moments: dict[str, datetime] = {}
@@ -430,10 +446,12 @@ def load_health_state(path: Path) -> HealthState:
     ):
         return HealthState((), "shape")
     pairs: list[tuple[str, datetime]] = []
+    if not all(_encodable(key) for key in data["last_absent_at"]):
+        return HealthState((), "shape")
     for key in sorted(data["last_absent_at"]):
         moment = _moment(data["last_absent_at"][key])
         if moment is None:
-            return HealthState((), f"timestamp of {key}")
+            return HealthState((), f"timestamp of {_escaped(key)}")
         pairs.append((key, moment))
     reset = data["reset_at"]
     reset_at = None if reset is None else _moment(reset)
@@ -596,15 +614,25 @@ def next_health_state(
     present: frozenset[str],
     now: datetime,
 ) -> HealthState:
-    """The state to write after a published generation: only keys that unexpired entries name."""
+    """The state to write after a published generation.
+
+    A key that an unexpired entry names is recorded absent now, or keeps its previous pair when
+    present. Every other previous pair is carried unchanged until it is older than
+    ``MAX_ACK_LENGTH``: an entry valid now was acknowledged within that time, and ``in_effect``
+    needs a recurrence after ``acknowledged_at``, so an older pair can void no entry.
+    The file stays bounded: a key enters only while named and leaves 14 days later.
+    """
     _require_aware(now)
     named = {e.key for e in issues.entries if e.source == source and e.expires_at > now}
     before = dict(previous.last_absent_at)
     pairs: list[tuple[str, datetime]] = []
-    for key in sorted(named):
-        if key not in present:
-            pairs.append((key, now))
-        elif key in before:
+    for key in sorted(named | before.keys()):
+        if key in named:
+            if key not in present:
+                pairs.append((key, now))
+            elif key in before:
+                pairs.append((key, before[key]))
+        elif before[key] > now - MAX_ACK_LENGTH:
             pairs.append((key, before[key]))
     # The lost history could have voided an old acknowledgement (review P4-05).
     reset_at = now if previous.problem is not None else previous.reset_at

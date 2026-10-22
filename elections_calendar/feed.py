@@ -679,16 +679,25 @@ def status_doc(
     }
 
 
+_JOINERS: Final = "\u200c\u200d"  # ZWNJ and ZWJ: names in Persian and Indic scripts need them
+
+
 def md_text(value: object) -> str:
     """``value`` as one line of plain Markdown text (S4-T19).
 
-    Whitespace is collapsed, control characters are dropped and every ASCII punctuation
-    character gets a backslash, so the text cannot start a heading, link, image, table cell,
-    code span or HTML tag.
+    Whitespace is collapsed, control, surrogate and format characters are dropped (a name
+    keeps its ZWNJ and ZWJ), and every ASCII punctuation character gets a backslash, so the
+    text cannot start a heading, link, image, table cell, code span or HTML tag, reorder
+    its neighbours (U+202E, U+2066) or fail to write as UTF-8.
     """
     text = collapse_ws(str(value))
-    text = "".join(c for c in text if unicodedata.category(c) != "Cc")
+    text = "".join(c for c in text if not _dropped(c))
     return text.translate(_ESCAPES)
+
+
+def _dropped(c: str) -> bool:
+    category = unicodedata.category(c)
+    return category in ("Cc", "Cs") or (category == "Cf" and c not in _JOINERS)
 
 
 def _stamp_text(value: object) -> str:
