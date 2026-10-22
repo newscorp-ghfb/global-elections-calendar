@@ -1,0 +1,31 @@
+# SC2 (spec 13.2, P101): where the 50 records of the v1 feed of 2026-10-16 do not map to exactly
+# one v2 card. A record maps to the card of its place whose span holds its date; several such
+# cards narrow to one by the record's link, then by the office label. The card must hold a witness:
+# a child or an umbrella whose label contains, or is contained in, the record's type.
+
+# No v2 card holds these: EEAS gave all five a placeholder date of 1 October.
+unmapped:
+  - {date: "2026-10-01", country: "Colombia"}
+  - {date: "2026-10-01", country: "Peru"}
+  - {date: "2026-10-01", country: "Bangladesh"}
+  - {date: "2026-10-01", country: "Zambia"}
+  - {date: "2026-10-01", country: "São Tomé e Príncipe"}
+
+# Two cards still fit after the link and the label: the Wikipedia midterm record has no office
+# that tells the governors card from the midterm elections card.
+ambiguous:
+  - {date: "2026-11-03", country: "United States", cards: ["54d4c47d9ded", "5a8da530909b"]}
+
+# Several v1 records are one contest in v2: two Brazilian elections held on the same day, and the
+# Presidency of 25 October that A-WEB lists as "2026 General Elections (2nd round)".
+merged:
+  54b356d5b5ea:
+    - {date: "2026-10-04", country: "Brazil", type: "Brazilian Chamber of Deputies"}
+    - {date: "2026-10-04", country: "Brazil", type: "Brazilian Federal Senate"}
+  4b35f9d2401c:
+    - {date: "2026-10-25", country: "Brazil", type: "Brazilian Presidency"}
+    - {date: "2026-10-25", country: "Brazil", type: "2026 General Elections (2nd round)"}
+
+# A record goes here only with a comment that says why its contest is still represented.
+# None does: the card of every mapped record holds a witness.
+unwitnessed: []
