@@ -12,12 +12,14 @@
 #                         collapsed) in place of `scope`; reason is unparsed_relevant or
 #                         partial_relevant; one entry per unit
 #   accept_drop           the acknowledgement fields plus `accept_units_seen_min` and
-#                         `accept_claims_min` (whole numbers, 0 or more); reason is
+#                         `accept_claims_min` (whole numbers, 0 to 1,000,000); reason is
 #                         sudden_drop or cumulative_drop; the candidate must reach both
 #
 # Rules:
 #   - `scope.stage` must be the reason's stage (fetch, parse, snapshot, match or run);
-#     `year` is a whole number or null; `page` is a string or null.
+#     `year` is a whole number from 1900 to 2199, or null; `page` is a string or null. A
+#     page reason carries its page key (`elections` for IPU), so `page: null` matches only a
+#     reason that has no page.
 #   - `expires_at` is after `acknowledged_at`, at most 14 days later; `acknowledged_at` is
 #     at most 1 day ahead of the run.
 #   - Some reasons can never be acknowledged, errors, warnings and info alike:
@@ -31,7 +33,7 @@
 #
 # - source: ipu
 #   reason: http_error
-#   scope: {stage: fetch, year: null, page: null}
+#   scope: {stage: fetch, year: null, page: elections}
 #   explanation: the site is down for maintenance
 #   owner: ops
 #   acknowledged_at: 2026-10-20T11:00:00Z
