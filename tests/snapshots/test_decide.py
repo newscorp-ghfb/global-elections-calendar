@@ -624,6 +624,19 @@ def test_aweb_rollover_keeps_december_events() -> None:
     assert d.baseline is not None and d.baseline.coverage_gaps == ()
 
 
+def test_a_hand_edited_gap_scope_never_crashes() -> None:
+    """R8: the coverage_gap detail is cut to 300 characters, whatever the stored scope."""
+    long_scope = "x" * 400
+    b0 = promoted(aweb((GAMBIA, *MARCH), 2026, datetime(2026, 12, 20, 6, tzinfo=UTC)))
+    edited = dataclasses.replace(
+        b0, coverage_gaps=(CoverageGap(long_scope, 2026, 2027, R1, (GAMBIA,)),)
+    )
+    d = run(aweb(FEBRUARY, 2027, R1), edited, now=R1)
+    (reason,) = [r for r in gap_reasons(d) if r.page == long_scope]
+    assert len(reason.detail) == 300
+    assert reason.detail.startswith("x" * 100)
+
+
 def test_eisa_january_without_a_new_table_keeps_december() -> None:
     december = datetime(2026, 12, 15, 6, tzinfo=UTC)
     january = datetime(2027, 1, 3, 6, tzinfo=UTC)

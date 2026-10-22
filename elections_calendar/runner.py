@@ -112,7 +112,7 @@ class ScrapeRun:
     runs: tuple[SourceRun, ...]  # in spec order
 
 
-def _load(spec: AdapterSpec) -> Adapter:
+def load_adapter(spec: AdapterSpec) -> Adapter:
     module, _, name = spec.target.partition(":")
     adapter_class: Any = getattr(importlib.import_module(module), name)
     adapter: Adapter = adapter_class(**dict(spec.options))
@@ -130,7 +130,7 @@ def _work(spec: AdapterSpec, directory: str, bundle: str, seconds: float, window
     """The worker's entry point (runs in the child). Writes only into ``directory``."""
     out = Path(directory)
     try:
-        adapter = _load(spec)
+        adapter = load_adapter(spec)
         deadline = Deadline.after(seconds)
         with Fetcher(verify=bundle) as fetcher:
             for number, page in enumerate(adapter.fetch(window, fetcher, deadline), start=1):
@@ -188,7 +188,7 @@ class _Scrape:
         for index, spec in enumerate(specs):
             directory = pages_root / f"{index:02d}-{spec.source}"
             try:
-                requests = _load(spec).requests(window)
+                requests = load_adapter(spec).requests(window)
             except Exception as exc:  # a bad adapter spec costs that source only
                 requests = ()
                 self.runs[index] = SourceRun(

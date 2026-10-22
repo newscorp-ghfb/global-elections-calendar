@@ -406,7 +406,7 @@ def test_the_default_adapters_import_construct_and_pickle_their_window() -> None
     ]
     shipped = pickle.loads(pickle.dumps(WINDOW))
     for spec_ in runner.DEFAULT_ADAPTERS:
-        adapter = runner._load(spec_)  # no options
+        adapter = runner.load_adapter(spec_)  # no options
         assert adapter.source == spec_.source
         requests = adapter.requests(WINDOW)
         assert requests and adapter.requests(shipped) == requests

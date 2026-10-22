@@ -169,6 +169,24 @@ def gaps_object(data: dict[str, Any]) -> None:
     data["coverage_gaps"] = {}
 
 
+def orphan_a_unit(data: dict[str, Any]) -> None:
+    """Move one unit (and its claims) under an id that no page's prefix starts."""
+    old = data["units"][0]["unit_id"]
+    new = "osce:nowhere/" + old.rsplit("/", 1)[-1]
+    data["units"][0]["unit_id"] = new
+    for claim in data["claims"]:
+        if claim["unit_id"] == old:
+            claim["unit_id"] = new
+            claim["claim_id"] = new + claim["claim_id"][len(old) :]
+    refresh_id(data)
+
+
+def overlap_two_pages(data: dict[str, Any]) -> None:
+    """A second page with the same prefix: every unit is on two pages."""
+    pages = data["scope"]["pages"]
+    pages.append({**pages[0], "key": "second"})
+
+
 CORRUPT: list[tuple[str, Any, str]] = [
     ("open-brace", b"{", "not JSON"),
     ("not-utf-8", b"\xff", "not JSON"),
@@ -182,6 +200,8 @@ CORRUPT: list[tuple[str, Any, str]] = [
     ("ledger-flag", fail_the_ledger_check, "record: Baseline: a baseline passed"),
     ("stamped-gap-claim", stamp_a_gap_claim, "record: CoverageGap: a gap holds unstamped claims"),
     ("orphan-claim", orphan_a_claim, "ledger: "),
+    ("orphan-unit", orphan_a_unit, "ledger: unit osce:nowhere/"),
+    ("unit-on-two-pages", overlap_two_pages, "ledger: unit osce:elections/"),
 ]
 
 
