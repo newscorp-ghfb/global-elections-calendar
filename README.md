@@ -139,7 +139,7 @@ Exit codes:
 
 A run prints one line, for example `published, verdict red, 377390 feed bytes`: the outcome
 (`published` or `validation_failed`), the verdict (`green` or `red`) and the length of
-`elections.json`. `red` means a source has an open warning or error that nobody has
+`elections.json`. `red` means a source or the run has an open warning or error that nobody has
 acknowledged. The feed is still published.
 
 ## `out/`
@@ -168,7 +168,11 @@ way has no `manifest.json`.
 a YAML list. The file explains its own rules at the top. There are three kinds of entry:
 
 - **acknowledgement:** one reason of one source. Its `scope` (`stage`, `year`, `page`) says
-  which reason it covers. `HEALTH.md` prints each open reason with the scope to paste.
+  which reason it covers. For an open reason that a scope can acknowledge, `HEALTH.md` prints
+  the scope to paste. For a unit reason (`unparsed_relevant`, `partial_relevant`) it says to
+  acknowledge each unit by its `unit_text`. For a reason that can never be acknowledged it says
+  so. For a reason that is already acknowledged it prints the entry's end time. An info reason
+  has no hint.
 - **unit acknowledgement:** one unparsed or partly parsed unit, named by its full text
   (`unit_text` in `attention_full.json`, whitespace collapsed). One entry per unit.
 - **`accept_drop`:** accepts a drop in a source's counts (`sudden_drop` or `cumulative_drop`).
@@ -196,7 +200,8 @@ Rules that hold for every entry:
 ## Registry changes
 
 Before committing a change to `data/places.yaml`, `data/institutions.yaml` or
-`data/subdivisions.yaml`, run the offline check above and read `HEALTH.md`.
+`data/subdivisions.yaml`, run the offline check above with `--repo` pointing at a checkout that holds `data/sources/`
+(without baselines there is nothing to compare), and read `HEALTH.md`.
 
 Each snapshot records the version of those three files. The first live run after a change finds
 every source's baseline made under another version. That baseline is never served, but it still

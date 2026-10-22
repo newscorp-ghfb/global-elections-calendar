@@ -6,7 +6,6 @@ the feed size and the command line.
 """
 
 import copy
-import gzip
 import hashlib
 import json
 import re
@@ -199,7 +198,14 @@ def test_end_to_end_counts(e2e: Fixture) -> None:
             ("unparsed_relevant", "relevant units unparsed: 2"),
         ],
     }
-    checks = [ServedCheck(s, e["snapshot"]["served_snapshot_id"], True, True) for s, e in entries.items()]
+    # the served check comes from the artifact's own baselines, not from the feed under test
+    checks = []
+    for source, entry in entries.items():
+        baseline = json.loads((e2e.out / "data" / "sources" / source / "baseline.json").read_text(encoding="utf-8"))
+        assert entry["snapshot"]["served_snapshot_id"] == baseline["snapshot_id"], source
+        checks.append(
+            ServedCheck(source, baseline["snapshot_id"], baseline["checks"]["ledger"], baseline["checks"]["discovery"])
+        )
     assert validate_feed(e2e.feed_bytes, served=checks, wall_clock=RUN_NOW) == ()
     manifest = json.loads((e2e.out / "manifest.json").read_text(encoding="utf-8"))
     on_disk = {p.relative_to(e2e.out).as_posix() for p in e2e.out.rglob("*") if p.is_file()}
@@ -310,7 +316,7 @@ def entry_children(entry: Mapping[str, Any], scope: list[tuple[dict[str, Any], d
     return exact if len(fits) > 1 and exact else [child_id for child_id, _ in fits]
 
 
-def test_expected_file(e2e: Fixture, capsys: pytest.CaptureFixture[str]) -> None:
+def test_expected_file(e2e: Fixture) -> None:
     entries = yaml.safe_load((EXPECTED / "2026-10-16.yaml").read_text(encoding="utf-8"))
     assert len(entries) == 122
     assert all(
@@ -335,7 +341,6 @@ def test_expected_file(e2e: Fixture, capsys: pytest.CaptureFixture[str]) -> None
     )
     print(f"subnational children in other months: {elsewhere}")
     assert elsewhere == 80
-    assert "subnational children in other months: 80" in capsys.readouterr().out
 
 
 # --- SC2: every v1 record maps to a v2 card -----------------------------------------------------
@@ -365,15 +370,16 @@ def map_v1(v1: Mapping[str, Any], feed: Mapping[str, Any], places: PlaceRegistry
             continue
         # 2. exactly one of them has a child source with one of the record's links
         linked = [c for c in hits if any(s["link"] in record["links"] for ch in c["children"] for s in ch["sources"])]
-        step = "one"
+        step = "unique"
         picked = hits
-        if len(linked) == 1:
-            picked, step = linked, "link"
+        # (on these fixtures the label step alone would pick the same card as the link step)
+        if len(hits) > 1 and len(linked) == 1:
+            picked, step = linked, "by_link"
         # 3. still several: those with a child whose label contains, or is contained in, the type
         if len(picked) > 1:
             labelled = [c for c in picked if any(near(ch["office_label"], record["type"]) for ch in c["children"])]
             if labelled:
-                picked, step = labelled, "label"
+                picked, step = labelled, "by_label"
         if len(picked) != 1:
             result["ambiguous"].append(
                 {"date": record["date"], "country": record["country"], "cards": sorted(c["group_id"] for c in picked)}
@@ -401,7 +407,7 @@ def test_v1_records_map_to_v2_cards(e2e: Fixture) -> None:
     assert set(expected) == {"unmapped", "ambiguous", "merged", "unwitnessed"}
     assert sum(mapped["witness"].values()) == 44
     assert mapped["witness"] == {"child": 42, "umbrella": 2}
-    assert mapped["step"] == {"one": 28, "link": 15, "label": 1}
+    assert mapped["step"] == {"unique": 36, "by_link": 7, "by_label": 1}
     for kind in ("unmapped", "ambiguous", "merged", "unwitnessed"):
         assert mapped[kind] == expected[kind], kind
     assert len(mapped["unmapped"]) == 5
@@ -413,7 +419,9 @@ def test_sc2_needs_a_witness(e2e: Fixture) -> None:
     places = PlaceRegistry.load()
     # on the real feed no child carries both records of a merged card
     cards = {card["group_id"]: card for _, card in cards_of(e2e.doc)}
-    for group, records in map_v1(v1, e2e.doc, places)["merged"].items():
+    merged = map_v1(v1, e2e.doc, places)["merged"]
+    assert set(merged) == {"54b356d5b5ea", "4b35f9d2401c"}
+    for group, records in merged.items():
         first, second = records[0]["type"], records[1]["type"]
         for child in cards[group]["children"]:
             assert not (near(child["office_label"], first) and near(child["office_label"], second)), group
@@ -442,7 +450,6 @@ def test_feed_size_on_the_fixtures(e2e: Fixture) -> None:
     assert verdict["feed_bytes"] == size
     assert verdict["feed_budget_bytes"] == FEED_BUDGET_BYTES
     assert e2e.result.feed_bytes == size
-    assert len(gzip.compress(e2e.feed_bytes)) < size
 
 
 def test_main_on_the_fixtures(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

@@ -207,6 +207,7 @@
   status: Held
   source: wikipedia
   quote: "4 October: Brazil , Governors Alagoas , Governor Amazonas , Governor Bahia , Governor Ceará , Governor Espírito Santo , Governor Federal District , Governor Goiás , Governor Maranhão , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor Paraná , Governor Pernambuco , Governor Rio de Janeiro , Governor Rio Grande do Norte , Governor Rio Grande do Sul , Governor Santa Catarina , Governor São Paulo , Governor Bosnia and Herzegovina Federation of Bosnia and Herzegovina , entity parliament and canton assemblies Republika Srpska , entity president and parliament"
+# office is "Presidency": the page writes "President", and the rule needs a text inside the label "Brazilian Presidency"
 - place: "iso:BR"
   office: "Presidency"
   round: 1
@@ -572,6 +573,7 @@
   status: Upcoming
   source: ndi
   quote: "2026 Bulgaria Parliamentary Elections October 25, 2026 (ALL DAY)"
+# office is "Presidency": the page writes "President", and the rule needs a text inside the label "Brazilian Presidency"
 - place: "iso:BR"
   office: "Presidency"
   round: 2
