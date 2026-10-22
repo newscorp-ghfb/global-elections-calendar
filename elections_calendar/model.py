@@ -878,9 +878,12 @@ def _iso_moment(value: object) -> datetime | None:
     if value is None:
         return None
     try:
-        return datetime.fromisoformat(value)  # type: ignore[arg-type]
-    except (TypeError, ValueError) as exc:
+        moment = datetime.fromisoformat(value)  # type: ignore[arg-type]
+        if moment.utcoffset() is not None:
+            moment.astimezone(UTC)  # year 9999 west of UTC or year 1 east of it cannot convert
+    except (TypeError, ValueError, OverflowError) as exc:
         raise RecordError(f"{value!r} is not an ISO timestamp") from exc
+    return moment
 
 
 def _check_unit_id(unit_id: str, source: str) -> None:

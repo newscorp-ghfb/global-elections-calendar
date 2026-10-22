@@ -603,10 +603,28 @@ def load_baseline(path: Path) -> Baseline | None:
     problems = record_problems(result)
     if problems:
         raise corrupt(f"ledger: {'; '.join(problems[:3])}")
-    prefixes = [p.unit_prefix for p in baseline.snapshot.pages if p.unit_prefix is not None]
-    for unit in baseline.snapshot.units:
+    snapshot = baseline.snapshot
+    prefixes = [p.unit_prefix for p in snapshot.pages if p.unit_prefix is not None]
+    for unit in snapshot.units:
         if sum(unit.unit_id.startswith(prefix) for prefix in prefixes) != 1:
             raise corrupt(f"ledger: unit {unit.unit_id} is not on exactly one page")
+    # What build_snapshot and the ledger guarantee, checked again: none of it is in snapshot_id,
+    # so a hand edit would otherwise pass (fetched_at drives fallback_stale and data_as_of;
+    # units_seen is the base of the sudden-drop check).
+    moments = [p.fetched_at for p in snapshot.pages if p.fetched_at is not None]
+    if snapshot.fetched_at != (min(moments) if moments else None):
+        raise corrupt("record: Snapshot: fetched_at is not the earliest page fetched_at")
+    for page in snapshot.pages:
+        if page.outcome in _WITH_UNITS:
+            if page.unit_prefix is None:
+                continue
+            have = sum(unit.unit_id.startswith(page.unit_prefix) for unit in snapshot.units)
+        else:
+            have = 0
+        if page.units_seen != have:
+            raise corrupt(
+                f"ledger: page {page.key!r} reports units_seen {page.units_seen}, has {have}"
+            )
     return baseline
 
 
