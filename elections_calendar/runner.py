@@ -370,7 +370,8 @@ def run_sources(
 
     The CA bundle is written first, in the parent: a ``TrustBundleError`` propagates before
     any worker starts. No worker outlives this call, whatever happens in it. ``environ`` only
-    selects the CA bundle: workers inherit ``os.environ``, proxy variables included.
+    selects the CA bundle: workers inherit ``os.environ``, proxy variables included. ``budget`` is
+    passed to every worker's ``Fetcher`` (None means no request limit).
     """
     began = time.monotonic()
     if parallel < 1:

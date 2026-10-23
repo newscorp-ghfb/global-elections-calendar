@@ -62,3 +62,19 @@ def test_used_counts_only_tokens_below_the_limit(tmp_path: Path) -> None:
     assert budget.used() == 0
     assert budget.take()
     assert budget.used() == 1
+
+
+def test_a_budget_error_other_than_an_existing_token_propagates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    budget = RequestBudget(tmp_path / "budget", 40)
+    calls: list[str] = []
+
+    def denied(path: object, flags: int) -> int:
+        calls.append(str(path))
+        raise PermissionError("denied")
+
+    monkeypatch.setattr("elections_calendar.fetch.os.open", denied)
+    with pytest.raises(PermissionError):
+        budget.take()
+    assert len(calls) == 1  # it stopped at the first error and tried no further token
