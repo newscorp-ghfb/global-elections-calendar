@@ -53,7 +53,7 @@ def _scrape_summary(args: argparse.Namespace) -> int:
         print("GITHUB_STEP_SUMMARY is not set", file=sys.stderr)
         return 2
     health = args.out / "HEALTH.md"
-    if health.is_file():
+    if health.is_file() and not health.is_symlink():
         append_summary(summary, health.read_bytes().decode("utf-8", errors="replace"))
     else:
         append_summary(summary, _NO_HEALTH)

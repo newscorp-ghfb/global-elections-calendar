@@ -36,7 +36,7 @@ def _load(root: Path) -> dict[str, str]:
         raise ManifestError("manifest.json is missing")
     try:
         data: Any = json.loads(path.read_bytes().decode("utf-8"))
-    except OSError, ValueError:  # UnicodeDecodeError and JSONDecodeError are ValueErrors
+    except OSError, ValueError, RecursionError:  # the first two cover bad UTF-8 and bad JSON
         raise ManifestError("manifest.json is malformed") from None
     if (
         not isinstance(data, dict)

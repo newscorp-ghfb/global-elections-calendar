@@ -222,6 +222,20 @@ ROWS = [
         False,
         "publish refused its context",
     ),
+    (
+        "r31-push-with-a-scrape",
+        {"GITHUB_EVENT_NAME": "push", "PUBLISH_RESULT": "skipped"},
+        "none",
+        False,
+        "unexpected jobs on a push",
+    ),
+    (
+        "r32-push-alert-test-stays-green",
+        {"GITHUB_EVENT_NAME": "push", **SKIPPED, "ALERT_TEST": "true"},
+        "none",
+        True,
+        "gates only",
+    ),
 ]
 
 
@@ -281,6 +295,33 @@ def test_unknown_states_are_red(tmp_path: Path, overrides: dict[str, str], headl
     assert (final.green, final.headline) == (False, headline)
 
 
+@pytest.mark.parametrize(
+    ("overrides", "headline"),
+    [
+        pytest.param(
+            {"GITHUB_EVENT_NAME": "pull_request", "GATES_RESULT": "banana"},
+            "unknown state: GITHUB_EVENT_NAME",
+            id="event-before-gates",
+        ),
+        pytest.param(
+            {"GATES_RESULT": "banana", "SCRAPE_RESULT": "banana"},
+            "unknown state: GATES_RESULT",
+            id="gates-before-scrape",
+        ),
+        pytest.param(
+            {"PAUSED": "banana", "PUBLISH_OUTCOME": "banana"},
+            "unknown state: PAUSED",
+            id="paused-before-outcome",
+        ),
+    ],
+)
+def test_the_first_unknown_state_wins(
+    tmp_path: Path, overrides: dict[str, str], headline: str
+) -> None:
+    final = final_verdict(state_from(run_env(**overrides), tmp_path))
+    assert (final.green, final.headline) == (False, headline)
+
+
 def test_unknown_state_shows_its_value_cut(tmp_path: Path) -> None:
     env = run_env(GATES_RESULT="y" * 300)
     final = final_verdict(state_from(env, tmp_path))
@@ -298,7 +339,8 @@ def test_state_from_reads_the_environment(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "kind", ["not-json", "list", "no-outcome", "case", "dry-string", "bad-outcome"]
+    "kind",
+    ["not-json", "list", "no-outcome", "case", "dry-string", "dry-zero", "dry-one", "bad-outcome"],
 )
 def test_malformed_verdict_json_is_red(tmp_path: Path, kind: str) -> None:
     root = make_artifact(tmp_path / "a")
@@ -308,6 +350,8 @@ def test_malformed_verdict_json_is_red(tmp_path: Path, kind: str) -> None:
         "no-outcome": {"verdict": "green", "dry_run": False},
         "case": {**good, "verdict": "GREEN"},
         "dry-string": {**good, "dry_run": "false"},
+        "dry-zero": {**good, "dry_run": 0},
+        "dry-one": {**good, "dry_run": 1},
         "bad-outcome": {**good, "outcome": "superseded"},
     }
     if kind == "not-json":
@@ -337,3 +381,22 @@ def test_summary_text(tmp_path: Path) -> None:
         summary_text(FinalVerdict(True, "paused", ()), state_from({}, tmp_path)).count("| none |")
         == 5
     )
+
+
+NESTED = b"[" * 100_000 + b"]" * 100_000
+
+
+def test_deeply_nested_verdict_json_is_malformed(tmp_path: Path) -> None:
+    root = make_artifact(tmp_path / "a")
+    (root / "verdict.json").write_bytes(NESTED)
+    write_manifest(root)
+    final = final_verdict(state_from(run_env(), root))
+    assert (final.green, final.headline) == (False, "verdict.json is malformed")
+
+
+def test_deeply_nested_manifest_is_malformed(tmp_path: Path) -> None:
+    root = make_artifact(tmp_path / "a")
+    (root / "manifest.json").write_bytes(NESTED)
+    final = final_verdict(state_from(run_env(), root))
+    assert (final.green, final.headline) == (False, "artifact incomplete")
+    assert final.details == ("manifest.json is malformed",)
