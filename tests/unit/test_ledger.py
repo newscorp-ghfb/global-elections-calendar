@@ -19,6 +19,7 @@ from elections_calendar.ledger import (
     TableRowsRule,
     check,
     discover,
+    marker_problems,
     page_revid,
     record_problems,
 )
@@ -783,3 +784,43 @@ def test_discovery_uses_the_page_key() -> None:
     assert check(raw, parsed("eisa:y2026/r1", "eisa:y2026/r2"), rules=rules).ok
     bad = check(raw, parsed("eisa:y2026/r1", "eisa:y2026/r2", "eisa:calendar/r1"), rules=rules)
     assert [r.code for r in bad.reasons] == ["discovery_mismatch"]
+
+
+def test_marker_rule_on_synthetic_pages() -> None:
+    rule = CardBlocksRule(NDI_BLOCKS.blocks, NDI_BLOCKS.wrapper, marker="add-to-cal")
+
+    def card(inner: str) -> str:
+        return f'<div class="partial">{inner}</div>'
+
+    good = card('<button class="add-to-cal">x</button>')
+
+    def wrapped(*cards: str) -> str:
+        return f'<div class="election-wrapper">{"".join(cards)}</div>'
+
+    def problems(upcoming: str, past: str | None = None) -> list[str]:
+        body = block_page(upcoming, wrapped(good) if past is None else past)
+        return marker_problems(rule, body, "k")
+
+    assert problems(wrapped(good)) == []
+    assert problems(wrapped(card("<p>none</p>"))) == [
+        "page 'k': upcoming card 1 holds 0 add-to-cal markers",
+        "page 'k': upcoming block holds 0 add-to-cal markers for 1 cards",
+    ]
+    assert problems(wrapped(card('<i class="add-to-cal"/>'))) == []
+    assert problems(wrapped(card('<i class="x add-to-cal"></i>'))) == []
+    assert problems(wrapped(card('<i class="add-to-cal-button"></i>'))) == [
+        "page 'k': upcoming card 1 holds 0 add-to-cal markers",
+        "page 'k': upcoming block holds 0 add-to-cal markers for 1 cards",
+    ]
+    deep = card('<div><div><div><b class="add-to-cal"></b></div></div></div>')
+    assert problems(wrapped(deep)) == []
+    assert problems(wrapped(good, "<br>", good)) == [
+        "page 'k': upcoming card 2 holds 0 add-to-cal markers",
+        "page 'k': upcoming block holds 2 add-to-cal markers for 3 cards",
+    ]
+    assert problems(wrapped(good), wrapped(card(""))) == [
+        "page 'k': past card 1 holds 0 add-to-cal markers",
+        "page 'k': past block holds 0 add-to-cal markers for 1 cards",
+    ]
+    assert marker_problems(NDI_BLOCKS, block_page(wrapped(card(""))), "k") == []
+    assert marker_problems(rule, b"<html></html>", "k") == []
