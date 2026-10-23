@@ -4,10 +4,10 @@ from datetime import UTC, date, datetime
 from typing import Any
 
 import pytest
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 from elections_calendar.fetch import Deadline
-from elections_calendar.ledger import COUNT_RULES, CardBlocksRule, check, discover
+from elections_calendar.ledger import COUNT_RULES, CardBlocksRule, check, discover, marker_problems
 from elections_calendar.model import Claim, DateSpan, Reason
 from elections_calendar.sources import ndi
 from elections_calendar.sources.base import Adapter, ParseResult, RawPages, Registries
@@ -737,9 +737,11 @@ def test_type_vocabulary_matches_the_page_filter() -> None:
 
 
 def test_count_rule_matches_the_adapter() -> None:
-    assert COUNT_RULES["ndi"] == CardBlocksRule(ndi.BLOCKS, ndi.WRAPPER)
+    assert COUNT_RULES["ndi"] == CardBlocksRule(ndi.BLOCKS, ndi.WRAPPER, marker="add-to-cal")
     assert COUNT_RULES["ndi"] == CardBlocksRule(
-        (("upcoming-elections", "upcoming"), ("past-elections", "past")), "election-wrapper"
+        (("upcoming-elections", "upcoming"), ("past-elections", "past")),
+        "election-wrapper",
+        marker="add-to-cal",
     )
 
 
@@ -815,3 +817,116 @@ def test_cards_outside_the_card_list_fail_the_page() -> None:
     )
     # (d) control: the unchanged page is read in full.
     assert detail(page0(BODIES[0])) == ("ok", "") and len(page0(BODIES[0]).units) == 20
+
+
+MARKER = 'class="add-to-cal"'
+EXTRA = '<span class="add-to-cal"></span>'
+
+
+def ledger(body: bytes) -> Any:
+    raw = raw_of({0: body})
+    return check(raw, Ndi().parse(raw, WINDOW, REGISTRIES))
+
+
+def marker_texts(body: bytes) -> list[str]:
+    return marker_problems(COUNT_RULES["ndi"], body, "p0")  # type: ignore[arg-type]
+
+
+def nth(text: str, needle: str, n: int, start: int = 0) -> int:
+    """The index of the n-th (from 1) occurrence of ``needle`` at or after ``start``."""
+    at = start - 1
+    for _ in range(n):
+        at = text.index(needle, at + 1)
+    return at
+
+
+def after_button(text: str, n: int) -> str:
+    """``text`` with EXTRA right after the n-th marker's button, still inside its card."""
+    end = text.index("</button>", nth(text, MARKER, n)) + len("</button>")
+    return text[:end] + EXTRA + text[end:]
+
+
+def mismatch_only(report: Any) -> None:
+    assert not report.ok
+    assert [r.code for r in report.reasons] == ["discovery_mismatch"]
+
+
+def test_ndi_marker_count_matches_the_fixture_cards() -> None:
+    blocks = ("upcoming-elections", "past-elections")
+    totals = []
+    for n in range(5):
+        assert marker_problems(COUNT_RULES["ndi"], BODIES[n], f"p{n}") == []  # type: ignore[arg-type]
+        soup = BeautifulSoup(BODIES[n].decode(), "lxml")
+        per_card: list[int] = []
+        inside = 0
+        for block_id in blocks:
+            panel = soup.find(id=block_id)
+            assert isinstance(panel, Tag)
+            inside += len(panel.select(".add-to-cal"))
+            wrapper = panel.find("div", class_="election-wrapper")
+            kids = [c for c in wrapper.children if isinstance(c, Tag)] if wrapper else []
+            per_card += [len(c.select(".add-to-cal")) for c in kids]
+        assert set(per_card) <= {1}
+        totals.append(len(per_card))
+        assert inside == len(soup.select(".add-to-cal")) == len(per_card)
+    assert totals == [20, 18, 10, 10, 10] and sum(totals) == 68
+    assert BODIES[0].decode().count("add-to-cal") == 48
+    assert check(RAW, RES).ok
+
+
+def test_ndi_missing_marker_is_a_ledger_problem() -> None:
+    text = BODIES[0].decode()
+    at = nth(text, MARKER, 3)
+    renamed = text[:at] + 'class="add-to-calx"' + text[at + len(MARKER) :]
+    report = ledger(renamed.encode())
+    mismatch_only(report)
+    assert "page 'p0': upcoming card 3 holds 0 add-to-cal markers" in report.problems
+    assert "page 'p0': upcoming block holds 9 add-to-cal markers for 10 cards" in report.problems
+    assert marker_texts(renamed.encode()) == [
+        "page 'p0': upcoming card 3 holds 0 add-to-cal markers",
+        "page 'p0': upcoming block holds 9 add-to-cal markers for 10 cards",
+    ]
+    # The 2nd marker is renamed and a marker is added to card 5: the block still holds 10 for 10.
+    at = nth(text, MARKER, 2)
+    swapped = text[:at] + 'class="add-to-calx"' + text[at + len(MARKER) :]
+    swapped = after_button(swapped, 4)  # marker 2 no longer matches: card 5 is the 4th hit
+    body = swapped.encode()
+    assert marker_texts(body) == [
+        "page 'p0': upcoming card 2 holds 0 add-to-cal markers",
+        "page 'p0': upcoming card 5 holds 2 add-to-cal markers",
+    ]
+    mismatch_only(ledger(body))
+
+
+def test_ndi_duplicate_marker_is_a_ledger_problem() -> None:
+    text = BODIES[0].decode()
+    first = after_button(text, 1).encode()
+    assert marker_texts(first) == [
+        "page 'p0': upcoming card 1 holds 2 add-to-cal markers",
+        "page 'p0': upcoming block holds 11 add-to-cal markers for 10 cards",
+    ]
+    wrapper = nth(text, "election-wrapper", 1, text.index('id="past-elections"'))
+    pager_at = nth(text, '<nav class="pager"', 1, wrapper)
+    outer = (text[:pager_at] + EXTRA + text[pager_at:]).encode()
+    assert marker_texts(outer) == ["page 'p0': past block holds 11 add-to-cal markers for 10 cards"]
+    tail = text.replace("</body>", EXTRA + "</body>").encode()
+    assert marker_texts(tail) == ["page 'p0': 1 add-to-cal markers outside the blocks"]
+    for body in (first, outer, tail):
+        mismatch_only(ledger(body))
+
+
+def test_ndi_without_markers_is_not_valid_empty() -> None:
+    text = BODIES[0].decode()
+    body = text.replace(MARKER, 'class="add-to-calx"').encode()
+    assert page0(body, balanced=False).coverage[0].outcome == "ok"
+    report = ledger(body)
+    mismatch_only(report)
+    cards = [p for p in report.problems if " card " in p and "holds 0 add-to-cal" in p]
+    blocks = [p for p in report.problems if " block holds 0 add-to-cal markers for 10 cards" in p]
+    assert (len(cards), len(blocks)) == (20, 2)
+    soup = BeautifulSoup(text, "lxml")
+    for wrapper in soup.select("div.election-wrapper"):
+        wrapper.clear()
+    emptied = str(soup).encode()
+    res = page0(emptied, balanced=False)
+    assert detail(res) == ("layout_not_recognised", "upcoming block is page 0 with 0 cards")

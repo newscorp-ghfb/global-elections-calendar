@@ -92,10 +92,14 @@ class CardBlocksRule:
     the element with that id, the direct element children of the ``div`` whose class list
     holds ``wrapper`` (``<slug>-c1``, ``<slug>-c2``, ...). Every child element counts, a card's
     own descendants and the text between cards do not. A block id must occur exactly once.
+    With ``marker`` set, the markers (elements of any tag whose class list holds it) are also
+    counted: each card must hold exactly one, a block as many as it has cards, and none may
+    lie outside the blocks (``marker_problems``).
     """
 
     blocks: tuple[tuple[str, str], ...]
     wrapper: str
+    marker: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,7 +125,8 @@ COUNT_RULES: Mapping[str, CountRule] = {
     "electionguide": TableRowsRule("electionsTable"),
     "osce": HeaderTableRowsRule(frozenset({"date", "country", "election", "activity"})),
     "ndi": CardBlocksRule(
-        (("upcoming-elections", "upcoming"), ("past-elections", "past")), "election-wrapper"
+        (("upcoming-elections", "upcoming"), ("past-elections", "past")), "election-wrapper",
+        marker="add-to-cal",
     ),
     "aweb": HeaderTableRowsRule(frozenset({"country", "election", "date"})),
     "eisa": JsonListRule(frozenset({"calendar"})),
@@ -458,10 +463,25 @@ class _CardBlocks(HTMLParser):
         self.wrapper_depth: int | None = None
         self.seen: dict[str, int] = dict.fromkeys(self.slugs.values(), 0)
         self.wrappers: dict[str, list[int]] = {slug: [] for slug in self.slugs.values()}
+        self.marker = rule.marker
+        self.card_markers: dict[str, list[int]] = {slug: [] for slug in self.slugs.values()}
+        self.block_markers: dict[str, int] = dict.fromkeys(self.slugs.values(), 0)
+        self.outside_markers = 0
 
     def _child(self, depth: int) -> None:
         if self.block is not None and self.wrapper_depth == depth - 1:
             self.wrappers[self.block[0]][-1] += 1
+            self.card_markers[self.block[0]].append(0)
+
+    def _mark(self, depth: int, values: dict[str, str | None]) -> None:
+        if self.marker is None or self.marker not in (values.get("class") or "").split():
+            return
+        if self.block is None:
+            self.outside_markers += 1
+            return
+        self.block_markers[self.block[0]] += 1
+        if self.wrapper_depth is not None and depth > self.wrapper_depth:
+            self.card_markers[self.block[0]][-1] += 1
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
@@ -476,14 +496,17 @@ class _CardBlocks(HTMLParser):
             self.seen[slug] += 1
             if self.block is None:
                 self.block = (slug, depth)
+        self._mark(depth, values)
         if tag not in _VOID_TAGS:
             self.stack.append(tag)
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        values = dict(attrs)
         self._child(len(self.stack))
-        slug = self.slugs.get(dict(attrs).get("id") or "")
+        slug = self.slugs.get(values.get("id") or "")
         if slug is not None:
             self.seen[slug] += 1
+        self._mark(len(self.stack), values)
 
     def handle_endtag(self, tag: str) -> None:
         if tag in _VOID_TAGS or tag not in self.stack:
@@ -496,20 +519,59 @@ class _CardBlocks(HTMLParser):
             self.block = None
 
 
-def _card_blocks(rule: CardBlocksRule, body: bytes) -> tuple[str, ...] | None:
+def _read_card_blocks(rule: CardBlocksRule, body: bytes) -> _CardBlocks | None:
+    """The parser after reading ``body``, or None when the blocks cannot be read."""
     parser = _CardBlocks(rule)
     try:
         parser.feed(body.decode("utf-8", errors="replace"))
         parser.close()
     except (ValueError, RecursionError):
         return None
+    for _, slug in rule.blocks:
+        if parser.seen[slug] != 1 or len(parser.wrappers[slug]) > 1:
+            return None
+    return parser
+
+
+def _card_blocks(rule: CardBlocksRule, body: bytes) -> tuple[str, ...] | None:
+    parser = _read_card_blocks(rule, body)
+    if parser is None:
+        return None
     units: list[str] = []
     for _, slug in rule.blocks:
         found = parser.wrappers[slug]
-        if parser.seen[slug] != 1 or len(found) > 1:
-            return None
         units += [f"{slug}-c{i}" for i in range(1, (found[0] if found else 0) + 1)]
     return tuple(units)
+
+
+def marker_problems(rule: CardBlocksRule, body: bytes, key: str) -> list[str]:
+    """R36: the marker counts of one page; [] without a ``marker`` or when the body is unreadable.
+
+    Per block, in rule order: one problem per card whose marker count is not 1, then the block's
+    problem when its markers differ from its cards, and last the markers outside the blocks.
+    """
+    marker = rule.marker
+    parser = _read_card_blocks(rule, body) if marker is not None else None
+    if marker is None or parser is None:
+        return []
+    problems: list[str] = []
+    for _, slug in rule.blocks:
+        cards = parser.card_markers[slug]
+        problems += [
+            f"page {key!r}: {slug} card {i} holds {n} {marker} markers"
+            for i, n in enumerate(cards, 1)
+            if n != 1
+        ]
+        if parser.block_markers[slug] != len(cards):
+            problems.append(
+                f"page {key!r}: {slug} block holds {parser.block_markers[slug]} {marker} "
+                f"markers for {len(cards)} cards"
+            )
+    if parser.outside_markers:
+        problems.append(
+            f"page {key!r}: {parser.outside_markers} {marker} markers outside the blocks"
+        )
+    return problems
 
 
 def _json_list(rule: JsonListRule, body: bytes, key: str) -> tuple[str, ...] | None:
@@ -734,6 +796,8 @@ def _discovery_problems(
         )
     if entry.units_seen != len(want):
         problems.append(f"page {entry.key!r}: units_seen {entry.units_seen}, page has {len(want)}")
+    if isinstance(rule, CardBlocksRule):
+        problems += marker_problems(rule, body, entry.key)
     return problems
 
 
