@@ -14,8 +14,6 @@ upstream, except a run's detail, which is redacted and cut here. Nothing here re
 import hashlib
 import json
 import re
-import string
-import unicodedata
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -54,6 +52,7 @@ from elections_calendar.runner import SourceRun
 from elections_calendar.snapshots import MAX_DIAGNOSTIC, Decision, PageRecord
 from elections_calendar.sources.base import PAGE_REASONS, PARSER_VERSION
 from elections_calendar.text import collapse_ws
+from elections_calendar.text import md_text as md_text
 from elections_calendar.window import Window
 
 DownloadOutcome = Literal[
@@ -527,7 +526,6 @@ _STAMP: Final = re.compile(
 )
 _TIMESTAMP: Final = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z")
 _DIGEST: Final = re.compile(r"[0-9a-f]{64}")
-_ESCAPES: Final = str.maketrans({c: "\\" + c for c in string.punctuation})
 _UNIT_HINT: Final = "acknowledge each unit by its full text (unit_text in attention_full.json)"
 _DROP_HINT: Final = "to accept the drop: accept_drop with this scope and the candidate's counts"
 
@@ -678,27 +676,6 @@ def status_doc(
             for a in s.acknowledged
         ],
     }
-
-
-_JOINERS: Final = "\u200c\u200d"  # ZWNJ and ZWJ: names in Persian and Indic scripts need them
-
-
-def md_text(value: object) -> str:
-    """``value`` as one line of plain Markdown text (S4-T19).
-
-    Whitespace is collapsed, control, surrogate and format characters are dropped (a name
-    keeps its ZWNJ and ZWJ), and every ASCII punctuation character gets a backslash, so the
-    text cannot start a heading, link, image, table cell, code span or HTML tag, reorder
-    its neighbours (U+202E, U+2066) or fail to write as UTF-8.
-    """
-    text = collapse_ws(str(value))
-    text = "".join(c for c in text if not _dropped(c))
-    return text.translate(_ESCAPES)
-
-
-def _dropped(c: str) -> bool:
-    category = unicodedata.category(c)
-    return category in ("Cc", "Cs") or (category == "Cf" and c not in _JOINERS)
 
 
 def _stamp_text(value: object) -> str:
