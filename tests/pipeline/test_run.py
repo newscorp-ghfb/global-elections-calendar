@@ -690,3 +690,36 @@ def test_a_scrape_run_of_another_source_is_a_programming_error(
     with pytest.raises(ValueError, match="scrape run of 'ipu'.*for 'osce'"):
         run(cfg)
     assert not cfg.out.exists() or files(cfg.out) == set()
+
+
+def test_an_over_budget_feed_is_a_red_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from elections_calendar.__main__ import main
+
+    offline = osce_offline(tmp_path)
+    green, out = go(tmp_path, offline)
+    assert (green.verdict, load(out, "verdict.json")["over_budget"]) == ("green", False)
+    reasons = load(out, "status.json")["reasons"]
+
+    monkeypatch.setattr(pipeline, "FEED_BUDGET_BYTES", 100)
+    red, out = go(tmp_path, offline, out="over")
+    verdict = load(out, "verdict.json")
+    assert (red.verdict, verdict["verdict"]) == ("red", "red")
+    assert verdict["over_budget"] is True
+    assert (red.outcome, verdict["outcome"]) == ("published", "published")
+    assert load(out, "status.json")["reasons"] == reasons
+
+    status = main(
+        [
+            "--offline", str(offline), "--now", "2026-10-19T12:00:00Z",
+            "--out", str(tmp_path / "cli"), "--repo", str(tmp_path / "repo"),
+        ]
+    )
+    assert status == 0
+    cli = tmp_path / "cli"
+    assert load(cli, "verdict.json")["over_budget"] is True
+    size = (cli / "elections.json").stat().st_size
+    assert capsys.readouterr().out == f"published, verdict red, {size} feed bytes\n"

@@ -14,15 +14,18 @@ block publishing (``validation_failed``) while the artifact still says why.
 """
 
 import dataclasses
+import hashlib
 import json
 import shutil
+import sys
 import tempfile
 import time
+import traceback
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, cast, get_args
+from typing import Any, Final, cast, get_args
 
 from elections_calendar import ledger
 from elections_calendar.feed import (
@@ -120,6 +123,7 @@ _SHAPE = "pages.json: shape"
 _PAGE_KEYS = frozenset({"url", "file", "fetched_at", "content_type", "status"})
 _OUTCOMES = frozenset(get_args(FetchOutcome))
 _SEVERITY_RANK: Mapping[Severity, int] = {"ok": 0, "warning": 1, "error": 2}
+REJECTED_PAGES_MAX_BYTES: Final = 50 * 1024 * 1024  # a run keeps at most this much of bad pages
 
 
 class UsageError(Exception):
@@ -256,11 +260,18 @@ class _Parsed:
     run: SourceRun
     parse_ms: int
     report: LedgerReport | None
+    coverage: tuple[PageCoverage, ...] | None  # ``None`` when the parser failed
     snapshot: Snapshot
     candidate_json: bytes
     baseline: Baseline | None
     baseline_problem: str | None
     state: HealthState
+
+
+def _log_failure(source: str, stage: str, exc: Exception) -> None:
+    """Print ``<source>: <stage> failed`` and the traceback to stderr, never into a file (P115)."""
+    print(f"{source}: {stage} failed", file=sys.stderr, flush=True)
+    traceback.print_exception(exc)
 
 
 def _fetch_offline(
@@ -278,6 +289,7 @@ def _fetch_offline(
                 for page in adapter.fetch(window, getter, Deadline.after(SOURCE_DEADLINE_S))
             )
         except Exception as exc:
+            _log_failure(spec.source, "fetch", exc)
             raw = RawPages(spec.source, (), ())
             detail = f"fetch: {type(exc).__name__}"
             runs.append(SourceRun(spec.source, raw, "worker_failed", 0, detail))
@@ -311,6 +323,77 @@ def _parse_failure(raw: RawPages) -> ParseResult:
         PageCoverage(request.key, request.year, "unfinished", None, 0) for request in raw.unfinished
     ]
     return ParseResult(raw.source, (), (), tuple(coverage))
+
+
+def rejected_pages(
+    raw: RawPages,
+    coverage: Sequence[PageCoverage],
+    *,
+    ledger_ok: bool,
+    parse_failed: bool,
+) -> list[tuple[int, str]]:
+    """The index of each page of ``raw`` to keep as a rejected body, and why (R33, P115).
+
+    A page with an empty body is never kept. ``coverage[i]`` is the coverage of ``raw.pages[i]``
+    (``ParseResult``'s order); a page with no coverage entry is a ledger problem.
+    """
+    kept: list[tuple[int, str]] = []
+    for i, page in enumerate(raw.pages):
+        if not page.result.body:
+            continue
+        if parse_failed:
+            why = "parse_failed"
+        elif not ledger_ok or i >= len(coverage):
+            why = "ledger"
+        elif coverage[i].outcome not in ("ok", "valid_empty"):
+            why = "page_outcome"
+        else:
+            continue
+        kept.append((i, why))
+    return kept
+
+
+def _write_rejected_pages(out: Path, parsed: Sequence[_Parsed]) -> None:
+    """Write the kept bodies and ``rejected/pages/index.json``; nothing when none is kept."""
+    order = {name: n for n, name in enumerate(SOURCE_ORDER)}
+    rows: list[dict[str, Any]] = []
+    total = 0
+    for p in sorted(parsed, key=lambda p: order.get(p.spec.source, len(order))):
+        coverage = p.coverage or ()
+        report = p.report
+        kept = rejected_pages(
+            p.run.raw,
+            coverage,
+            ledger_ok=report is not None and report.ok,
+            parse_failed=p.coverage is None,
+        )
+        for i, why in kept:
+            page = p.run.raw.pages[i]
+            body = page.result.body
+            keep = total + len(body) <= REJECTED_PAGES_MAX_BYTES
+            if keep:
+                total += len(body)
+                write_atomic(out / "rejected" / "pages" / p.spec.source / f"{i}.body", body)
+            rows.append(
+                {
+                    "source": p.spec.source,
+                    "index": i,
+                    "key": page.request.key,
+                    "year": page.request.year,
+                    "url": page.result.url,
+                    "final_url": page.result.final_url,
+                    "fetch_outcome": page.result.outcome,
+                    "page_outcome": coverage[i].outcome if i < len(coverage) else None,
+                    "http_status": page.result.http_status,
+                    "content_type": page.result.content_type,
+                    "bytes": len(body),
+                    "sha256": hashlib.sha256(body).hexdigest(),
+                    "why": why,
+                    "kept": keep,
+                }
+            )
+    if rows:
+        write_atomic(out / "rejected" / "pages" / "index.json", stored_json(rows))
 
 
 def _read_baseline(path: Path, source: str) -> tuple[Baseline | None, str | None]:
@@ -360,6 +443,7 @@ def _parse_source(
 ) -> _Parsed:
     elapsed = 0.0
     report: LedgerReport | None = None
+    coverage: tuple[PageCoverage, ...] | None = None
     failure: Exception | None = None
     try:
         adapter = load_adapter(spec)
@@ -369,6 +453,7 @@ def _parse_source(
         finally:
             elapsed = config.timer() - start
         report = ledger.check(run.raw, result)
+        coverage = result.coverage
         snapshot = build_snapshot(
             run.raw,
             result,
@@ -379,8 +464,9 @@ def _parse_source(
         candidate_json = stored_json(snapshot_to_dict(snapshot))  # strict UTF-8, as it is written
     except Exception as exc:
         failure = exc
+        _log_failure(spec.source, "parse", exc)
     if failure is not None:
-        report = None
+        report = coverage = None
         run = dataclasses.replace(
             run, outcome="worker_failed", detail=f"parse: {type(failure).__name__}"
         )
@@ -399,6 +485,7 @@ def _parse_source(
         run=run,
         parse_ms=round(elapsed * 1000),
         report=report,
+        coverage=coverage,
         snapshot=snapshot,
         candidate_json=candidate_json,
         baseline=baseline,
@@ -614,7 +701,8 @@ def run(config: RunConfig) -> RunResult:
 
     # The verdict.
     open_reasons = [r for s in results for r in unacknowledged(s.reasons, s.acknowledged)]
-    verdict = verdict_of([*open_reasons, *reasons_now])
+    over_budget = feed is not None and len(feed) > FEED_BUDGET_BYTES  # P114: soft, red not blocked
+    verdict: Verdict = "red" if over_budget else verdict_of([*open_reasons, *reasons_now])
     verdict_doc = {
         "verdict": verdict,
         "outcome": outcome,
@@ -622,6 +710,7 @@ def run(config: RunConfig) -> RunResult:
         "reasons": _verdict_rows(results, reasons_now),
         "feed_bytes": None if feed is None else len(feed),
         "feed_budget_bytes": FEED_BUDGET_BYTES,
+        "over_budget": over_budget,
         "trust_sources": list(scrape.trust_sources),
     }
     health = health_md(
@@ -657,6 +746,7 @@ def run(config: RunConfig) -> RunResult:
     write_atomic(out / "verdict.json", stored_json(verdict_doc))
     write_atomic(out / "attention_full.json", stored_json(parts.attention_full))
     write_atomic(out / "dispositions.json", stored_json(parts.dispositions))
+    _write_rejected_pages(out, parsed)
     if feed is not None and feed_problems:
         write_atomic(out / "rejected" / "elections.json", feed)
     if rejected_status is not None:

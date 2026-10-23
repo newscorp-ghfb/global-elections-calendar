@@ -110,8 +110,8 @@ Parsing runs afterwards and has no time bound here (Plan 4).
 
 ## Running v2 locally
 
-The v2 pipeline builds one artifact directory from the sources. It does not touch v1: the
-existing scraper keeps running until Plan 5 replaces it.
+The v2 pipeline builds one artifact directory from the sources. `python scraper.py ...` is the
+same command as `python -m elections_calendar ...`: `scraper.py` is only its entry point.
 
 ```powershell
 .venv\Scripts\python.exe -m elections_calendar --offline tests/fixtures --now 2026-10-19T12:00:00Z --out out
@@ -154,10 +154,12 @@ acknowledged. The feed is still published.
 | `data/sources/<source>/baseline.json` | published, when there is one | The last accepted snapshot of the source. |
 | `data/sources/<source>/candidate.json` | published | This run's snapshot of the source. |
 | `data/sources/<source>/health_state.json` | published | `last_absent_at`: when each reason that a `known_issues.yml` entry names was last absent, each pair kept until it is 14 days old; and `reset_at`, the acknowledgements' reset time. |
-| `verdict.json` | always | The verdict, its reasons, and the feed's length and budget. |
+| `verdict.json` | always | The verdict, its reasons, the feed's length and budget, and `over_budget`: true when the feed is longer than the budget, which makes the verdict `red` (the feed is still published). |
 | `attention_full.json` | always | Every attention item, uncapped, with the text to acknowledge it by. |
 | `dispositions.json` | always | What the merge did with every claim. |
 | `rejected/` | on a failure | The bytes and the problems of whatever failed validation. |
+| `rejected/pages/<source>/<i>.body` | when a page is kept | The exact bytes of page `i` (its position, in decimal) when its body is not empty and its parser failed, its source's ledger has a problem, or its own outcome is not `ok` or `valid_empty`. A run keeps at most 50 MiB of them; a page past that is listed with `kept: false` and has no file. |
+| `rejected/pages/index.json` | when a page is kept | One row per such page, in source order: source, index, key, year, URLs, outcomes, status, content type, length, SHA-256, why and `kept`. |
 | `manifest.json` | always, written last | Each other file with its SHA-256. |
 
 A publish job (Plan 5) will commit only the repository files: `elections.json`, `status.json`,
