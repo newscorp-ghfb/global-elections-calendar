@@ -264,6 +264,24 @@ def test_a_good_baseline_loads(tmp_path: Path) -> None:
     assert load_baseline(path) == good()
 
 
+def test_a_unit_page_without_a_prefix_is_corrupt(tmp_path: Path) -> None:
+    """P109 is moot: PageCoverage already refuses an ok page without a unit_prefix."""
+    data = baseline_to_dict(good("eisa"))
+    path = write(tmp_path / "baseline.json", data)
+    assert load_baseline(path) == good("eisa")
+    (calendar,) = [p for p in data["scope"]["pages"] if p["key"] == "calendar"]
+    assert calendar["outcome"] == "ok" and calendar["unit_prefix"] is not None
+    calendar["unit_prefix"] = None
+    calendar["units_seen"] = 5
+    path = write(tmp_path / "edited.json", data)
+    with pytest.raises(RecordError) as caught:
+        load_baseline(path)
+    assert str(caught.value) == (
+        "baseline.json is corrupt: record: page 'calendar': "
+        "unit_prefix is set exactly for ok and valid_empty pages"
+    )
+
+
 def page(**changes: Any) -> PageRecord:
     return dataclasses.replace(snapshot_of("osce").pages[0], **changes)
 

@@ -664,6 +664,7 @@ def status_doc(
         **_serving_fields(serving),
         "sources": [
             {
+                "source": s.source,
                 "name": SOURCE_NAMES[s.source],
                 "severity": s.severity,
                 "using_fallback": s.decision.health.using_fallback,

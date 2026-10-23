@@ -270,6 +270,37 @@ def test_invalid_candidates(
     assert d.health == SnapshotHealth("fallback", True, base.snapshot.snapshot_id, T0, 30, True)
 
 
+def test_a_worker_failure_gives_no_deadline_per_page() -> None:
+    """P108 (M3): after a crash the source's worker_failed covers its unfinished pages."""
+    base = promoted(synth(pages=tuple(SynthPage(k, 10) for k in ("p1", "p2", "p3")), fetched_at=T0))
+
+    def errors(d: Decision) -> list[tuple[str, str | None, str]]:
+        return [(r.code, r.page, r.detail) for r in d.reasons if REASON_LEVEL[r.code] == "error"]
+
+    unfinished = three(p2="unfinished", p3="unfinished")
+    crashed = run(unfinished, base, ledger=None, outcome="worker_failed", detail="fetch: RuntimeError")
+    assert crashed.acceptance == "fallback"
+    assert errors(crashed) == [("worker_failed", None, "fetch: RuntimeError")]
+    assert "deadline" not in codes(crashed)
+
+    late = run(unfinished, base, outcome="deadline")
+    assert errors(late) == [
+        ("deadline", None, "deadline"),
+        ("deadline", "p2", "p2"),
+        ("deadline", "p3", "p3"),
+    ]
+    scrape = run(unfinished, base, outcome="scrape_deadline")
+    assert [r.page for r in scrape.reasons if r.code == "deadline"] == [None, "p2", "p3"]
+
+    # a page that was fetched keeps its own reason after a worker failure
+    mixed = three(p1="layout_not_recognised", p2="unfinished")
+    kept = run(mixed, base, ledger=None, outcome="worker_failed", detail="fetch: RuntimeError")
+    assert errors(kept) == [
+        ("worker_failed", None, "fetch: RuntimeError"),
+        ("layout_not_recognised", "p1", "p1"),
+    ]
+
+
 def test_quarantine_health() -> None:
     base = promoted(one(100, fetched_at=T0))
     d = run(one(40), base)

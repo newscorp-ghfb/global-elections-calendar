@@ -211,6 +211,19 @@
       "items": {
         "type": "object",
         "properties": {
+          "source": {
+            "enum": [
+              "electionguide",
+              "osce",
+              "wikipedia",
+              "ndi",
+              "aweb",
+              "eisa",
+              "ipu",
+              "carter",
+              "eeas"
+            ]
+          },
           "name": {
             "type": "string"
           },
@@ -232,6 +245,7 @@
           }
         },
         "required": [
+          "source",
           "name",
           "severity",
           "using_fallback",

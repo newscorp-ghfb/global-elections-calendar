@@ -217,7 +217,7 @@ def test_a_corrupt_health_state_voids_every_acknowledgement(
 ) -> None:
     path = tmp_path / "health_state.json"
     path.write_bytes(raw)
-    state = load_health_state(path)
+    state = load_health_state(path, now=NOW)
     assert state == HealthState((), problem)
 
     known = issues(
@@ -238,12 +238,40 @@ def test_a_corrupt_health_state_voids_every_acknowledgement(
     )
 
 
+def test_a_future_health_state_is_corrupt(tmp_path: Path) -> None:
+    """P110: a time after the run's ``now`` is a hand edit or a skewed clock."""
+    path = tmp_path / "health_state.json"
+    soon = NOW + timedelta(seconds=1)
+
+    def state(absent: datetime, reset: datetime | None) -> bytes:
+        return json.dumps(
+            {
+                "last_absent_at": {"k": ts(absent)},
+                "reset_at": None if reset is None else ts(reset),
+            }
+        ).encode()
+
+    path.write_bytes(state(soon, None))
+    assert load_health_state(path, now=NOW) == HealthState((), 'timestamp of "k" is after the run')
+    path.write_bytes(state(NOW, soon))
+    assert load_health_state(path, now=NOW) == HealthState(
+        (), "timestamp of reset_at is after the run"
+    )
+    path.write_bytes(state(NOW, NOW))
+    assert load_health_state(path, now=NOW) == HealthState((("k", NOW),), None, NOW)
+    path.write_bytes(state(NOW - HOUR, None))
+    assert load_health_state(path, now=NOW).problem is None
+    with pytest.raises(ValueError, match="timezone-aware"):
+        load_health_state(path, now=NOW.replace(tzinfo=None))
+    assert load_health_state(tmp_path / "missing.json", now=NOW) == CLEAN
+
+
 def test_a_good_state_has_no_problem_reason_and_round_trips(tmp_path: Path) -> None:
     path = tmp_path / "health_state.json"
-    assert load_health_state(path) == CLEAN
+    assert load_health_state(path, now=NOW) == CLEAN
     assert state_problem_reason(CLEAN) is None
     path.write_bytes(GOOD_STATE_BYTES)
-    loaded = load_health_state(path)
+    loaded = load_health_state(path, now=NOW)
     assert loaded.last_absent_at == (
         ("a|x||", datetime(2026, 10, 19, 10, tzinfo=UTC)),
         ("b|fetch||", datetime(2026, 10, 20, 10, tzinfo=UTC)),
@@ -253,7 +281,7 @@ def test_a_good_state_has_no_problem_reason_and_round_trips(tmp_path: Path) -> N
     for state in (loaded, with_reset):
         data = health_state_to_dict(state)
         path.write_text(json.dumps(data), encoding="utf-8")
-        assert load_health_state(path) == state
+        assert load_health_state(path, now=NOW) == state
     assert health_state_to_dict(with_reset) == {
         "last_absent_at": {"a|x||": "2026-10-19T10:00:00Z", "b|fetch||": "2026-10-20T10:00:00Z"},
         "reset_at": "2026-10-20T12:00:00Z",

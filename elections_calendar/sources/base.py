@@ -51,8 +51,9 @@ PageOutcome = Literal[
     "fetch_failed",
 ]
 _PAGES_WITH_UNITS = ("ok", "valid_empty")
-# The reason each page outcome without units gives. "unfinished" is "deadline" for now: the
-# runner also leaves requests unfinished after a worker failure (Plan 4 may tell them apart).
+# The reason each page outcome without units gives. "unfinished" is "deadline"; after a worker
+# failure ``snapshots`` leaves those reasons out, and the source's ``worker_failed`` covers them
+# (P108).
 PAGE_REASONS: Final[dict[PageOutcome, ReasonCode]] = {
     "not_published_yet": "not_published_yet",
     "required_year_missing": "required_year_missing",

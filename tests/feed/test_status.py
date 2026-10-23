@@ -1,5 +1,6 @@
 """status.json: the attempt, the serving feed and the reasons (spec §5.8; P103, P104; NM-T04)."""
 
+import copy
 import dataclasses
 import hashlib
 import json
@@ -183,6 +184,22 @@ def test_status_lists_reasons_and_sources() -> None:
     # a reason without a detail shows its code
     bare = doc(run_reasons=(Reason("validation_failed"),))
     assert bare["reasons"][-1]["text"] == "validation_failed"
+
+
+def test_status_sources_carry_the_source_key() -> None:
+    """P111 (M12): the key comes first, is required and is one of SOURCE_ORDER."""
+    got = doc()
+    sources = got["sources"]
+    assert [s["source"] for s in sources] == list(SOURCE_ORDER)
+    assert all(list(s)[0] == "source" for s in sources)
+    assert validate_status(json.dumps(got).encode()) == ()
+
+    lacking = copy.deepcopy(got)
+    del lacking["sources"][3]["source"]
+    assert validate_status(json.dumps(lacking).encode()) != ()
+    evil = copy.deepcopy(got)
+    evil["sources"][3]["source"] = "evil"
+    assert validate_status(json.dumps(evil).encode()) != ()
 
 
 def test_status_acknowledgements_are_per_page() -> None:

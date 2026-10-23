@@ -777,7 +777,10 @@ def _own_reasons(
         if base is None
         else {p.year for p in base.pages if p.outcome in _WITH_UNITS and p.year is not None}
     )
-    for reason in coverage_reasons(_coverage(candidate.pages)) + candidate.notes:
+    pages = _coverage(candidate.pages)
+    if run_outcome == "worker_failed":  # P108: worker_failed covers the unfinished pages
+        pages = tuple(p for p in pages if p.outcome != "unfinished")
+    for reason in coverage_reasons(pages) + candidate.notes:
         if reason.code == "not_published_yet" and reason.year in published:
             reason = Reason(
                 "required_year_missing",
