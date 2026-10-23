@@ -126,7 +126,7 @@ def _data(artifact: Path) -> tuple[dict[str, Any] | None, FinalVerdict | None]:
         return None, _red("artifact incomplete", "verdict.json is missing")
     try:
         data: Any = json.loads((artifact / "verdict.json").read_bytes().decode("utf-8"))
-    except OSError, ValueError:
+    except OSError, ValueError, RecursionError:
         data = None
     if isinstance(data, dict) and data.get("dry_run") is True:
         return None, _red("dry-run artifact")

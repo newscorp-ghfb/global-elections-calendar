@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from elections_calendar.ci.__main__ import main
+from elections_calendar.publish import write_manifest
 from tests.support.ci import REASON, make_artifact, run_env
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -154,3 +155,40 @@ def test_light_commands_need_only_the_standard_library(tmp_path: Path) -> None:
         check=False,
     )
     assert (done.returncode, done.stdout.strip()) == (0, "Verdict: green, published"), done.stderr
+
+
+def test_verdict_command_survives_nested_json(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    _env(monkeypatch, run_env())
+    nested = b"[" * 100_000 + b"]" * 100_000
+    for name, headline in (
+        ("verdict.json", "verdict.json is malformed"),
+        ("manifest.json", "artifact incomplete"),
+    ):
+        artifact = make_artifact(tmp_path / name)
+        (artifact / name).write_bytes(nested)
+        if name == "verdict.json":
+            write_manifest(artifact)
+        assert main(["verdict", "--artifact", str(artifact)]) == 1
+        assert capsys.readouterr().out == f"Verdict: red, {headline}\n"
+    assert summary.read_text(encoding="utf-8").count("## Verdict: red, ") == 2
+
+
+def test_scrape_summary_treats_a_linked_health_as_absent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    out = tmp_path / "out"
+    out.mkdir()
+    real = tmp_path / "real.md"
+    real.write_text("secret outside the artifact\n", encoding="utf-8")
+    try:
+        os.symlink(real, out / "HEALTH.md")
+    except OSError as problem:  # Windows without the privilege to make links
+        pytest.skip(f"cannot make a symbolic link here: {problem}")
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    assert main(["scrape-summary", "--out", str(out)]) == 0
+    assert summary.read_text(encoding="utf-8") == NO_HEALTH
