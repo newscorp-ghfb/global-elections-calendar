@@ -5,9 +5,14 @@ Heavier commands (Task 6) import their modules inside their handlers, so these s
 """
 
 import argparse
+import hashlib
 import os
+import re
 import sys
+import tempfile
+import time
 from collections.abc import Callable, Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 
 from elections_calendar.ci.summary import append_summary, write_outputs
@@ -70,6 +75,106 @@ def _verdict(args: argparse.Namespace) -> int:
     return 0 if final.green else 1
 
 
+def _publish(args: argparse.Namespace) -> int:
+    from elections_calendar.ci import publishing
+    from elections_calendar.ci.context import publishing_allowed
+    from elections_calendar.ci.git import Git
+    from elections_calendar.fetch import Deadline
+    from elections_calendar.text import md_text
+
+    output = _env_path("GITHUB_OUTPUT")
+    if output is None:
+        print("GITHUB_OUTPUT is not set", file=sys.stderr)
+        return 2
+    env = os.environ
+    git = Git(args.repo, deadline=Deadline.after(publishing.PUBLISH_STAGE_S))
+    code_sha = env.get("GITHUB_SHA", "")
+    allowed = publishing_allowed(
+        env.get("GITHUB_EVENT_NAME", ""), env.get("GITHUB_REF", ""), env.get("INPUT_PUBLISH", "")
+    )
+    if allowed and not re.fullmatch(r"[0-9a-f]{40}", code_sha):
+        result = publishing.PublishResult(
+            "refused", "not_checked", None, "GITHUB_SHA is not a commit SHA"
+        )
+    else:
+        with tempfile.TemporaryDirectory() as workdir:
+            fetch = (
+                publishing.served_fetcher(env, workdir=Path(workdir))
+                if allowed
+                else _no_fetch
+            )
+            result = publishing.publish(
+                args.artifact,
+                git,
+                code_sha=code_sha,
+                allowed=allowed,
+                wall_clock=datetime.now(UTC),
+                fetch=fetch,
+                sleep=time.sleep,
+                clock=time.monotonic,
+            )
+    write_outputs(output, {"outcome": result.outcome, "served": result.served})
+    summary = _env_path("GITHUB_STEP_SUMMARY")
+    if summary is not None:
+        head = f"## Publish: {result.outcome}, served {result.served}"
+        lines = [head, "", md_text(result.detail)]
+        if result.commit is not None:
+            lines += ["", f"Commit: `{result.commit}`"]
+        append_summary(summary, "\n".join(lines) + "\n")
+    return 0
+
+
+def _no_fetch(timeout_s: float) -> bytes | None:
+    raise AssertionError("nothing is fetched when publishing is not allowed")
+
+
+def _adopt(args: argparse.Namespace) -> int:
+    from elections_calendar.ci.artifact import (
+        ArtifactError,
+        copy_repository_files,
+        load_artifact,
+        served_link_problems,
+    )
+
+    approved: str = args.manifest_sha256
+    if not re.fullmatch(r"[0-9a-f]{64}", approved):
+        print("--manifest-sha256 must be 64 lowercase hex characters", file=sys.stderr)
+        return 2
+    try:
+        actual = hashlib.sha256((args.artifact / "manifest.json").read_bytes()).hexdigest()
+    except OSError:
+        print("manifest.json is missing", file=sys.stderr)
+        return 1
+    if actual != approved:
+        print(f"the artifact is not the approved one: its manifest is {actual}", file=sys.stderr)
+        return 1
+    try:
+        artifact = load_artifact(args.artifact, code_sha=None, wall_clock=datetime.now(UTC))
+    except ArtifactError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    if artifact.outcome != "published":
+        print("only a published artifact has baselines", file=sys.stderr)
+        return 1
+    problems = served_link_problems(artifact, lambda source: None)
+    if problems:
+        print(problems[0], file=sys.stderr)
+        return 1
+    if os.path.lexists(args.repo / "data" / "sources"):
+        print(
+            "data/sources already exists: the first baselines are adopted once", file=sys.stderr
+        )
+        return 1
+    copied = copy_repository_files(
+        artifact, args.repo, only=lambda path: path.startswith("data/sources/")
+    )
+    for path in copied:
+        print(path)
+    run_sha = artifact.status["code_sha"]
+    print(f"adopted {len(copied)} files from the run of {run_sha} (manifest {approved})")
+    return 0
+
+
 def _parser() -> tuple[argparse.ArgumentParser, dict[str, Handler]]:
     """The parser and the handler of each command; a handler may import heavier modules itself."""
     parser = argparse.ArgumentParser(prog="elections_calendar.ci")
@@ -85,6 +190,13 @@ def _parser() -> tuple[argparse.ArgumentParser, dict[str, Handler]]:
         "--out", type=Path, required=True, metavar="DIR"
     )
     add("verdict", _verdict).add_argument("--artifact", type=Path, required=True, metavar="DIR")
+    publish = add("publish", _publish)
+    publish.add_argument("--artifact", type=Path, required=True, metavar="DIR")
+    publish.add_argument("--repo", type=Path, required=True, metavar="DIR")
+    adopt = add("adopt", _adopt)
+    adopt.add_argument("--artifact", type=Path, required=True, metavar="DIR")
+    adopt.add_argument("--manifest-sha256", required=True, metavar="HEX")
+    adopt.add_argument("--repo", type=Path, default=Path(), metavar="DIR")
     return parser, handlers
 
 

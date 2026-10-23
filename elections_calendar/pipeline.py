@@ -414,14 +414,11 @@ def _write_rejected_pages(out: Path, parsed: Sequence[_Parsed]) -> None:
 def _read_baseline(path: Path, source: str) -> tuple[Baseline | None, str | None]:
     """The committed baseline of ``source``, or why it cannot be used (never one of another)."""
     try:
-        baseline = load_baseline(path)
+        baseline = load_baseline(path, source=source)
     except RecordError as exc:
         return None, str(exc)
     except OSError as exc:
         return None, f"baseline.json is corrupt: cannot be read ({type(exc).__name__})"
-    if baseline is not None and baseline.snapshot.source != source:
-        found = baseline.snapshot.source
-        return None, f"baseline.json is corrupt: it is of {found!r}, not {source!r}"
     return baseline, None
 
 
