@@ -284,6 +284,10 @@ def test_publish_refuses_an_incomplete_artifact(
         "data/sources/evil/baseline.json",
         "data/sources/osce/notes.txt",
         "extension/background.js",
+        "rejectedX/a",
+        "rejected",
+        "Rejected/a",
+        "dataX/a",
     ],
 )
 def test_an_artifact_with_an_unexpected_file_is_refused(path: str, tmp_path: Path) -> None:
@@ -292,6 +296,44 @@ def test_an_artifact_with_an_unexpected_file_is_refused(path: str, tmp_path: Pat
     result = run_publish(root, repos)
     assert (result.outcome, result.detail) == ("refused", f"an unexpected file: {path!r}")
     assert snapshot(repos) == unchanged(repos)
+
+
+def test_rejected_files_are_artifact_only(tmp_path: Path) -> None:
+    repos, root = make(tmp_path)
+    add_file(root, "rejected/x", b"x")
+    artifact = load_artifact(root, code_sha=repos.head, wall_clock=NOW, sources=SOURCES)
+    assert "rejected/x" not in artifact.repository_files
+    result = run_publish(root, repos)
+    assert result.outcome == "published"
+    assert names_changed(repos) == list(artifact.repository_files)
+
+
+def test_an_impossible_attempt_at_is_an_artifact_error(tmp_path: Path) -> None:
+    repos, root = make(tmp_path)
+    edit_json(root, "status.json", lambda s: s.update(attempt_at="2026-02-30T00:00:00Z"))
+    result = run_publish(root, repos)
+    assert (result.outcome, result.served, result.commit) == ("refused", "not_checked", None)
+    assert result.detail == "status.json is invalid: attempt_at"
+    assert snapshot(repos) == unchanged(repos)
+
+
+def test_the_checkout_must_be_clean_and_at_the_runs_commit(tmp_path: Path) -> None:
+    repos, root = make(tmp_path)
+    (repos.clone / "stray.txt").write_bytes(b"x")
+    result = run_publish(root, repos)
+    assert (result.outcome, result.served, result.commit) == ("refused", "not_checked", None)
+    assert result.detail == "the checkout has changes"
+    assert snapshot(repos) == (repos.head, repos.head, "?? stray.txt")
+    assert (repos.clone / "stray.txt").read_bytes() == b"x"
+    (repos.clone / "stray.txt").unlink()
+
+    git(repos.clone, "commit", "--allow-empty", "-m", "local")
+    local = git(repos.clone, "rev-parse", "HEAD")
+    assert local != repos.head
+    result = run_publish(root, repos)
+    assert (result.outcome, result.commit) == ("refused", None)
+    assert result.detail == "the checkout is not at the run's commit"
+    assert snapshot(repos) == (repos.head, local, "")
 
 
 def pretty(root: Path) -> None:
