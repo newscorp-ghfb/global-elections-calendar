@@ -578,11 +578,12 @@ def _need_date(value: Any) -> date:
     return day
 
 
-def load_baseline(path: Path) -> Baseline | None:
+def load_baseline(path: Path, *, source: str | None = None) -> Baseline | None:
     """The baseline in ``path``; None when there is no file.
 
     A file that cannot be trusted raises ``RecordError("baseline.json is corrupt: <problem>")``
-    and is never read as empty (P94).
+    and is never read as empty (P94). With ``source``, a baseline of another source is corrupt
+    too: it is never served as this one's (R2-01).
     """
     if not path.exists():
         return None
@@ -625,6 +626,8 @@ def load_baseline(path: Path) -> Baseline | None:
             raise corrupt(
                 f"ledger: page {page.key!r} reports units_seen {page.units_seen}, has {have}"
             )
+    if source is not None and snapshot.source != source:
+        raise corrupt(f"it is of {snapshot.source!r}, not {source!r}")
     return baseline
 
 

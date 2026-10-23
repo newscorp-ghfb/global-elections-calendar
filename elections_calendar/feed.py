@@ -574,7 +574,7 @@ def _real_timestamp(value: str) -> bool:
     return True
 
 
-def _serving_fields(serving: bytes | None) -> dict[str, str | None]:
+def serving_fields(serving: bytes | None) -> dict[str, str | None]:
     """The four ``serving_*`` fields of the bytes the repository serves (NM-T04)."""
     fields: dict[str, str | None] = {
         "serving_feed_sha256": None,
@@ -659,7 +659,7 @@ def status_doc(
         "outcome": outcome,
         "severity": severity,
         "reasons": reasons,
-        **_serving_fields(serving),
+        **serving_fields(serving),
         "sources": [
             {
                 "source": s.source,

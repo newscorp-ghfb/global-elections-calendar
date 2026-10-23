@@ -1,11 +1,11 @@
 """Offline inputs and the commit step for the pipeline tests (Plan 4 Task 8)."""
 
 import json
-import shutil
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
+from elections_calendar.ci.artifact import copy_repository_files, load_artifact
 from elections_calendar.model import FetchOutcome
 from elections_calendar.pipeline import RunConfig
 from elections_calendar.runner import AdapterSpec
@@ -26,16 +26,19 @@ def osce_url() -> str:
 
 
 def commit(out: Path, repo: Path) -> None:
-    """Copy the repository files of ``out`` into ``repo``, as Plan 5's publish job will."""
-    for name in ("elections.json", "status.json", "HEALTH.md"):
-        if (out / name).exists():
-            shutil.copyfile(out / name, repo / name)
-    sources = out / "data" / "sources"
-    for path in sorted(sources.rglob("*")) if sources.exists() else []:
-        if path.is_file():
-            target = repo / path.relative_to(out)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(path, target)
+    """Copy the repository files of ``out`` into ``repo``, as Plan 5's publish job does.
+
+    The runs of these tests judge simulated days, some ahead of the real clock, so the status's
+    own ``attempt_at`` stands for the wall clock that ``load_artifact`` checks timestamps against.
+    """
+    status = json.loads((out / "status.json").read_text(encoding="utf-8"))
+    artifact = load_artifact(
+        out,
+        code_sha=None,
+        wall_clock=datetime.fromisoformat(status["attempt_at"]),
+        sources=[entry["source"] for entry in status["sources"]],
+    )
+    copy_repository_files(artifact, repo)
 
 
 def offline_dir(tmp_path: Path, pages: Sequence[Page], name: str = "offline") -> Path:

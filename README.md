@@ -156,6 +156,29 @@ A run prints one line, for example `published, verdict red, 377390 feed bytes`: 
 `elections.json`. `red` means a source or the run has an open warning or error that nobody has
 acknowledged. The feed is still published.
 
+## `ci adopt`: the first baselines
+
+The first baselines are not written by a publish job. The user approves one artifact, and
+`ci adopt` copies its baselines into a checkout once:
+
+```powershell
+.venv\Scripts\python.exe -m elections_calendar.ci adopt --artifact DIR --manifest-sha256 HEX --repo DIR
+```
+
+- **Which artifact:** a **published** artifact of the scrape job, from a normal run. Do not use
+  the artifact of a `--dry-run` (it carries `dry_run: true` and is refused) or of a validation
+  failure (it has no baselines and is refused). The dry-run artifact is the one you *compare*; the
+  published artifact is the one you *adopt*. They are two different artifacts.
+- `HEX` is the SHA-256 of that artifact's `manifest.json`, which you read and approve first. Any
+  other manifest is refused: `the artifact is not the approved one`.
+- The artifact must pass every check the publish job makes (`load_artifact`), and its feed must
+  serve each source's own `baseline.json`.
+- It copies only `data/sources/**`, prints each path and `adopted <n> files from the run of
+  <code_sha> (manifest <HEX>)`, and commits nothing. `elections.json`, `status.json` and
+  `HEALTH.md` are not copied.
+- It refuses when `--repo` (default: the current directory) already has a `data/sources`: the
+  first baselines are adopted once.
+
 ## `out/`
 
 | File | When | What it is |

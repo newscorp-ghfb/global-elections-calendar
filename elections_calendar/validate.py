@@ -322,25 +322,45 @@ def _served(doc: Any, served: Sequence[ServedCheck]) -> list[str]:
     return problems
 
 
-def validate_feed(
-    data: bytes, *, served: Sequence[ServedCheck], wall_clock: datetime
-) -> tuple[str, ...]:
-    """The problems of an ``elections.json`` (§11.3), or ``()``.
-
-    ``wall_clock`` is the machine clock, timezone-aware. Bytes that are not UTF-8 JSON give
-    the ``json`` problem alone; otherwise every check runs. It never raises on the document's
-    content, whatever its shape; a naive ``wall_clock`` raises ``ValueError``.
-    """
-    if wall_clock.utcoffset() is None:
-        raise ValueError("wall_clock must be timezone-aware")
-    ok, doc = _load(data)
+def _content_problems(ok: bool, doc: Any, data: bytes, wall_clock: datetime) -> list[str]:
     if not ok:
-        return ("json: not UTF-8 JSON",)
+        return ["json: not UTF-8 JSON"]
     problems = _schema_problems(doc, FEED_SCHEMA)
     problems += _legacy(doc)
     problems += _invariants(doc)
     if len(data) > FEED_MAX_BYTES:
         problems.append(f"size: {len(data)} bytes is over {FEED_MAX_BYTES}")
     problems += _timestamps(doc, wall_clock)
-    problems += _served(doc, served)
+    return problems
+
+
+def feed_content_problems(data: bytes, *, wall_clock: datetime) -> tuple[str, ...]:
+    """The problems of an ``elections.json`` other than its served checks (§11.3), or ``()``.
+
+    ``wall_clock`` is the machine clock, timezone-aware. Bytes that are not UTF-8 JSON give
+    the ``json`` problem alone; otherwise the schema, legacy, invariant, size and timestamp
+    checks run. It never raises on the document's content; a naive ``wall_clock`` raises
+    ``ValueError``.
+    """
+    if wall_clock.utcoffset() is None:
+        raise ValueError("wall_clock must be timezone-aware")
+    ok, doc = _load(data)
+    return tuple(_content_problems(ok, doc, data, wall_clock))
+
+
+def validate_feed(
+    data: bytes, *, served: Sequence[ServedCheck], wall_clock: datetime
+) -> tuple[str, ...]:
+    """The problems of an ``elections.json`` (§11.3), or ``()``.
+
+    ``feed_content_problems`` plus the served checks, which run only when the bytes load.
+    It never raises on the document's content, whatever its shape; a naive ``wall_clock``
+    raises ``ValueError``.
+    """
+    if wall_clock.utcoffset() is None:
+        raise ValueError("wall_clock must be timezone-aware")
+    ok, doc = _load(data)
+    problems = _content_problems(ok, doc, data, wall_clock)
+    if ok:
+        problems += _served(doc, served)
     return tuple(problems)
