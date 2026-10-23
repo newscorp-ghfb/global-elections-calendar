@@ -1,7 +1,9 @@
 """Text normalisation shared by every layer (stdlib only)."""
 
 import re
+import string
 import unicodedata
+from typing import Final
 
 _WS = re.compile(r"\s+")
 _APOSTROPHES = str.maketrans({"’": "'", "‘": "'", "`": "'", "´": "'", "ʼ": "'", "ʻ": "'"})
@@ -54,3 +56,25 @@ def norm_name(text: str) -> str:
 def slug(text: str) -> str:
     """Identifier fragment: norm_name with apostrophes dropped and spaces as hyphens."""
     return norm_name(text).replace("'", "").replace(" ", "-")
+
+
+_ESCAPES: Final = str.maketrans({c: "\\" + c for c in string.punctuation})
+_JOINERS: Final = "\u200c\u200d"  # ZWNJ and ZWJ: names in Persian and Indic scripts need them
+
+
+def md_text(value: object) -> str:
+    """``value`` as one line of plain Markdown text (S4-T19).
+
+    Whitespace is collapsed, control, surrogate and format characters are dropped (a name
+    keeps its ZWNJ and ZWJ), and every ASCII punctuation character gets a backslash, so the
+    text cannot start a heading, link, image, table cell, code span or HTML tag, reorder
+    its neighbours (U+202E, U+2066) or fail to write as UTF-8.
+    """
+    text = collapse_ws(str(value))
+    text = "".join(c for c in text if not _dropped(c))
+    return text.translate(_ESCAPES)
+
+
+def _dropped(c: str) -> bool:
+    category = unicodedata.category(c)
+    return category in ("Cc", "Cs") or (category == "Cf" and c not in _JOINERS)
