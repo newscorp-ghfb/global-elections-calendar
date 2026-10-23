@@ -120,7 +120,10 @@ def _check_saved_state(
     root: Path, status: Mapping[str, Any], present: set[str], sources: Sequence[str]
 ) -> None:
     """P5A-01: what the repository will hold must load with the loaders that read it back."""
-    attempt_at = datetime.fromisoformat(status["attempt_at"])
+    try:
+        attempt_at = datetime.fromisoformat(status["attempt_at"])
+    except ValueError:  # the schema's pattern admits dates such as 2026-02-30
+        raise ArtifactError("status.json is invalid: attempt_at") from None
     for source in sources:
         folder = f"{_SOURCES_DIR}{source}/"
         if folder + "baseline.json" in present:
