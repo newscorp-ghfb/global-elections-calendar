@@ -813,8 +813,11 @@ def health_md(
     budget: int,
     problems: Sequence[str],
     not_yet_active: Sequence[Entry],
+    dry_run: tuple[int, int] | None = None,
 ) -> str:
     """``HEALTH.md``: the run, each source and the attention items, every value escaped (S4-T19).
+
+    ``dry_run`` (a dry run's requests made and allowed, P116) adds the dry-run line after the title.
 
     The source sections render the feed's own source health entries; nothing is recomputed.
     """
@@ -829,9 +832,15 @@ def health_md(
         size = f"{feed_size} bytes of a {budget} byte budget" + (
             ", over budget" if feed_size > budget else ""
         )
-    lines = [
-        "# Elections calendar health",
-        "",
+    lines = ["# Elections calendar health", ""]
+    if dry_run is not None:
+        made, allowed = dry_run
+        lines += [
+            f"**Dry run:** {made} of {allowed} requests. "
+            "Nothing here is published.",
+            "",
+        ]
+    lines += [
         f"- Generated: {_stamp_text(doc['generated_at'])}",
         f"- Outcome: {'published' if outcome == 'published' else 'validation failed'}",
         f"- Verdict: {verdict}",

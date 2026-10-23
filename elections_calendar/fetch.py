@@ -19,6 +19,10 @@ local configuration: a ``verify`` path that does not exist raises ``OSError``.
 - At most 5 redirects, https only; TLS is verified on every hop.
 - The caller's ``Deadline`` (4 min per source, 12 min per scrape) bounds
   attempts and back-off waits.
+- An optional ``RequestBudget`` (a dry run's 40 requests, shared by the worker
+  processes through token files) is spent before every request, redirect hops
+  included. Once it is spent a request is refused as ``fetch_failed``
+  "request budget reached", never sent and never retried.
 - These are inactivity limits and cooperative checks, not a wall-clock
   bound. Name resolution (``getaddrinfo`` takes no timeout), connecting to
   each resolved address in turn (each try has its own connect timeout) and a
@@ -94,6 +98,37 @@ _URL_IN_TEXT = re.compile(r"https?://[^\s'\"<>]+")
 _PATH_PARAM_IN_TEXT = re.compile(r";[^\s/?#;=]+=[^\s/?#'\"<>]*")
 _QUERY_IN_TEXT = re.compile(r"(?P<lead>[?#])(?P<query>[^\s'\"<>]+)")
 _PAIR_SEPARATOR = re.compile(r"([&;])")
+
+
+class RequestBudget:
+    """At most ``limit`` requests across every process that shares ``directory`` (P116).
+
+    One file ``<n>.token`` per request, created with ``O_EXCL``, so two processes can never
+    take the same token. Plain attributes only: it pickles into a spawned worker.
+    """
+
+    def __init__(self, directory: Path, limit: int) -> None:
+        if limit < 0:
+            raise ValueError("the request budget cannot be negative")
+        self.directory = directory
+        self.limit = limit
+        directory.mkdir(parents=True, exist_ok=True)
+
+    def take(self) -> bool:
+        """Spend one request; False when the budget is spent. Other ``OSError`` propagates."""
+        for number in range(self.limit):
+            try:
+                descriptor = os.open(
+                    self.directory / f"{number}.token", os.O_CREAT | os.O_EXCL | os.O_WRONLY
+                )
+            except FileExistsError:
+                continue
+            os.close(descriptor)
+            return True
+        return False
+
+    def used(self) -> int:
+        return sum((self.directory / f"{number}.token").exists() for number in range(self.limit))
 
 
 @dataclass(frozen=True, slots=True)
@@ -192,6 +227,7 @@ class Fetcher:
         wall_clock: Callable[[], datetime] = lambda: datetime.now(UTC),
         attempt_timeout: float = ATTEMPT_TIMEOUT_S,
         max_bytes: int = MAX_BYTES,
+        budget: RequestBudget | None = None,
     ) -> None:
         if not verify:
             raise ValueError("TLS verification needs a CA bundle path")
@@ -201,6 +237,7 @@ class Fetcher:
         self._wall_clock = wall_clock
         self._attempt_timeout = attempt_timeout
         self._max_bytes = max_bytes
+        self._budget = budget
         self._session = requests.Session()
 
     def __enter__(self) -> Self:
@@ -267,6 +304,11 @@ class Fetcher:
                     return _Attempt(
                         "fetch_failed", "redirect", redact_url(current),
                         error=f"refusing a non-https URL: {redact_url(current)}",
+                    )  # fmt: skip
+                if self._budget is not None and not self._budget.take():
+                    return _Attempt(
+                        "fetch_failed", "redirect" if hop else "request", redact_url(current),
+                        error="request budget reached",
                     )  # fmt: skip
                 response = self._send(current, parts.hostname or "", left)
             except (requests.exceptions.RequestException, ValueError) as exc:

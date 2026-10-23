@@ -108,6 +108,12 @@ period. The **return bound** is longer: `run_sources` returns within the latest 
 grace period plus 2 s, cleanup included, and no child outlives it. This bounds fetching only.
 Parsing runs afterwards and has no time bound here (Plan 4).
 
+A **dry run** (`--dry-run`) also shares a request budget of 40 across the worker processes: one
+token file per request, created with `O_EXCL`, taken before every attempt and every redirect hop.
+Once the budget is spent a request is refused as `fetch_failed` "request budget reached"; it is
+never sent and never retried. A clean run makes 16 requests, which leaves 24 for retries and
+redirects. The scrape deadline of a dry run is 480 s instead of 720 s.
+
 ## Running v2 locally
 
 The v2 pipeline builds one artifact directory from the sources. `python scraper.py ...` is the
@@ -116,12 +122,18 @@ same command as `python -m elections_calendar ...`: `scraper.py` is only its ent
 ```powershell
 .venv\Scripts\python.exe -m elections_calendar --offline tests/fixtures --now 2026-10-19T12:00:00Z --out out
 .venv\Scripts\python.exe -m elections_calendar --live --out out
+.venv\Scripts\python.exe -m elections_calendar --live --dry-run --out out
 ```
 
 - `--offline DIR` reads `DIR/pages.json` instead of the network. `tests/fixtures/pages.json`
   lists the committed fixture pages; run it with `--now 2026-10-19T12:00:00Z`, the time the
   end-to-end test uses.
 - `--live` fetches the nine sources.
+- `--dry-run` (with `--live` only; with `--offline` it is a usage error) is a live check that
+  publishes nothing: at most 40 requests, retries and redirects included, and a 480 s scrape
+  deadline. The artifact is complete and can be compared, `verdict.json` records `dry_run` and
+  `requests`, and `HEALTH.md` opens with `**Dry run:** <n> of 40 requests. Nothing here is
+  published.` The publish job and `ci adopt` refuse it.
 - Give exactly one of the two.
 - `--now ISO` is the time to judge the data at. It needs a time zone, and its UTC year must be
   1900 to 2199. The default is the machine clock. With `--live` it judges the real fetch times
@@ -154,7 +166,7 @@ acknowledged. The feed is still published.
 | `data/sources/<source>/baseline.json` | published, when there is one | The last accepted snapshot of the source. |
 | `data/sources/<source>/candidate.json` | published | This run's snapshot of the source. |
 | `data/sources/<source>/health_state.json` | published | `last_absent_at`: when each reason that a `known_issues.yml` entry names was last absent, each pair kept until it is 14 days old; and `reset_at`, the acknowledgements' reset time. |
-| `verdict.json` | always | The verdict, its reasons, the feed's length and budget, and `over_budget`: true when the feed is longer than the budget, which makes the verdict `red` (the feed is still published). |
+| `verdict.json` | always | The verdict, its reasons, the feed's length and budget, and `over_budget`: true when the feed is longer than the budget, which makes the verdict `red` (the feed is still published); `dry_run`: true on a `--dry-run`; and `requests`: the requests a dry run made (an integer), else null. |
 | `attention_full.json` | always | Every attention item, uncapped, with the text to acknowledge it by. |
 | `dispositions.json` | always | What the merge did with every claim. |
 | `rejected/` | on a failure | The bytes and the problems of whatever failed validation. |
