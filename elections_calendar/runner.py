@@ -23,6 +23,9 @@ cut counts. A worker cut at its cutoff is ``deadline`` even if it had just
 finished. ``run_sources`` returns within the latest cutoff + ``grace_s``
 + 2 s, cleanup included. Parsing happens after ``run_sources`` and is not
 bounded here (Plan 4).
+
+An optional ``RequestBudget`` (a dry run's) is passed to every worker, which builds its
+``Fetcher`` with it, so the workers spend one shared budget (P116).
 """
 
 import importlib
@@ -48,6 +51,7 @@ from elections_calendar.fetch import (
     SOURCE_DEADLINE_S,
     Deadline,
     Fetcher,
+    RequestBudget,
     trust_bundle,
 )
 from elections_calendar.sources.base import Adapter, PageRequest, RawPage, RawPages
@@ -126,13 +130,20 @@ def _publish(directory: Path, temporary: str, final: str, data: bytes) -> None:
     os.replace(path, directory / final)
 
 
-def _work(spec: AdapterSpec, directory: str, bundle: str, seconds: float, window: Window) -> None:
+def _work(
+    spec: AdapterSpec,
+    directory: str,
+    bundle: str,
+    seconds: float,
+    window: Window,
+    budget: RequestBudget | None,
+) -> None:
     """The worker's entry point (runs in the child). Writes only into ``directory``."""
     out = Path(directory)
     try:
         adapter = load_adapter(spec)
         deadline = Deadline.after(seconds)
-        with Fetcher(verify=bundle) as fetcher:
+        with Fetcher(verify=bundle, budget=budget) as fetcher:
             for number, page in enumerate(adapter.fetch(window, fetcher, deadline), start=1):
                 _publish(out, f"{number:04d}.tmp", f"{number:04d}.page", pickle.dumps(page))
         _publish(out, "done.tmp", "done", b"")
@@ -173,7 +184,9 @@ class _Scrape:
         parallel: int,
         grace_s: float,
         pages_root: Path,
+        budget: RequestBudget | None,
     ) -> None:
+        self._budget = budget
         self._window = window
         self._bundle = bundle
         self._source_deadline_s = source_deadline_s
@@ -241,6 +254,7 @@ class _Scrape:
                 str(self._bundle),
                 slot.cutoff - now,
                 self._window,
+                self._budget,
             )
             # Pickle the payload before the child exists. On Windows, spawn creates the child
             # first and pickles second, so a payload that fails to pickle orphans a child that
@@ -350,6 +364,7 @@ def run_sources(
     scrape_deadline_s: float = SCRAPE_DEADLINE_S,
     parallel: int = 4,
     grace_s: float = 5.0,
+    budget: RequestBudget | None = None,
 ) -> ScrapeRun:
     """Fetch every source in its own worker process; returns within the latest cutoff + grace + 2 s.
 
@@ -373,6 +388,7 @@ def run_sources(
         parallel,
         grace_s,
         pages_root,
+        budget,
     )
     try:
         runs = scrape.run()

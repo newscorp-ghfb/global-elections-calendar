@@ -24,6 +24,7 @@ from elections_calendar.fetch import (
     Deadline,
     Fetcher,
     FetchResult,
+    RequestBudget,
     TrustBundleError,
     outcome_for,
     parse_retry_after,
@@ -635,3 +636,57 @@ def test_a_combined_bundle_trusts_only_what_it_lists(
     url = server.route("/page", Reply(body=b"ok"))
     with Fetcher(verify=str(bundle.path), clock=fake.clock, sleep=fake.sleep) as f:
         assert f.get(url, deadline=Deadline.after(60, fake.clock)).outcome == outcome
+
+
+# -- the request budget (P116) ----------------------------------------------
+
+
+def budget_fetcher(pki: Pki, fake: FakeTime, budget: RequestBudget) -> Fetcher:
+    return Fetcher(
+        verify=str(pki.bundle),
+        clock=fake.clock,
+        sleep=fake.sleep,
+        wall_clock=lambda: NOW,
+        budget=budget,
+    )
+
+
+def test_a_refused_request_is_not_sent(
+    pki: Pki, fake: FakeTime, server: TestServer, tmp_path: Path
+) -> None:
+    redirect = server.route("/a", Reply(status=302, headers={"Location": "/b"}))
+    server.route("/b", Reply(body=b"here"))
+    budget = RequestBudget(tmp_path / "two", 2)
+    with budget_fetcher(pki, fake, budget) as f:
+        first = f.get(redirect, deadline=Deadline.after(240, fake.clock))
+        assert first.ok and budget.used() == 2
+        assert len(server.requests) == 2
+        again = f.get(redirect, deadline=Deadline.after(240, fake.clock))
+    assert (again.outcome, again.stage, again.attempts) == ("fetch_failed", "request", 1)
+    assert again.error == "request budget reached"
+    assert len(server.requests) == 2  # the refused request was never sent
+
+    flaky = server.route("/flaky", Reply(status=503), Reply(body=b"ok"))
+    one = RequestBudget(tmp_path / "one", 1)
+    with budget_fetcher(pki, fake, one) as f:
+        retried = f.get(flaky, deadline=Deadline.after(240, fake.clock))
+    assert (retried.outcome, retried.error) == ("fetch_failed", "request budget reached")
+    assert [r.path for r in server.requests][2:] == ["/flaky"]  # the retry was refused
+    assert fake.sleeps == [2.0]  # waited for the retry, then was refused
+
+
+def test_a_budget_that_ends_on_a_redirect_hop_names_the_redirect_stage(
+    pki: Pki, fake: FakeTime, server: TestServer, tmp_path: Path
+) -> None:
+    url = server.route("/a", Reply(status=302, headers={"Location": "/b"}))
+    server.route("/b", Reply(body=b"here"))
+    budget = RequestBudget(tmp_path / "one", 1)
+    with budget_fetcher(pki, fake, budget) as f:
+        result = f.get(url, deadline=Deadline.after(240, fake.clock))
+    assert (result.outcome, result.stage, result.error) == (
+        "fetch_failed",
+        "redirect",
+        "request budget reached",
+    )
+    assert result.final_url == server.url("/b")
+    assert [r.path for r in server.requests] == ["/a"]

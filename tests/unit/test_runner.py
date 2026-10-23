@@ -19,7 +19,7 @@ from typing import Any
 import pytest
 
 from elections_calendar import runner
-from elections_calendar.fetch import TrustBundleError
+from elections_calendar.fetch import RequestBudget, TrustBundleError
 from elections_calendar.model import Reason
 from elections_calendar.runner import AdapterSpec, run_sources
 from elections_calendar.sources.base import missing_pages
@@ -492,3 +492,27 @@ def test_a_chained_source_cut_mid_chain(
     assert missing_pages(Chain(urls).expected(r.raw.pages), r.raw) == [
         Reason("pagination_incomplete", "three was not fetched", page="three")
     ]
+
+
+def test_workers_get_the_budget(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    built: list[dict[str, Any]] = []
+
+    class Recorder:
+        def __init__(self, **kwargs: Any) -> None:
+            built.append(kwargs)
+
+        def __enter__(self) -> Recorder:
+            return self
+
+        def __exit__(self, *exc: object) -> None:
+            return None
+
+    monkeypatch.setattr(runner, "Fetcher", Recorder)
+    directory = tmp_path / "worker"
+    directory.mkdir()
+    budget = RequestBudget(tmp_path / "budget", 40)
+    runner._work(spec("LatePage", seconds="0"), str(directory), "bundle.pem", 30.0, WINDOW, budget)
+    assert [(k["verify"], k["budget"]) for k in built] == [("bundle.pem", budget)]
+    assert (directory / "done").exists()
+    runner._work(spec("LatePage", seconds="0"), str(directory), "bundle.pem", 30.0, WINDOW, None)
+    assert built[1]["budget"] is None

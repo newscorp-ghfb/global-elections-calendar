@@ -39,7 +39,7 @@ from elections_calendar.feed import (
     reason_dict,
     status_doc,
 )
-from elections_calendar.fetch import SOURCE_DEADLINE_S, Deadline, FetchResult
+from elections_calendar.fetch import SOURCE_DEADLINE_S, Deadline, FetchResult, RequestBudget
 from elections_calendar.health import (
     HealthState,
     KnownIssues,
@@ -124,6 +124,8 @@ _PAGE_KEYS = frozenset({"url", "file", "fetched_at", "content_type", "status"})
 _OUTCOMES = frozenset(get_args(FetchOutcome))
 _SEVERITY_RANK: Mapping[Severity, int] = {"ok": 0, "warning": 1, "error": 2}
 REJECTED_PAGES_MAX_BYTES: Final = 50 * 1024 * 1024  # a run keeps at most this much of bad pages
+DRY_RUN_REQUESTS: Final = 40  # a dry run's request budget, retries and redirects included (P116)
+DRY_RUN_SCRAPE_DEADLINE_S: Final = 480  # 720 s on a live run; the whole check fits in 600 s
 
 
 class UsageError(Exception):
@@ -241,6 +243,7 @@ class RunConfig:
     wall_clock: datetime
     environ: Mapping[str, str]
     offline: Path | None = None  # None = live
+    dry_run: bool = False  # live only: at most DRY_RUN_REQUESTS requests, nothing to publish
     specs: tuple[AdapterSpec, ...] = DEFAULT_ADAPTERS
     timer: Callable[[], float] = time.perf_counter
 
@@ -298,10 +301,22 @@ def _fetch_offline(
     return ScrapeRun((), tuple(runs))
 
 
-def _fetch_live(config: RunConfig, window: Window) -> ScrapeRun:
+def _fetch_live(config: RunConfig, window: Window) -> tuple[ScrapeRun, int | None]:
+    """The scrape, and on a dry run the number of requests it made (read before cleanup)."""
     workdir = Path(tempfile.mkdtemp(prefix="elections-"))
     try:
-        return run_sources(config.specs, window, workdir=workdir, environ=config.environ)
+        if not config.dry_run:
+            return run_sources(config.specs, window, workdir=workdir, environ=config.environ), None
+        budget = RequestBudget(workdir / "budget", DRY_RUN_REQUESTS)
+        scrape = run_sources(
+            config.specs,
+            window,
+            workdir=workdir,
+            environ=config.environ,
+            scrape_deadline_s=DRY_RUN_SCRAPE_DEADLINE_S,
+            budget=budget,
+        )
+        return scrape, budget.used()
     finally:
         shutil.rmtree(workdir, ignore_errors=True)  # F-10
 
@@ -553,6 +568,8 @@ def _check_usage(config: RunConfig) -> OfflineGetter | None:
         raise UsageError("--now is out of range")
     if config.out.exists() and (not config.out.is_dir() or any(config.out.iterdir())):
         raise UsageError("--out must be empty")
+    if config.dry_run and config.offline is not None:
+        raise UsageError("--dry-run needs --live")
     return None if config.offline is None else load_offline(config.offline)
 
 
@@ -566,11 +583,10 @@ def run(config: RunConfig) -> RunResult:
     issues = _read_issues(repo / "known_issues.yml", now)
 
     # Fetch.
-    scrape = (
-        _fetch_live(config, window)
-        if getter is None
-        else _fetch_offline(config, window, getter)
-    )
+    if getter is None:
+        scrape, request_count = _fetch_live(config, window)
+    else:
+        scrape, request_count = _fetch_offline(config, window, getter), None
 
     # Parse, check, snapshot and load what is committed.
     for spec, source_run in zip(config.specs, scrape.runs, strict=True):
@@ -712,6 +728,8 @@ def run(config: RunConfig) -> RunResult:
         "feed_budget_bytes": FEED_BUDGET_BYTES,
         "over_budget": over_budget,
         "trust_sources": list(scrape.trust_sources),
+        "dry_run": config.dry_run,
+        "requests": request_count,
     }
     health = health_md(
         parts,
@@ -723,6 +741,7 @@ def run(config: RunConfig) -> RunResult:
         budget=FEED_BUDGET_BYTES,
         problems=problems,
         not_yet_active=not_yet_active(issues, now),
+        dry_run=None if request_count is None else (request_count, DRY_RUN_REQUESTS),
     )
 
     # Write, `manifest.json` last.

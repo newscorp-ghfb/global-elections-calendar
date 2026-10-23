@@ -1,5 +1,7 @@
 """The command line: ``python -m elections_calendar (--live | --offline DIR) --out DIR`` (P98).
 
+``--dry-run`` (with ``--live`` only) spends at most 40 requests and marks the artifact a dry run.
+
 Exit 0: a complete artifact was written, whatever the verdict. Exit 1: the run failed before it
 could write one (an untrusted CA bundle, or an unexpected error, which propagates). Exit 2: a
 usage error. Only this module chooses the clock (``now`` and ``wall_clock`` come in with the
@@ -26,6 +28,9 @@ def _parser() -> argparse.ArgumentParser:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--live", action="store_true", help="fetch the sources")
     mode.add_argument("--offline", type=Path, metavar="DIR", help="read DIR/pages.json instead")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="with --live: at most 40 requests, nothing published"
+    )
     parser.add_argument("--now", metavar="ISO", help="the time to judge the data at (needs a zone)")
     parser.add_argument("--out", type=Path, required=True, metavar="DIR", help="empty or new")
     parser.add_argument("--repo", type=Path, default=Path(), metavar="DIR", help="default: .")
@@ -55,6 +60,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             wall_clock=wall_clock,
             environ=os.environ,
             offline=args.offline,
+            dry_run=args.dry_run,
         )
         result = run(config)
     except UsageError as error:
