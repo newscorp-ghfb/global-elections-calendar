@@ -455,6 +455,44 @@ def test_a_lone_surrogate_costs_only_its_source(
         (out / name).read_bytes().decode("utf-8")
 
 
+def test_a_parse_failure_shows_one_worker_failed_and_no_deadline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """P108 (M3) end to end; the stand-in is a run whose requests are all unfinished."""
+
+    def fake(specs: Any, window: Any, **kwargs: Any) -> ScrapeRun:
+        raw = RawPages("osce", (), Osce().requests(window))
+        return ScrapeRun((), (SourceRun("osce", raw, "complete", 0),))
+
+    def boom(self: Osce, *args: object) -> None:
+        raise ValueError("x")
+
+    monkeypatch.setattr(pipeline, "run_sources", fake)
+    monkeypatch.setattr(Osce, "parse", boom)
+    _, out = go(tmp_path, None)
+    status = load(out, "status.json")
+    mine = [r["code"] for r in status["reasons"] if r["source"] == "osce"]
+    assert mine.count("worker_failed") == 1
+    assert "deadline" not in mine
+    assert "deadline" not in reason_codes(osce_entry(out))
+
+
+def test_a_future_health_state_is_ack_invalid(tmp_path: Path) -> None:
+    """P110 end to end: a pair later than the run's now voids the source's acknowledgements."""
+    state = tmp_path / "repo" / "data" / "sources" / "osce" / "health_state.json"
+    state.parent.mkdir(parents=True)
+    future = NOW + timedelta(hours=1)
+    state.write_text(
+        json.dumps({"last_absent_at": {"http_error|fetch||": ts(future)}, "reset_at": None}),
+        encoding="utf-8",
+    )
+    _, out = go(tmp_path, osce_offline(tmp_path))
+    details = [r["text"] for r in osce_entry(out)["reasons"] if r["code"] == "ack_invalid"]
+    assert details == [
+        'health_state.json is corrupt: timestamp of "http_error|fetch||" is after the run'
+    ]
+
+
 def test_a_failed_parse_keeps_the_unfinished_requests_unfinished(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -470,7 +508,7 @@ def test_a_failed_parse_keeps_the_unfinished_requests_unfinished(
     _, out = go(tmp_path, None)
     codes = reason_codes(osce_entry(out))
     assert "worker_failed" in codes
-    assert "deadline" in codes  # an unfinished request, not an unrecognised layout
+    assert "deadline" not in codes  # P108: worker_failed covers the unfinished requests
     assert "layout_not_recognised" not in codes
 
 

@@ -327,7 +327,7 @@ def _read_baseline(path: Path, source: str) -> tuple[Baseline | None, str | None
     return baseline, None
 
 
-def _read_state(folder: Path) -> HealthState:
+def _read_state(folder: Path, now: datetime) -> HealthState:
     """The source's recurrence state; a state file gone from beside a baseline is a lost one.
 
     A published run writes ``health_state.json`` with every ``baseline.json``, so a baseline
@@ -337,7 +337,7 @@ def _read_state(folder: Path) -> HealthState:
     try:
         if not path.exists() and (folder / "baseline.json").exists():
             return HealthState((), "missing beside a baseline")
-        return load_health_state(path)
+        return load_health_state(path, now=now)
     except OSError as exc:
         return HealthState((), f"cannot be read ({type(exc).__name__})")
 
@@ -403,7 +403,7 @@ def _parse_source(
         candidate_json=candidate_json,
         baseline=baseline,
         baseline_problem=problem,
-        state=_read_state(folder),
+        state=_read_state(folder, config.now),
     )
 
 

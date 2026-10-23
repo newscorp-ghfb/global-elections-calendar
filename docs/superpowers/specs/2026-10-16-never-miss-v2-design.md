@@ -499,7 +499,7 @@ Every unit gets exactly one outcome. Claims link back to units. Headers are matc
 ```yaml
 - source: ipu
   reason: http_error
-  scope: {stage: fetch, year: null, page: null}
+  scope: {stage: fetch, year: null, page: elections}
   explanation: "IPU blocks GitHub runner IPs; API fallback being evaluated"
   owner: senescalk
   acknowledged_at: 2026-10-20T09:00:00Z

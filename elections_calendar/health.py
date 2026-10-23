@@ -427,8 +427,13 @@ def _no_repeats(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return dict(pairs)
 
 
-def load_health_state(path: Path) -> HealthState:
-    """A missing file is an empty state; a file that cannot be read gives a ``problem``."""
+def load_health_state(path: Path, *, now: datetime) -> HealthState:
+    """A missing file is an empty state; a file that cannot be read gives a ``problem``.
+
+    A time later than ``now`` is a problem too (P110): no run writes one, and a future absence
+    would void acknowledgements made before it. A time equal to ``now`` is valid.
+    """
+    _require_aware(now)
     try:
         raw = path.read_bytes()
     except FileNotFoundError:
@@ -452,11 +457,15 @@ def load_health_state(path: Path) -> HealthState:
         moment = _moment(data["last_absent_at"][key])
         if moment is None:
             return HealthState((), f"timestamp of {_escaped(key)}")
+        if moment > now:
+            return HealthState((), f"timestamp of {_escaped(key)} is after the run")
         pairs.append((key, moment))
     reset = data["reset_at"]
     reset_at = None if reset is None else _moment(reset)
     if reset is not None and reset_at is None:
         return HealthState((), "timestamp of reset_at")
+    if reset_at is not None and reset_at > now:
+        return HealthState((), "timestamp of reset_at is after the run")
     return HealthState(tuple(pairs), None, reset_at)
 
 

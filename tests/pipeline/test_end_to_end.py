@@ -20,9 +20,10 @@ import pytest
 import yaml
 from bs4 import BeautifulSoup
 
+from elections_calendar import feed
 from elections_calendar.__main__ import main
-from elections_calendar.feed import md_text
-from elections_calendar.model import SOURCE_NAMES
+from elections_calendar.feed import RunInfo, build_feed, md_text
+from elections_calendar.model import SOURCE_NAMES, SOURCE_ORDER
 from elections_calendar.pipeline import OfflineGetter, RunConfig, RunResult, run
 from elections_calendar.places import PlaceRegistry
 from elections_calendar.publish import FEED_BUDGET_BYTES
@@ -32,6 +33,7 @@ from elections_calendar.text import collapse_ws, fold
 from elections_calendar.validate import ServedCheck, validate_feed
 from elections_calendar.window import window_for
 from tests.support.appendix_b import appendix_b
+from tests.support.feed import first_run
 from tests.support.fixture_claims import fixture_claim
 from tests.support.fixtures import FIXTURES
 
@@ -438,6 +440,41 @@ def test_sc2_needs_a_witness(e2e: Fixture) -> None:
 
 
 # --- size and command line ----------------------------------------------------------------------
+
+
+def test_every_relevant_item_is_served_or_counted(
+    e2e: Fixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """P112 (M2, transport half): the feed holds the first relevant items in cap order."""
+    full = json.loads((e2e.out / "attention_full.json").read_text(encoding="utf-8"))["items"]
+    rank = {"in_or_after_window": 0, "unknown": 1}
+    relevant = sorted(
+        (i for i in full if i["relevance"] in rank),
+        key=lambda i: (rank[i["relevance"]], i["date"] is None, i["date"] or "", i["item_id"]),
+    )
+    items = e2e.doc["attention_items"]
+    assert len(relevant) == 157
+    assert [i["item_id"] for i in items] == [i["item_id"] for i in relevant[: len(items)]]
+    assert len(items) + e2e.doc["attention_truncated"] == 157
+    assert (len(items), e2e.doc["attention_truncated"]) == (157, 0)
+
+    run = first_run()
+    expected = {i.item_id for i in run.merge.attention} | {
+        i.item_id for s in run.sources.values() for i in s.items
+    }
+    assert {i["item_id"] for i in full} == expected
+
+    monkeypatch.setattr(feed, "MAX_FEED_ITEMS", 100)
+    capped = build_feed(
+        run.merge,
+        [run.sources[s] for s in SOURCE_ORDER],
+        window=run.window,
+        now=RUN_NOW,
+        run=RunInfo("local", ()),
+        run_reasons=(),
+    ).doc
+    assert [i["item_id"] for i in capped["attention_items"]] == [i["item_id"] for i in relevant[:100]]
+    assert capped["attention_truncated"] == 57
 
 
 def test_feed_size_on_the_fixtures(e2e: Fixture) -> None:
