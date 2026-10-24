@@ -290,6 +290,42 @@ The republished file is the original with `published_at` set to now and `republi
 (the original's digest) added; `status.json` records outcome `republished`. A missing or altered
 pair, an abbreviated SHA or another format exits 1 with the reason and writes nothing.
 
+## Live check
+
+`scripts/live_check.py` runs the sources once for real, as a dry run, and compares the result
+with a fresh offline run on the fixtures. It is a report for the person who decides whether the
+first rollout goes ahead. It is **not a gate**: nothing in CI runs it.
+
+```powershell
+$env:PYTHONIOENCODING = "utf-8"
+.venv\Scripts\python.exe -m scripts.live_check --out .scratch/live
+```
+
+Set this machine's TLS bundle variable first, as for any live run (see "TLS"). It makes read-only
+GET requests, at most 40 including retries and redirects, and is killed with every process it
+started after 600 s; the offline run is killed after 120 s, and a bad offline run stops the check
+before the live run starts. `--out DIR` gets a folder named by the UTC time, holding `live_check.md`
+(the report), the two artifacts, and the two logs. The exit code is 0 when the report is written
+and the live run exited 0, 1 when the live run was killed or failed (the report is still
+written), and 2 for a bad reviewed file.
+
+**Material differences** (the report counts them; the first rollout pauses on any):
+
+- a fixture page missing live, not `ok`/`valid_empty` live, or with `units_seen` under half or
+  over double the fixture's (when the fixture's is above 0);
+- a source at severity `error`;
+- a national contest of `tests/expected/2026-10-16.yaml` whose dates overlap the live window and
+  that has no witness child: a child on a card of the same place and level, with the entry's
+  office inside its office label, the same round (and jurisdiction, when the entry names one),
+  and a card that overlaps the entry's dates. A contest seen on another date is
+  `possible reschedule, review required` until a row in `tests/expected/reviewed_reschedules.yaml`
+  (keys in its header) links the old date to the new one after the user has reviewed it;
+- a feed over its byte budget, more than 40 requests, a run killed at the limit, or a live file
+  that cannot be read.
+
+Everything else (live-only pages, every source's severity, feed and gzip bytes, requests used,
+elapsed time) is listed for information.
+
 ## `out/`
 
 | File | When | What it is |
