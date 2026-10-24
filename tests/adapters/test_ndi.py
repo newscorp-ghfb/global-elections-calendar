@@ -828,8 +828,14 @@ def ledger(body: bytes) -> Any:
     return check(raw, Ndi().parse(raw, WINDOW, REGISTRIES))
 
 
+def ndi_rule() -> CardBlocksRule:
+    rule = COUNT_RULES["ndi"]
+    assert isinstance(rule, CardBlocksRule)
+    return rule
+
+
 def marker_texts(body: bytes) -> list[str]:
-    return marker_problems(COUNT_RULES["ndi"], body, "p0")  # type: ignore[arg-type]
+    return marker_problems(ndi_rule(), body, "p0")
 
 
 def nth(text: str, needle: str, n: int, start: int = 0) -> int:
@@ -855,7 +861,7 @@ def test_ndi_marker_count_matches_the_fixture_cards() -> None:
     blocks = ("upcoming-elections", "past-elections")
     totals = []
     for n in range(5):
-        assert marker_problems(COUNT_RULES["ndi"], BODIES[n], f"p{n}") == []  # type: ignore[arg-type]
+        assert marker_problems(ndi_rule(), BODIES[n], f"p{n}") == []
         soup = BeautifulSoup(BODIES[n].decode(), "lxml")
         per_card: list[int] = []
         inside = 0
@@ -930,3 +936,72 @@ def test_ndi_without_markers_is_not_valid_empty() -> None:
     emptied = str(soup).encode()
     res = page0(emptied, balanced=False)
     assert detail(res) == ("layout_not_recognised", "upcoming block is page 0 with 0 cards")
+
+
+# --- the final fix wave (final review T1-M3, T1-M5): R36 markers on odd elements ---------------
+
+THREE = ndi_page([BULGARIA, HUNGARY, BULGARIA], PAST).decode()
+DROPDOWN = '<div class="cal-dropdown">'
+
+
+def inside_first_card(extra: str) -> bytes:
+    at = THREE.index(DROPDOWN)
+    return (THREE[:at] + extra + THREE[at:]).encode()
+
+
+def test_a_marker_on_the_wrapper_or_the_block_element_is_a_block_problem_not_a_cards() -> None:
+    assert marker_texts(THREE.encode()) == []
+    wrapper = THREE.replace('<div class="election-wrapper">', '<div class="election-wrapper add-to-cal">', 1)
+    assert marker_texts(wrapper.encode()) == [
+        "page 'p0': upcoming block holds 4 add-to-cal markers for 3 cards"
+    ]
+    panel = THREE.replace(
+        '<div class="tab_panel" id="upcoming-elections">',
+        '<div class="tab_panel add-to-cal" id="upcoming-elections">',
+        1,
+    )
+    assert marker_texts(panel.encode()) == [
+        "page 'p0': upcoming block holds 4 add-to-cal markers for 3 cards"
+    ]
+
+
+def test_a_marker_on_the_card_element_itself_counts_for_that_card() -> None:
+    card_marked = THREE.replace(
+        '<div class="partial -election -feed">', '<div class="partial -election -feed add-to-cal">', 1
+    )
+    assert marker_texts(card_marked.encode()) == [
+        "page 'p0': upcoming card 1 holds 2 add-to-cal markers",
+        "page 'p0': upcoming block holds 4 add-to-cal markers for 3 cards",
+    ]
+
+
+def test_a_marker_in_a_script_or_a_comment_is_not_a_marker() -> None:
+    script = "<script>var x = '<span class=\"add-to-cal\"></span>';</script>"
+    assert marker_texts(inside_first_card(script)) == []
+    assert marker_texts(inside_first_card('<!-- <span class="add-to-cal"></span> -->')) == []
+    # and it does not stand in for a missing one: the card still holds none
+    gone = THREE.replace('<button class="add-to-cal"', '<button class="x"', 1)
+    at = gone.index(DROPDOWN)
+    covered = (gone[:at] + script + gone[at:]).encode()
+    assert marker_texts(covered) == [
+        "page 'p0': upcoming card 1 holds 0 add-to-cal markers",
+        "page 'p0': upcoming block holds 2 add-to-cal markers for 3 cards",
+    ]
+
+
+def test_markers_in_malformed_html_follow_the_parser_and_never_hide_a_missing_one() -> None:
+    # a tag cut off by the end of the page is never opened: no marker
+    cut = (THREE[: THREE.index(DROPDOWN)] + '<span class="add-to-cal"').encode()
+    assert marker_texts(cut) == []
+    # a tag that runs into the next one takes that tag's attributes, the last class wins: no marker
+    runs_on = THREE.replace(DROPDOWN, '<div class="add-to-cal"' + DROPDOWN, 1)
+    assert marker_texts(runs_on.encode()) == []
+    # an unclosed marker tag after the blocks reads as a marker outside them
+    after = THREE.replace("</main>", '<span class="add-to-cal"</main>')
+    assert marker_texts(after.encode()) == ["page 'p0': 1 add-to-cal markers outside the blocks"]
+    # in every case a card missing its own marker is still reported
+    gone = THREE.replace('<button class="add-to-cal"', '<button class="x"', 1)
+    assert marker_texts(gone.replace(DROPDOWN, '<div class="add-to-cal"' + DROPDOWN, 1).encode()) == [
+        "page 'p0': upcoming card 1 holds 0 add-to-cal markers",
+        "page 'p0': upcoming block holds 2 add-to-cal markers for 3 cards",
+    ]

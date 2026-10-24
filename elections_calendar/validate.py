@@ -34,6 +34,7 @@ _DAY: Final = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 _STAMP: Final = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z")
 _MONTH: Final = re.compile(r"[0-9]{4}-[0-9]{2}")
 _LEGACY_STATUS: Final = frozenset(get_args(LegacyStatus))
+_SURROGATE: Final = re.compile(r"[\ud800-\udfff]")
 _HASH: Final = re.compile(r"[0-9a-f]{64}")
 _LEGACY_REQUIRED: Final = frozenset({"current_month", "errors", "generated_at", "months"})
 _LEGACY_KEYS: Final = _LEGACY_REQUIRED | {"published_at", "republished_from_sha256"}
@@ -74,11 +75,39 @@ def _validator(path: Path) -> Draft202012Validator:
     return _SchemaValidator(json.loads(path.read_text(encoding="utf-8")))
 
 
+def _constant(name: str) -> Any:
+    raise ValueError(f"{name} is not JSON")
+
+
+def _lone_surrogate(doc: Any) -> bool:
+    """Whether a key or a string anywhere in ``doc`` holds a lone surrogate (not UTF-8 text)."""
+    todo = [doc]
+    while todo:
+        item = todo.pop()
+        if isinstance(item, str):
+            if _SURROGATE.search(item):
+                return True
+        elif isinstance(item, dict):
+            todo.extend(item.keys())
+            todo.extend(item.values())
+        elif isinstance(item, list):
+            todo.extend(item)
+    return False
+
+
 def _load(data: bytes) -> tuple[bool, Any]:
+    """``(True, document)`` when ``data`` is UTF-8 JSON that any JSON reader accepts, else not.
+
+    ``NaN``, ``Infinity`` and ``-Infinity`` are not JSON, and a lone surrogate (JSON's escape
+    for U+D800, say) is not text that can be written as UTF-8: both make the bytes unloadable.
+    """
     try:
-        return True, json.loads(data.decode("utf-8"))
+        doc = json.loads(data.decode("utf-8"), parse_constant=_constant)
     except (ValueError, RecursionError):
         return False, None
+    if _lone_surrogate(doc):
+        return False, None
+    return True, doc
 
 
 def _path_key(error: Any) -> tuple[tuple[int, int, str], ...]:

@@ -24,6 +24,7 @@ from elections_calendar.snapshots import decide, registry_version
 from elections_calendar.sources.base import RawPages
 from elections_calendar.sources.osce import Osce
 from elections_calendar.validate import ServedCheck, validate_feed, validate_status
+from tests.support.broken import fail_the_parse_of_an_unfinished_run
 from tests.support.fixture_claims import fixture_results
 from tests.support.known_issues import entry as ack_entry
 from tests.support.known_issues import ts
@@ -459,16 +460,7 @@ def test_a_parse_failure_shows_one_worker_failed_and_no_deadline(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """P108 (M3) end to end; the stand-in is a run whose requests are all unfinished."""
-
-    def fake(specs: Any, window: Any, **kwargs: Any) -> ScrapeRun:
-        raw = RawPages("osce", (), Osce().requests(window))
-        return ScrapeRun((), (SourceRun("osce", raw, "complete", 0),))
-
-    def boom(self: Osce, *args: object) -> None:
-        raise ValueError("x")
-
-    monkeypatch.setattr(pipeline, "run_sources", fake)
-    monkeypatch.setattr(Osce, "parse", boom)
+    fail_the_parse_of_an_unfinished_run(monkeypatch)
     _, out = go(tmp_path, None)
     status = load(out, "status.json")
     mine = [r["code"] for r in status["reasons"] if r["source"] == "osce"]
@@ -493,18 +485,11 @@ def test_a_future_health_state_is_ack_invalid(tmp_path: Path) -> None:
     ]
 
 
-def test_a_failed_parse_keeps_the_unfinished_requests_unfinished(
+def test_a_failed_parse_is_worker_failed_not_deadline_or_layout_not_recognised(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def fake(specs: Any, window: Any, **kwargs: Any) -> ScrapeRun:
-        raw = RawPages("osce", (), Osce().requests(window))
-        return ScrapeRun((), (SourceRun("osce", raw, "complete", 0),))
-
-    def boom(self: Osce, *args: object) -> None:
-        raise ValueError("x")
-
-    monkeypatch.setattr(pipeline, "run_sources", fake)
-    monkeypatch.setattr(Osce, "parse", boom)
+    """The source's own reasons only (P108); the test above checks the status file."""
+    fail_the_parse_of_an_unfinished_run(monkeypatch)
     _, out = go(tmp_path, None)
     codes = reason_codes(osce_entry(out))
     assert "worker_failed" in codes

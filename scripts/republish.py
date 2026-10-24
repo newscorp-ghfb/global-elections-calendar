@@ -58,11 +58,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             releases_text=text,
             code_sha=git.run("rev-parse", "HEAD"),
         )
-    except (RecoveryError, GitError, UnicodeDecodeError) as exc:
+    except (RecoveryError, GitError, UnicodeDecodeError, OSError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
-    write_atomic(repo / "elections.json", feed)
-    write_atomic(repo / "status.json", status)
+    replaced: list[str] = []
+    for name, data in (("elections.json", feed), ("status.json", status)):
+        try:
+            write_atomic(repo / name, data)
+        except OSError as exc:
+            done = f"{' and '.join(replaced)} already replaced" if replaced else "nothing replaced"
+            print(f"cannot write {name}: {exc} ({done}); run again", file=sys.stderr)
+            return 1
+        replaced.append(name)
     original = json.loads(feed)["republished_from_sha256"]
     print(f"republished {args.from_commit} ({original}) as {hashlib.sha256(feed).hexdigest()}")
     print("next: review, then commit elections.json and status.json and push (spec §15 step 7.2)")

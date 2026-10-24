@@ -892,7 +892,7 @@ def test_two_runs_in_one_second_exit_1_with_a_message(
     capsys.readouterr()
     calls = len(fake.calls)
     assert live_check.main(["--out", str(out)]) == 1
-    assert "already exists" in capsys.readouterr().err
+    assert "already exists (two runs in one second); run again" in capsys.readouterr().err
     assert len(fake.calls) == calls
     assert (_stamp_dir(out) / "live_check.md").is_file()
 
@@ -999,3 +999,195 @@ def test_a_run_that_raises_still_writes_the_report(
 
 def test_dry_run_fits_the_live_check_limit() -> None:
     assert pipeline.DRY_RUN_SCRAPE_DEADLINE_S + 5 + 2 + 60 <= live_check.LIMIT_S
+
+
+# --- the final fix wave (final review F4; Task 9 minors m1, m2, m4) ---------------------------
+
+
+@pytest.mark.parametrize("key", ["from", "to"])
+@pytest.mark.parametrize("value", ["9999-12-31", "2026-10-01 to 9999-12-31"])
+def test_a_reviewed_row_ending_on_9999_12_31_is_a_row_error(
+    tmp_path: Path, key: str, value: str
+) -> None:
+    row = {**REVIEWED[0], key: value}
+    path = tmp_path / "reviewed.yaml"
+    path.write_text(yaml.safe_dump([row]), encoding="utf-8")
+    with pytest.raises(ValueError, match=rf"^reviewed_reschedules\.yaml row 1: {key}: "):
+        live_check.load_reviewed(path)
+
+
+def test_main_exits_2_for_a_reviewed_row_ending_on_9999_12_31(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(live_check, "run_bounded", Fake(tmp_path))
+    path = tmp_path / "reviewed.yaml"
+    path.write_text(yaml.safe_dump([{**REVIEWED[0], "to": "9999-12-31"}]), encoding="utf-8")
+    assert live_check.main(["--out", str(tmp_path / "out"), "--reviewed", str(path)]) == 2
+    assert "reviewed_reschedules.yaml row 1: to: " in capsys.readouterr().err
+
+
+def test_a_live_card_ending_on_9999_12_31_is_a_material_line_and_the_report_is_written(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def far_end(feed: dict[str, Any]) -> None:
+        card = next(c for m in feed["months"].values() for c in m if c["date_precision"] == "day")
+        card["end_date"] = "9999-12-31"
+
+    class Far(Fake):
+        def __call__(
+            self, cmd: Sequence[str], *, limit_s: float, cwd: Path, log: Path
+        ) -> int | None:
+            code = super().__call__(cmd, limit_s=limit_s, cwd=cwd, log=log)
+            if "scraper.py" in cmd:
+                _edit(Path(cmd[cmd.index("--out") + 1]) / "elections.json", far_end)
+            return code
+
+    monkeypatch.setattr(live_check, "run_bounded", Far(tmp_path))
+    out = tmp_path / "out"
+    assert live_check.main(["--out", str(out)]) == 0
+    report = (_stamp_dir(out) / "live_check.md").read_text(encoding="utf-8")
+    assert "cannot use live elections.json against the expected file" in report
+    assert "9999-12-31" in report
+
+
+@pytest.mark.parametrize(
+    ("bad", "said"),
+    [
+        ({"place": "iso:ZZ", "office": "Parliament", "round": None, "level": "national"}, "'date'"),
+        ({"place": "iso:ZZ", "office": "Parliament", "round": None, "date": "2026-10-05"}, "'level'"),
+        ("not an entry", "is not a mapping"),
+    ],
+    ids=["no date", "no level", "not a mapping"],
+)
+def test_a_malformed_expected_entry_is_a_material_line_and_does_not_skip_the_rest(
+    tmp_path: Path, bad: Any, said: str
+) -> None:
+    offline = _copy(tmp_path, "offline")
+    live = _copy(tmp_path, "live")
+    good = {
+        "place": "iso:ZY",
+        "office": "Parliament",
+        "round": None,
+        "level": "national",
+        "date": "2026-10-05",
+    }
+    expected = tmp_path / "expected.yaml"
+    expected.write_text(yaml.safe_dump([bad, good]), encoding="utf-8")
+    material, _ = live_check.compare(live, offline, expected, [])
+    assert len(material) == 2, material
+    assert material[0].startswith("cannot read expected entry ") and said in material[0]
+    assert material[1] == "expected and not found: iso:ZY Parliament 2026-10-05"
+
+
+def test_an_out_that_is_a_file_is_not_a_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fake = Fake(tmp_path)
+    monkeypatch.setattr(live_check, "run_bounded", fake)
+    afile = tmp_path / "afile"
+    afile.write_text("x", encoding="utf-8")
+    for out in (afile, afile / "below"):
+        assert live_check.main(["--out", str(out)]) == 1
+        err = capsys.readouterr().err
+        assert f"{afile.resolve()} is not a directory" in err
+        assert "two runs" not in err
+    assert fake.calls == []
+
+
+@pytest.mark.parametrize("name", ["20261024T120000Z", "repo-offline", "repo-live"])
+def test_another_mkdir_failure_is_a_message_not_a_traceback(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    name: str,
+) -> None:
+    frozen = datetime(2026, 10, 24, 12, 0, 0, tzinfo=UTC)
+    monkeypatch.setattr(live_check, "datetime", types.SimpleNamespace(now=lambda tz=None: frozen))
+    fake = Fake(tmp_path)
+    monkeypatch.setattr(live_check, "run_bounded", fake)
+    real = Path.mkdir
+
+    def refusing(self: Path, *args: Any, **kwargs: Any) -> None:
+        if self.name == name:
+            raise PermissionError("read-only disk")
+        real(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "mkdir", refusing)
+    assert live_check.main(["--out", str(tmp_path / "out")]) == 1
+    err = capsys.readouterr().err
+    assert "cannot create " in err and name in err and "read-only disk" in err
+    assert fake.calls == []
+
+
+class _Gone:
+    pid = 4242
+
+
+def _taskkill(monkeypatch: pytest.MonkeyPatch, outcome: int | BaseException) -> list[Any]:
+    calls: list[Any] = []
+
+    def run(cmd: Sequence[str], **kwargs: Any) -> Any:
+        calls.append((list(cmd), kwargs))
+        if isinstance(outcome, BaseException):
+            raise outcome
+        return types.SimpleNamespace(returncode=outcome)
+
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(subprocess, "run", run)
+    return calls
+
+
+@pytest.mark.parametrize("code", [0, 128])
+def test_taskkill_success_or_not_found_is_not_a_failure(
+    monkeypatch: pytest.MonkeyPatch, code: int
+) -> None:
+    calls = _taskkill(monkeypatch, code)
+    live_check.kill_tree(_Gone())  # type: ignore[arg-type]
+    (cmd, kwargs), = calls
+    assert cmd == ["taskkill", "/T", "/F", "/PID", "4242"]
+    assert kwargs["timeout"] == live_check.REAP_S
+
+
+def test_a_failing_taskkill_is_a_kill_tree_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    _taskkill(monkeypatch, 1)
+    with pytest.raises(RuntimeError, match="taskkill exited with code 1"):
+        live_check.kill_tree(_Gone())  # type: ignore[arg-type]
+
+
+def test_a_hung_taskkill_is_a_kill_tree_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    _taskkill(monkeypatch, subprocess.TimeoutExpired("taskkill", 30))
+    with pytest.raises(RuntimeError, match="taskkill ran over"):
+        live_check.kill_tree(_Gone())  # type: ignore[arg-type]
+
+
+def test_stop_reports_a_failing_taskkill(monkeypatch: pytest.MonkeyPatch) -> None:
+    _taskkill(monkeypatch, 5)
+
+    class Dead:
+        pid = 4242
+
+        def kill(self) -> None:
+            pass
+
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+    with pytest.raises(RuntimeError, match="kill_tree failed .*taskkill exited with code 5"):
+        live_check._stop(Dead())  # type: ignore[arg-type]
+
+
+def test_posix_kill_tree_treats_a_missing_group_as_gone(monkeypatch: pytest.MonkeyPatch) -> None:
+    def killpg(pid: int, sig: int) -> None:
+        raise ProcessLookupError
+
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(os, "killpg", killpg, raising=False)
+    monkeypatch.setattr(signal, "SIGKILL", 9, raising=False)
+    live_check.kill_tree(_Gone())  # type: ignore[arg-type]
+
+    def refused(pid: int, sig: int) -> None:
+        raise PermissionError("no")
+
+    monkeypatch.setattr(os, "killpg", refused, raising=False)
+    with pytest.raises(PermissionError):
+        live_check.kill_tree(_Gone())  # type: ignore[arg-type]

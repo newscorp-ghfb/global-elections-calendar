@@ -96,3 +96,17 @@ def test_adopt_refuses_a_feed_that_serves_another_snapshot(
         f"osce: the feed serves snapshot {'0' * 64}, the committed baseline is {held}\n"
     )
     assert files_under(repo) == []
+
+
+def test_adopt_refuses_an_impossible_attempt_at(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = fixture_artifact(tmp_path / "artifact", code_sha=SHA)
+    status = json.loads((root / "status.json").read_text(encoding="utf-8"))
+    status["attempt_at"] = "2026-13-45T25:61:61Z"  # matches the schema's pattern, is no moment
+    rewrite(root, "status.json", stored_json(status))
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    assert adopt(root, repo) == 1
+    assert capsys.readouterr().err == "status.json is invalid: attempt_at\n"
+    assert files_under(repo) == []

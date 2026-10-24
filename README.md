@@ -78,8 +78,10 @@ on GitHub in Plan 5c; until then its structure is proven offline by `tests/workf
   cannot run a workflow command, writes the step summary, and uploads `out/` as the artifact
   `generation` (kept 14 days, uploaded even after a crash; it holds `rejected/pages/`, the raw
   bytes of invalid pages, up to 50 MiB).
-- `publish` (`contents: write`, its own concurrency group `publish-elections`, never cancelled):
-  only on `main` and only for the schedule or a dispatch with `publish: true`. It re-checks the
+- `publish` (`contents: write`, its own concurrency group `publish-elections`): a running publish
+  job is not cancelled by a newer run, but a pending one is replaced by the newer one, and a
+  timeout (25 minutes) or a user's cancel stops a running one. Each of these makes the verdict red
+  with `publish failed`. It runs only on `main` and only for the schedule or a dispatch with `publish: true`. It re-checks the
   artifact (nothing outside the allowlist is written) and commits only `elections.json`,
   `status.json`, `HEALTH.md` and `data/sources/**`, pushes, and polls the raw URL for up to 10
   minutes to see the new digest served.
@@ -104,6 +106,15 @@ run's original commit, so it is superseded again (P5A-06).
 included): `PAUSE_PUBLISHING` skips the scrape and the publish, and the day's verdict is green
 `paused`; `ALERT_TEST` turns the run red (`alert test`) after every other check, to prove that
 the failure email reaches its readers.
+
+**Known limits** (each is visible in the run, and the tests prove the rest):
+
+- A passed served check is not a guarantee for every reader. It shows that the raw URL served the
+  new digest within 10 minutes. A reader behind another CDN node may get the old bytes for up to 5
+  more minutes; 5b's feed/status link shows that case.
+- The data verdict is the producer's claim. The publish job re-checks everything it commits, but
+  whether the day's data is healthy (`verdict.json`'s green or red) comes from the scrape job. A
+  compromised scrape could call a valid feed green; it cannot commit an invalid one.
 
 ## Updating dependencies
 
@@ -341,7 +352,7 @@ elapsed time) is listed for information.
 | `dispositions.json` | always | What the merge did with every claim. |
 | `rejected/` | on a failure | The bytes and the problems of whatever failed validation. |
 | `rejected/pages/<source>/<i>.body` | when a page is kept | The exact bytes of page `i` (its position, in decimal) when its body is not empty and its parser failed, its source's ledger has a problem, or its own outcome is not `ok` or `valid_empty`. A run keeps at most 50 MiB of them; a page past that is listed with `kept: false` and has no file. |
-| `rejected/pages/index.json` | when a page is kept | One row per such page, in source order: source, index, key, year, URLs, outcomes, status, content type, length, SHA-256, why and `kept`. |
+| `rejected/pages/index.json` | whenever any page is listed, including `kept: false` rows past the cap | One row per such page, in source order: source, index, key, year, URLs, outcomes, status, content type, length, SHA-256, why and `kept`. |
 | `manifest.json` | always, written last | Each other file with its SHA-256. |
 
 A publish job (Plan 5) will commit only the repository files: `elections.json`, `status.json`,

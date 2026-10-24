@@ -819,3 +819,41 @@ def test_every_schema_pattern_ends_in_one_unescaped_dollar() -> None:
                 bare += 1
             i += 1
         assert bare == 0, pattern
+
+
+# --- the final fix wave (final review T8-M1, T8-M2): bytes no JSON reader can use --------------
+
+UNREADABLE = [
+    pytest.param(b'"\\ud800"', id="lone high surrogate"),
+    pytest.param(b'"\\udc00"', id="lone low surrogate"),
+    pytest.param(b'{"\\ud800": 1}', id="surrogate in a key"),
+    pytest.param(b'{"a": [{"b": "x\\ud800y"}]}', id="surrogate deep in a value"),
+    pytest.param(b'{"a": NaN}', id="NaN"),
+    pytest.param(b'{"a": [Infinity]}', id="Infinity"),
+    pytest.param(b'{"a": -Infinity}', id="-Infinity"),
+]
+
+
+@pytest.mark.parametrize("data", UNREADABLE)
+def test_json_no_reader_can_use_is_not_loadable(data: bytes) -> None:
+    ok, doc = validate._load(data)
+    assert (ok, doc) == (False, None)
+    assert validate.validate_status(data) == ("json: not UTF-8 JSON",)
+    assert validate.feed_content_problems(data, wall_clock=WALL) == ("json: not UTF-8 JSON",)
+    assert validate.legacy_feed_problems(data, wall_clock=WALL) == ("legacy: not UTF-8 JSON",)
+    assert validate.republished_problems(data, wall_clock=WALL) == ("json: not UTF-8 JSON",)
+    assert validate.validate_feed(data, served=[], wall_clock=WALL) == ("json: not UTF-8 JSON",)
+
+
+def test_a_surrogate_pair_and_ordinary_numbers_still_load() -> None:
+    assert validate._load(b'"\\ud83d\\ude00"') == (True, "\U0001f600")
+    assert validate._load(b'{"a": [1, 2.5, -0, 1e3, null, true]}')[0] is True
+
+
+def test_a_legacy_feed_with_a_nan_or_a_lone_surrogate_has_a_json_problem() -> None:
+    doc = json.loads(V1_FEED.read_bytes())
+    doc["errors"] = ["@@"]
+    text = json.dumps(doc, ensure_ascii=False, separators=(",", ":"))
+    for replacement in ("NaN", '"\\ud800"'):
+        data = text.replace('"@@"', replacement).encode("utf-8")
+        assert validate.legacy_feed_problems(data, wall_clock=WALL) == ("legacy: not UTF-8 JSON",)
