@@ -75,6 +75,10 @@ class Git:
             raise GitError(f"git {_name(args)} failed: {_last_line(done.stderr)}")
         return done.stdout.decode("utf-8", errors="replace").strip()
 
+    def succeeds(self, *args: str) -> bool:
+        """Whether a git command exits 0; a timeout, an ``OSError`` or a spent deadline raises."""
+        return self._exec(*args).returncode == 0
+
     def blob(self, commit: str, path: str) -> bytes | None:
         """The raw bytes of ``path`` at ``commit``, or None when it is not there."""
         spec = f"{commit}:{path}"

@@ -224,6 +224,10 @@ def test_schema_enums_equal_the_literals() -> None:
     Draft202012Validator.check_schema(status)
 
 
+# Written only by a republication (Plan 5a Task 8, P122); every other property is required.
+OPTIONAL_PROPERTIES = {"republished_from_sha256"}
+
+
 def test_every_schema_object_is_closed_and_complete() -> None:
     for path in (FEED_SCHEMA, STATUS_SCHEMA):
         schema = json.loads(path.read_text(encoding="utf-8"))
@@ -235,7 +239,8 @@ def test_every_schema_object_is_closed_and_complete() -> None:
                 if node.get("type") == "object" and "properties" in node:
                     seen += 1
                     assert node["additionalProperties"] is False
-                    assert sorted(node["required"]) == sorted(node["properties"])
+                    assert set(node["required"]) <= set(node["properties"])
+                    assert set(node["properties"]) - set(node["required"]) <= OPTIONAL_PROPERTIES
                 for value in node.values():
                     walk(value)
             elif isinstance(node, list):
@@ -244,6 +249,8 @@ def test_every_schema_object_is_closed_and_complete() -> None:
 
         walk(schema)
         assert seen >= (10 if path == FEED_SCHEMA else 3)
+        optional = set(schema["properties"]) - set(schema["required"])
+        assert optional == (OPTIONAL_PROPERTIES if path == FEED_SCHEMA else set())
 
 
 def test_v1_feed_is_not_a_v2_feed() -> None:
@@ -717,3 +724,15 @@ def test_a_card_date_with_a_trailing_newline_is_a_legacy_problem() -> None:
     doc = feed_doc()
     first_card(doc)["date"] = "20261004"  # date.fromisoformat accepts it; the feed does not
     assert any(p.startswith("legacy: ") for p in check(doc))
+
+
+def test_the_schema_accepts_the_republication_field() -> None:
+    doc = feed_doc()
+    assert check(doc) == ()
+    doc["republished_from_sha256"] = "a" * 64
+    assert check(doc) == ()
+    for bad in ("x", "A" * 64, "a" * 63, 5, None):
+        doc["republished_from_sha256"] = bad
+        problems = check(doc)
+        assert problems, bad
+        assert problems[0].startswith("schema: /republished_from_sha256"), problems

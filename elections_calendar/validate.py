@@ -34,6 +34,9 @@ _DAY: Final = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 _STAMP: Final = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z")
 _MONTH: Final = re.compile(r"[0-9]{4}-[0-9]{2}")
 _LEGACY_STATUS: Final = frozenset(get_args(LegacyStatus))
+_HASH: Final = re.compile(r"[0-9a-f]{64}")
+_LEGACY_REQUIRED: Final = frozenset({"current_month", "errors", "generated_at", "months"})
+_LEGACY_KEYS: Final = _LEGACY_REQUIRED | {"published_at", "republished_from_sha256"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -320,6 +323,85 @@ def _served(doc: Any, served: Sequence[ServedCheck]) -> list[str]:
         if source not in seen
     ]
     return problems
+
+
+def _real_moment(value: Any, wall_clock: datetime) -> str | None:
+    """Why ``value`` is not a real UTC timestamp no more than ``MAX_AHEAD`` ahead, or None."""
+    moment = _moment(value)
+    if moment is None:
+        return f"{value!r} is not a real UTC timestamp"
+    if moment - wall_clock > MAX_AHEAD:
+        return f"{value} is more than 10 minutes ahead of {_utc_iso(wall_clock)}"
+    return None
+
+
+def legacy_feed_problems(data: bytes, *, wall_clock: datetime) -> tuple[str, ...]:
+    """The problems of a v1 ``elections.json`` as v1.0.2 reads it; each starts ``legacy: ``.
+
+    The top-level keys are ``current_month``, ``errors``, ``generated_at`` and ``months``, plus the
+    two a republication adds (``published_at``, ``republished_from_sha256``). Every card passes the
+    per-card checks of §11.3. A naive ``wall_clock`` raises ``ValueError``.
+    """
+    if wall_clock.utcoffset() is None:
+        raise ValueError("wall_clock must be timezone-aware")
+    ok, doc = _load(data)
+    if not ok:
+        return ("legacy: not UTF-8 JSON",)
+    if not isinstance(doc, dict):
+        return ("legacy: the feed is not a JSON object",)
+    problems = [f"legacy: missing key {key}" for key in sorted(_LEGACY_REQUIRED - doc.keys())]
+    problems += [
+        f"legacy: unexpected key {str(key)[:40]!r}"
+        for key in doc
+        if key not in _LEGACY_KEYS
+    ]
+    for field in ("generated_at", "published_at"):
+        if field in doc and (why := _real_moment(doc[field], wall_clock)) is not None:
+            problems.append(f"legacy: {field} {why}")
+    if "republished_from_sha256" in doc:
+        digest = doc["republished_from_sha256"]
+        if not (isinstance(digest, str) and _HASH.fullmatch(digest)):
+            problems.append("legacy: republished_from_sha256 is not 64 lowercase hex characters")
+    month = doc.get("current_month")
+    if "current_month" in doc and not (isinstance(month, str) and _MONTH.fullmatch(month)):
+        problems.append(f"legacy: current_month {month!r} is not YYYY-MM")
+    if "errors" in doc and not isinstance(doc["errors"], list):
+        problems.append("legacy: errors is not a list")
+    months = doc.get("months")
+    if "months" in doc:
+        if not isinstance(months, dict):
+            problems.append("legacy: months is not an object")
+        else:
+            for key, cards in months.items():
+                if not (isinstance(key, str) and _MONTH.fullmatch(key)):
+                    problems.append(f"legacy: months key {str(key)[:40]!r} is not YYYY-MM")
+                if not (isinstance(cards, list) and all(isinstance(c, dict) for c in cards)):
+                    problems.append(f"legacy: months {str(key)[:40]!r} is not a list of objects")
+    if len(data) > FEED_MAX_BYTES:
+        problems.append(f"legacy: size: {len(data)} bytes is over {FEED_MAX_BYTES}")
+    problems += _legacy(doc)
+    return tuple(p[:MAX_PROBLEM] for p in problems)
+
+
+def republished_problems(data: bytes, *, wall_clock: datetime) -> tuple[str, ...]:
+    """The problems of a feed about to be republished, by its format (P122), or ``()``.
+
+    ``schema_version`` exactly the integer 2 is a v2 feed (``feed_content_problems``); no
+    ``schema_version`` key is a v1 feed (``legacy_feed_problems``); anything else is refused.
+    """
+    if wall_clock.utcoffset() is None:
+        raise ValueError("wall_clock must be timezone-aware")
+    ok, doc = _load(data)
+    if not ok:
+        return ("json: not UTF-8 JSON",)
+    if not isinstance(doc, dict):
+        return ("format: the feed is not a JSON object",)
+    if "schema_version" not in doc:
+        return legacy_feed_problems(data, wall_clock=wall_clock)
+    version = doc["schema_version"]
+    if type(version) is int and version == 2:
+        return feed_content_problems(data, wall_clock=wall_clock)
+    return (f"format: schema_version {version!r} is not supported"[:MAX_PROBLEM],)
 
 
 def _content_problems(ok: bool, doc: Any, data: bytes, wall_clock: datetime) -> list[str]:
