@@ -17,7 +17,9 @@ import sys
 import textwrap
 import threading
 import time
+import types
 from collections.abc import Callable, Mapping, Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -392,7 +394,9 @@ def _two_expectations(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         for e in entries
         if e["place"] == "iso:BR" and e["office"] == "Presidency" and e["round"] == 1
     )
-    return [one, {**one, "date": "2026-11-08"}]
+    # The wrong-date entry comes first: rows are used in order, so only the `from` match
+    # keeps it from taking the row meant for the 2026-10-04 entry.
+    return [{**one, "date": "2026-11-08"}, one]
 
 
 def _range_entry(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -463,6 +467,23 @@ def _reviewed_info(old: str) -> str:
             [_reviewed_info("4 October 2026")],
             id="moved with a reviewed row",
         ),
+        *[
+            pytest.param(
+                _move(["4 October 2026"]),
+                None,
+                [{**REVIEWED[0], **change}],
+                [_possible("4 October 2026")],
+                [],
+                id=f"moved, a reviewed row with the wrong {name}",
+            )
+            for name, change in (
+                ("to", {"to": "2026-10-20"}),
+                ("round", {"round": 2}),
+                ("jurisdiction", {"jurisdiction": "X"}),
+                ("office", {"office": "Senate"}),
+                ("place", {"place": "iso:AR"}),
+            )
+        ],
         pytest.param(
             _move(["4 October 2026"]),
             None,
@@ -543,6 +564,98 @@ def test_compare_needs_a_witness_child(
     assert [line for line in got_info if line.startswith("rescheduled from")] == info
 
 
+@pytest.mark.parametrize(
+    ("n", "live_n", "flagged"),
+    [
+        (10, 5, False),  # exactly half
+        (10, 4, True),
+        (10, 20, False),  # exactly double
+        (10, 21, True),
+        (11, 6, False),  # half of 11 is 5.5
+        (11, 5, True),
+        (11, 22, False),
+        (11, 23, True),
+    ],
+)
+def test_the_units_seen_boundaries(tmp_path: Path, n: int, live_n: int, flagged: bool) -> None:
+    offline = _copy(tmp_path, "offline")
+    live = _copy(tmp_path, "live")
+    key = _first_page(offline, "osce")["key"]
+    _page_edit(offline, "osce", key, lambda p: p.update(units_seen=n))
+    _page_edit(live, "osce", key, lambda p: p.update(units_seen=live_n))
+    material, _ = live_check.compare(live, offline, EXPECTED, [])
+    assert len(material) == int(flagged), material
+    if flagged:
+        assert f"osce/{key}" in material[0]
+
+
+def _presidency_entry() -> dict[str, Any]:
+    entries = yaml.safe_load(EXPECTED.read_text(encoding="utf-8"))
+    entry: dict[str, Any] = next(
+        e
+        for e in entries
+        if e["place"] == "iso:BR" and e["office"] == "Presidency" and e["round"] == 1
+    )
+    return entry
+
+
+def test_a_reviewed_row_links_one_entry(tmp_path: Path) -> None:
+    offline = _copy(tmp_path, "offline")
+    live = _copy(tmp_path, "live")
+    _edit(live / "elections.json", _move(["4 October 2026"]))
+    expected = tmp_path / "expected.yaml"
+    one = _presidency_entry()
+    expected.write_text(yaml.safe_dump([one, dict(one)]), encoding="utf-8")
+    material, info = live_check.compare(live, offline, expected, REVIEWED)
+    assert [line for line in info if line.startswith("rescheduled from")] == [
+        _reviewed_info("4 October 2026")
+    ]
+    assert material == [_possible("4 October 2026")]
+
+
+def test_a_reversed_expected_date_is_a_material_line_and_does_not_skip_the_rest(
+    tmp_path: Path,
+) -> None:
+    offline = _copy(tmp_path, "offline")
+    live = _copy(tmp_path, "live")
+    base = {"office": "Parliament", "round": None, "level": "national"}
+    entries = [
+        {**base, "place": "iso:ZZ", "date": "2026-10-20 to 2026-10-11"},
+        {**base, "place": "iso:ZY", "date": "2026-10-05"},
+    ]
+    expected = tmp_path / "expected.yaml"
+    expected.write_text(yaml.safe_dump(entries), encoding="utf-8")
+    material, _ = live_check.compare(live, offline, expected, [])
+    assert material == [
+        "cannot read expected entry iso:ZZ Parliament: "
+        "'2026-10-20 to 2026-10-11' runs backwards",
+        "expected and not found: iso:ZY Parliament 2026-10-05",
+    ]
+
+
+def test_load_reviewed_reports_mixed_type_keys_as_a_value_error(tmp_path: Path) -> None:
+    path = tmp_path / "reviewed.yaml"
+    path.write_text(
+        "- place: 'iso:BR'\n  office: Presidency\n  round: 1\n  from: '2026-10-04'\n"
+        "  to: '2026-10-11'\n  note: t\n  1: a\n  x: b\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match=r"^reviewed_reschedules\.yaml row 1: unexpected key"):
+        live_check.load_reviewed(path)
+
+
+def test_an_unlistable_sources_folder_is_a_material_line(tmp_path: Path) -> None:
+    offline = _copy(tmp_path, "offline")
+    live = _copy(tmp_path, "live")
+    shutil.rmtree(offline / "data" / "sources")
+    material, _ = live_check.compare(live, offline, EXPECTED, [])
+    assert any("cannot list offline data/sources" in line for line in material), material
+    offline = _copy(tmp_path, "offline2")
+    shutil.rmtree(live / "data" / "sources")
+    material, _ = live_check.compare(live, offline, EXPECTED, [])
+    assert any("cannot list live data/sources" in line for line in material), material
+
+
 def test_the_witness_is_a_child_of_the_same_jurisdiction(tmp_path: Path) -> None:
     offline = _copy(tmp_path, "offline")
     live = _copy(tmp_path, "live")
@@ -590,6 +703,12 @@ def test_load_reviewed_reads_good_rows(tmp_path: Path) -> None:
         pytest.param(lambda r: r.update(to="2026-13-01"), "to", id="bad to"),
         pytest.param(lambda r: r.update(place=""), "place", id="empty place"),
         pytest.param(lambda r: r.update(jurisdiction=""), "jurisdiction", id="empty jurisdiction"),
+        pytest.param(
+            lambda r: r.update(to="2026-10-20 to 2026-10-11"), "backwards", id="reversed to"
+        ),
+        pytest.param(
+            lambda r: r.update({"from": "2026-10-20 to 2026-10-11"}), "backwards", id="reversed from"
+        ),
     ],
 )
 def test_load_reviewed_rejects_a_bad_row(
@@ -759,6 +878,87 @@ def test_a_reviewed_row_reaches_the_report(tmp_path: Path, monkeypatch: pytest.M
     report = (_stamp_dir(out) / "live_check.md").read_text(encoding="utf-8")
     assert "Material differences: 0" in report
     assert _reviewed_info("4 October 2026") in report
+
+
+def test_two_runs_in_one_second_exit_1_with_a_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    frozen = datetime(2026, 10, 24, 12, 0, 0, tzinfo=UTC)
+    monkeypatch.setattr(live_check, "datetime", types.SimpleNamespace(now=lambda tz=None: frozen))
+    fake = Fake(tmp_path)
+    monkeypatch.setattr(live_check, "run_bounded", fake)
+    out = tmp_path / "out"
+    assert live_check.main(["--out", str(out)]) == 0
+    capsys.readouterr()
+    calls = len(fake.calls)
+    assert live_check.main(["--out", str(out)]) == 1
+    assert "already exists" in capsys.readouterr().err
+    assert len(fake.calls) == calls
+    assert (_stamp_dir(out) / "live_check.md").is_file()
+
+
+def test_a_relative_out_reaches_the_children_as_an_absolute_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake = Fake(tmp_path)
+    monkeypatch.setattr(live_check, "run_bounded", fake)
+    monkeypatch.chdir(tmp_path)
+    assert live_check.main(["--out", "rel-out"]) == 0
+    for cmd, *_ in fake.calls:
+        assert Path(cmd[cmd.index("--out") + 1]).is_absolute()
+        assert Path(cmd[cmd.index("--repo") + 1]).is_absolute()
+
+
+def test_a_failing_kill_tree_still_ends_the_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    script = tmp_path / "sleeper.py"
+    script.write_text(
+        "import os, sys, time\nopen(sys.argv[1], 'w').write(str(os.getpid()))\ntime.sleep(120)\n",
+        encoding="utf-8",
+    )
+    pidfile = tmp_path / "sleeper.pid"
+    seen: list[subprocess.Popen[bytes]] = []
+
+    def broken(process: subprocess.Popen[bytes]) -> None:
+        seen.append(process)
+        raise OSError("taskkill refused")
+
+    monkeypatch.setattr(live_check, "kill_tree", broken)
+    monkeypatch.setattr(live_check, "REAP_S", 2)
+    try:
+        with pytest.raises(RuntimeError, match="kill_tree failed"):
+            live_check.run_bounded(
+                [sys.executable, str(script), str(pidfile)],
+                limit_s=2,
+                cwd=tmp_path,
+                log=tmp_path / "sleeper.log",
+            )
+        assert seen[0].poll() is not None
+    finally:  # the venv launcher's child outlives the launcher itself
+        if pidfile.exists() and pidfile.read_text().strip():
+            _kill_pid(int(pidfile.read_text().strip()))
+        for process in seen:
+            process.kill()
+            process.wait(10)
+
+
+def test_a_child_that_survives_the_kill_is_reported_not_waited_for(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Stubborn:
+        pid = 1
+
+        def kill(self) -> None:
+            pass
+
+        def wait(self, timeout: float | None = None) -> int:
+            assert timeout is not None, "waited without a limit"
+            raise subprocess.TimeoutExpired("stubborn", timeout)
+
+    monkeypatch.setattr(live_check, "kill_tree", lambda process: None)
+    with pytest.raises(RuntimeError, match="still alive"):
+        live_check._stop(Stubborn())  # type: ignore[arg-type]
 
 
 def test_dry_run_fits_the_live_check_limit() -> None:

@@ -30,6 +30,7 @@ from elections_calendar.text import fold
 
 ROOT: Final = Path(__file__).resolve().parents[1]
 LIMIT_S: Final = 600  # the live run's hard limit (spec 13.5)
+REAP_S: Final = 30  # how long a killed run may take to disappear
 OFFLINE_LIMIT_S: Final = 120  # the offline fixture run takes about 4 s
 OFFLINE_NOW: Final = "2026-10-19T12:00:00Z"
 DEFAULT_REVIEWED: Final = ROOT / "tests" / "expected" / "reviewed_reschedules.yaml"
@@ -81,12 +82,37 @@ def run_bounded(cmd: Sequence[str], *, limit_s: float, cwd: Path, log: Path) -> 
         try:
             return process.wait(timeout=limit_s)
         except subprocess.TimeoutExpired:
-            kill_tree(process)
-            process.wait()
+            _stop(process)
             return None
         except BaseException:  # an interrupt must not leave the run behind either
-            kill_tree(process)
+            with contextlib.suppress(RuntimeError):
+                _stop(process)
             raise
+
+
+def _stop(process: subprocess.Popen[bytes]) -> None:
+    """Kill the tree; when that fails, kill the child itself. Never waits more than REAP_S.
+
+    Raises RuntimeError when ``kill_tree`` failed (the child's own children may remain) or the
+    child is still alive REAP_S seconds after the kill.
+    """
+    problem: Exception | None = None
+    try:
+        kill_tree(process)
+    except Exception as exc:
+        problem = exc
+    process.kill()
+    try:
+        process.wait(timeout=REAP_S)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(
+            f"process {process.pid} is still alive {REAP_S} s after the kill"
+        ) from problem
+    if problem is not None:
+        raise RuntimeError(
+            f"kill_tree failed ({problem}); process {process.pid} was killed, "
+            "but its children may remain"
+        ) from problem
 
 
 def alive(pid: int) -> bool:
@@ -133,7 +159,10 @@ def _span(text: str) -> _Span:
     """YYYY-MM-DD is a day, YYYY-MM a month, ``A to B`` runs from A through B."""
     if " to " in text:
         first, last = text.split(" to ")
-        return _span(first)[0], _span(last)[1]
+        start, end = _span(first)[0], _span(last)[1]
+        if end <= start:
+            raise ValueError(f"{text!r} runs backwards")
+        return start, end
     if not _DATE_PART.fullmatch(text):
         raise ValueError(f"{text!r} is not YYYY-MM-DD, YYYY-MM or YYYY-MM-DD to YYYY-MM-DD")
     if len(text) == 7:
@@ -163,7 +192,7 @@ def _row_problem(row: Any) -> str | None:
     keys = set(row)
     if missing := sorted(_REVIEWED_KEYS - keys):
         return f"missing key {missing[0]}"
-    if extra := sorted(keys - _REVIEWED_KEYS - {"jurisdiction"}):
+    if extra := sorted(map(str, keys - _REVIEWED_KEYS - {"jurisdiction"})):
         return f"unexpected key {extra[0]}"
     for name in ("place", "office", "note"):
         if not isinstance(row[name], str) or not row[name].strip():
@@ -219,10 +248,11 @@ def _guarded(label: str, material: list[str], step: Callable[[], None]) -> None:
         material.append(f"cannot use {label}: unexpected content ({type(exc).__name__}: {exc})")
 
 
-def _source_names(root: Path) -> list[str]:
+def _source_names(root: Path, side: str, material: list[str]) -> list[str]:
     try:
         return sorted(p.name for p in (root / "data" / "sources").iterdir() if p.is_dir())
-    except OSError:
+    except OSError as exc:
+        material.append(f"cannot list {side} data/sources: {exc}")
         return []
 
 
@@ -256,7 +286,7 @@ def _only_live(source: str, pages: Mapping[str, Mapping[str, Any]], info: list[s
 
 
 def _compare_pages(live: Path, offline: Path, material: list[str], info: list[str]) -> None:
-    offline_names = _source_names(offline)
+    offline_names = _source_names(offline, "offline", material)
     for source in offline_names:
         fixture = _pages(offline, "offline", source, material)
         got = _pages(live, "live", source, material)
@@ -278,7 +308,7 @@ def _compare_pages(live: Path, offline: Path, material: list[str], info: list[st
                     f"(live {now['units_seen']}, fixtures {page['units_seen']})"
                 )
         _only_live(source, {k: v for k, v in got.items() if k not in fixture}, info)
-    for source in _source_names(live):
+    for source in _source_names(live, "live", material):
         if source not in offline_names:
             _only_live(source, _pages(live, "live", source, material) or {}, info)
 
@@ -355,11 +385,15 @@ def _same_contest(
     )
 
 
-def _reviewed_rows(entry: Mapping[str, Any], reviewed: Sequence[Mapping[str, Any]]) -> list[Any]:
+def _reviewed_rows(
+    entry: Mapping[str, Any], reviewed: Sequence[Mapping[str, Any]], used: set[int]
+) -> list[tuple[int, Mapping[str, Any]]]:
+    """The not yet used reviewed rows that name ``entry`` (one row links one entry)."""
     return [
-        row
-        for row in reviewed
-        if row["place"] == entry["place"]
+        (n, row)
+        for n, row in enumerate(reviewed)
+        if n not in used
+        and row["place"] == entry["place"]
         and row["office"] == entry["office"]
         and row["round"] == entry["round"]
         and row.get("jurisdiction") == entry.get("jurisdiction")
@@ -387,10 +421,17 @@ def _compare_contests(
         months = feed["window"]["months"]
         window = (_span(months[0])[0], _span(months[-1])[1])
         cards = [card for month in feed["months"].values() for card in month]
+        used: set[int] = set()
         for entry in entries:
             if entry["level"] != "national":
                 continue
-            wanted = _span(str(entry["date"]))
+            try:
+                wanted = _span(str(entry["date"]))
+            except ValueError as exc:
+                material.append(
+                    f"cannot read expected entry {entry['place']} {entry['office']}: {exc}"
+                )
+                continue
             if not _overlaps(wanted, window):
                 continue
             pairs = [
@@ -401,15 +442,16 @@ def _compare_contests(
             ]
             if any(_overlaps(_card_span(card), wanted) for card, _ in pairs):
                 continue
-            rows = _reviewed_rows(entry, reviewed)
+            rows = _reviewed_rows(entry, reviewed, used)
             linked = [
-                (card, child, row)
+                (card, child, n, row)
                 for card, child in pairs
-                for row in rows
+                for n, row in rows
                 if _overlaps(_card_span(card), _span(str(row["to"])))
             ]
             if linked:
-                card, child, row = linked[0]
+                card, child, n, row = linked[0]
+                used.add(n)
                 wrote = "; ".join(child["rescheduled_from"]) or "no old date"
                 info.append(
                     f"rescheduled from {row['from']} to {card['date']} (reviewed): "
@@ -508,8 +550,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(str(exc), file=sys.stderr)
         return 2
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    folder: Path = args.out / stamp
-    folder.mkdir(parents=True)
+    folder: Path = args.out.resolve() / stamp  # the children run with cwd = the repository root
+    try:
+        folder.mkdir(parents=True)
+    except FileExistsError:
+        print(f"{folder} already exists (two runs in one second); run again", file=sys.stderr)
+        return 1
     offline_repo, live_repo = folder / "repo-offline", folder / "repo-live"
     offline_repo.mkdir()
     live_repo.mkdir()
