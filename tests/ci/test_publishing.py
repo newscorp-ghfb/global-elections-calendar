@@ -944,3 +944,14 @@ def test_a_bad_ca_bundle_crashes_the_command(
     with pytest.raises(TrustBundleError):
         command.run(repos.clone)
     assert snapshot(repos) == unchanged(repos)
+
+
+def test_a_status_stamp_with_a_trailing_newline_is_refused_and_commits_nothing(
+    tmp_path: Path,
+) -> None:
+    """Python's ``$`` matches before a final newline; the schema's (ECMA-262) does not (final review F1)."""
+    repos, root = make(tmp_path, outcome="validation_failed")
+    edit_json(root, "status.json", lambda s: s.update(attempt_at=s["attempt_at"] + "\n"))
+    result = run_publish(root, repos)
+    assert result.outcome == "refused"
+    assert git(repos.origin, "rev-parse", "main") == repos.head

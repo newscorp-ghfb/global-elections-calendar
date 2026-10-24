@@ -2,6 +2,7 @@
 
 import copy
 import json
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta, timezone
 from functools import cache
 from pathlib import Path
@@ -736,3 +737,85 @@ def test_the_schema_accepts_the_republication_field() -> None:
         problems = check(doc)
         assert problems, bad
         assert problems[0].startswith("schema: /republished_from_sha256"), problems
+
+
+def _schema_ends(doc: Any) -> bool:
+    return any(p.startswith("schema: ") for p in check(doc))
+
+
+def test_a_schema_pattern_reads_dollar_as_the_end_of_input() -> None:
+    """ECMA-262 ``$`` without ``m`` is the end of input; Python's also matches before a final ``\\n``."""
+    assert check(feed_doc()) == ()
+    doc = feed_doc()
+    doc["current_month"] += "\n"
+    assert _schema_ends(doc)
+    doc = feed_doc()
+    first_card(doc)["group_id"] += "\n"
+    assert _schema_ends(doc)
+    doc = feed_doc()
+    doc["window"]["months"][0] += "\n"
+    assert _schema_ends(doc)
+    doc = feed_doc()
+    month = next(iter(doc["months"]))
+    doc["months"][month + "\n"] = doc["months"].pop(month)  # a propertyNames pattern
+    assert _schema_ends(doc)
+
+
+def test_a_status_pattern_reads_dollar_as_the_end_of_input() -> None:
+    from tests.feed.test_status import doc as status_doc
+
+    assert validate.validate_status(json.dumps(status_doc()).encode()) == ()
+    for field in ("attempt_id", "attempt_at", "code_sha"):
+        bad = status_doc()
+        bad[field] += "\n"
+        problems = validate.validate_status(json.dumps(bad).encode())
+        assert len(problems) == 1 and problems[0].startswith(f"schema: /{field}: "), problems
+        assert "does not match" in problems[0]
+    wrong_type = status_doc()
+    wrong_type["attempt_id"] = 5  # a pattern is checked on strings only; the type is the one problem
+    (problem,) = validate.validate_status(json.dumps(wrong_type).encode())
+    assert "is not of type 'string'" in problem
+
+
+def test_a_pattern_message_names_the_pattern_as_written() -> None:
+    doc = feed_doc()
+    doc["current_month"] = "2026-1"
+    (problem,) = [p for p in check(doc) if p.startswith("schema: /current_month")]
+    assert problem == "schema: /current_month: '2026-1' does not match '^[0-9]{4}-[0-9]{2}$'"
+
+
+def test_every_schema_pattern_ends_in_one_unescaped_dollar() -> None:
+    """The translation of ``$`` to ``\\Z`` is complete only if no pattern holds another bare ``$``."""
+
+    def patterns(node: Any) -> Iterator[str]:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key == "pattern" and isinstance(value, str):
+                    yield value
+                else:
+                    yield from patterns(value)
+        elif isinstance(node, list):
+            for value in node:
+                yield from patterns(value)
+
+    found = []
+    for path in (validate.FEED_SCHEMA, validate.STATUS_SCHEMA):
+        found += list(patterns(json.loads(path.read_text(encoding="utf-8"))))
+    assert len(found) == 13
+    for pattern in found:
+        assert pattern.endswith("$") and not pattern.endswith("\\$"), pattern
+        body = pattern[:-1]
+        bare, in_class, i = 0, False, 0
+        while i < len(body):
+            char = body[i]
+            if char == "\\":
+                i += 2
+                continue
+            if char == "[":
+                in_class = True
+            elif char == "]":
+                in_class = False
+            elif char == "$" and not in_class:
+                bare += 1
+            i += 1
+        assert bare == 0, pattern
