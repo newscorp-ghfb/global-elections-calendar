@@ -18,7 +18,7 @@ from functools import cache
 from pathlib import Path
 from typing import Any, Final, get_args
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, ValidationError, validators
 
 from elections_calendar.model import LegacyStatus, _utc_iso
 
@@ -50,8 +50,28 @@ class ServedCheck:
 
 
 @cache
+def _ecma(pattern: str) -> re.Pattern[str]:
+    """``pattern`` as ECMA-262 reads it without the ``m`` flag: a final unescaped ``$`` is the end.
+
+    Python's ``$`` also matches just before a final newline, so it is read as ``\\Z``. A test keeps
+    every schema pattern to one ``$``, at the end.
+    """
+    if pattern.endswith("$") and not pattern.endswith("\\$"):
+        return re.compile(pattern[:-1] + "\\Z")
+    return re.compile(pattern)
+
+
+def _pattern(validator: Any, pattern: str, instance: Any, schema: Any) -> Iterator[Any]:
+    if isinstance(instance, str) and _ecma(pattern).search(instance) is None:
+        yield ValidationError(f"{instance!r} does not match {pattern!r}")
+
+
+_SchemaValidator: Final = validators.extend(Draft202012Validator, {"pattern": _pattern})
+
+
+@cache
 def _validator(path: Path) -> Draft202012Validator:
-    return Draft202012Validator(json.loads(path.read_text(encoding="utf-8")))
+    return _SchemaValidator(json.loads(path.read_text(encoding="utf-8")))
 
 
 def _load(data: bytes) -> tuple[bool, Any]:
