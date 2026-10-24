@@ -517,7 +517,10 @@ def build_feed(
 
 # --- status.json and HEALTH.md (spec §5.8, §11.6; P96, P104; S4-T19, NM-T04) -------------------
 
-AttemptOutcome = Literal["published", "validation_failed"]  # Plan 5 adds the other three
+# status-v1's Outcome also lists "superseded" and "paused": the publish job reports them in its
+# summary and verdict but never writes them to a status.json (P120). "republished" is written by
+# scripts/republish.py only.
+AttemptOutcome = Literal["published", "validation_failed", "republished"]
 _RUN_ID: Final = re.compile(r"[0-9]+")
 _TRIGGER: Final = re.compile(r"[a-z_]+")
 _CODE_SHA: Final = re.compile(r"[0-9a-f]{40}")

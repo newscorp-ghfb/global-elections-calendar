@@ -236,6 +236,60 @@ The first baselines are not written by a publish job. The user approves one arti
 - It refuses when `--repo` (default: the current directory) already has a `data/sources`: the
   first baselines are adopted once.
 
+## Rollback
+
+To go back to the pre-v2 code (spec 15 step 7; P122, P123), run these steps from a checkout of
+`main`. Every write to `main` needs the user's go-ahead at the time; 5c's runbook holds the
+`MERGE_APPROVED` steps. `scripts/republish.py` writes files and never commits.
+
+1. **Commit `PAUSE_PUBLISHING`.** v2's workflow reads it, so v2's scheduled and dispatched runs
+   stop scraping and publishing. A v2 run already in flight is `superseded` at its next push.
+2. **Republish a recorded feed:**
+
+   ```powershell
+   .venv\Scripts\python.exe -m scripts.republish --from-commit <40-hex SHA>
+   ```
+
+   It prints `republished <commit> (<original sha256>) as <new sha256>`. Review
+   `elections.json` and `status.json`, then commit and push them (spec 15 step 7.2).
+3. **Restore the pre-v2 tree and commit it:**
+
+   ```powershell
+   git restore --source=pre-v2 --staged --worktree -- . ':(exclude)elections.json' ':(exclude)status.json' ':(exclude)HEALTH.md' ':(exclude)data/sources' ':(exclude)RELEASES.md' ':(exclude).gitattributes'
+   git commit -m "Roll back to the pre-v2 code"
+   ```
+
+   The excludes are `elections_calendar.ci.recovery.ROLLBACK_EXCLUDES`. `PAUSE_PUBLISHING` is not
+   excluded: `pre-v2` has none, so this commit removes it and brings back v1's workflow. **From
+   this commit on, v1 is the writer:**
+   - v1's workflow has no `push` trigger, so the push itself starts nothing;
+   - its next 00:00 UTC run, or a dispatch, publishes v1's feed (spec 15: "accepted as newer");
+   - it never reads `PAUSE_PUBLISHING` and commits only `elections.json`;
+   - `status.json` stays the republication's, so v2 clients then show "current health can't be
+     confirmed for this data" (spec 12.1).
+
+   Check that the served digest still equals the republished one before 00:00 UTC.
+4. **Only if v1 must be held back too:** before step 3, disable the workflow on GitHub
+   (`gh workflow disable update-elections.yml`), and enable it again to resume. That state is
+   outside the repository, so no commit changes it. Disabling stops new runs only: a run already
+   in progress goes on, and its publish job is `superseded` because step 1's commit moved `main`.
+   `gh run cancel <id>` stops it sooner. The drill on GitHub is 5c's.
+
+**Recovery pairs.** A pair is a `main` commit and the SHA-256 of its `elections.json` blob
+(`git show <commit>:elections.json`). `republish.py` restores only a commit that is in `main`'s
+history (the checkout must be on branch `main`) and has a pair, recorded in one of two formats:
+
+- a row under "Recovery pairs" in `RELEASES.md`, written by hand with the user's approval:
+  `| Name | <40-hex commit> | <64-hex digest> | Checked |`, each hash optionally in backticks.
+  This is the only way to record the `pre-v2` feed, whose commit has no `status.json`;
+- otherwise, the `serving_feed_sha256` in that commit's own `status.json`.
+
+A row decides when there is one. The blob must hash to the digest, and its format must be a v2 feed
+(`schema_version` exactly 2) or a v1 feed (no `schema_version`) that passes the format's checks.
+The republished file is the original with `published_at` set to now and `republished_from_sha256`
+(the original's digest) added; `status.json` records outcome `republished`. A missing or altered
+pair, an abbreviated SHA or another format exits 1 with the reason and writes nothing.
+
 ## `out/`
 
 | File | When | What it is |
