@@ -539,6 +539,14 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _attempt(cmd: Sequence[str], *, limit_s: float, log: Path) -> tuple[int | None, str | None]:
+    """``run_bounded`` as (code, failure text): a run that raises must still get its report."""
+    try:
+        return run_bounded(cmd, limit_s=limit_s, cwd=ROOT, log=log), None
+    except (RuntimeError, OSError) as exc:  # not BaseException: an interrupt propagates
+        return None, f"{type(exc).__name__}: {exc}"
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     try:
         args = _parser().parse_args(argv)
@@ -574,12 +582,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--repo",
         str(offline_repo),
     ]
-    offline_code = run_bounded(
-        offline_cmd, limit_s=OFFLINE_LIMIT_S, cwd=ROOT, log=folder / "offline.log"
+    offline_code, offline_failure = _attempt(
+        offline_cmd, limit_s=OFFLINE_LIMIT_S, log=folder / "offline.log"
     )
     if offline_code != 0:
         how = (
-            f"was killed at {OFFLINE_LIMIT_S} s"
+            f"failed: {offline_failure}"
+            if offline_failure
+            else f"was killed at {OFFLINE_LIMIT_S} s"
             if offline_code is None
             else f"exited with code {offline_code}"
         )
@@ -600,11 +610,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         str(live_repo),
     ]
     started = time.monotonic()
-    live_code = run_bounded(live_cmd, limit_s=LIMIT_S, cwd=ROOT, log=folder / "live.log")
+    live_code, live_failure = _attempt(live_cmd, limit_s=LIMIT_S, log=folder / "live.log")
     elapsed = time.monotonic() - started
 
     material, info = compare(folder / "live", folder / "offline", EXPECTED, reviewed)
-    if live_code is None:
+    if live_failure:
+        material.insert(0, f"the live run failed: {live_failure}")
+    elif live_code is None:
         material.insert(0, f"the live run was killed at {LIMIT_S} s")
     elif live_code != 0:
         material.insert(0, f"the live run exited with code {live_code}")

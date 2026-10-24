@@ -961,5 +961,41 @@ def test_a_child_that_survives_the_kill_is_reported_not_waited_for(
         live_check._stop(Stubborn())  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize("side", ["offline", "live"])
+@pytest.mark.parametrize(
+    "error",
+    [
+        RuntimeError("kill_tree failed (x); process 1 was killed, but its children may remain"),
+        OSError("no such file"),
+    ],
+    ids=["RuntimeError", "OSError"],
+)
+def test_a_run_that_raises_still_writes_the_report(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, side: str, error: Exception
+) -> None:
+    class Raising(Fake):
+        def __call__(
+            self, cmd: Sequence[str], *, limit_s: float, cwd: Path, log: Path
+        ) -> int | None:
+            if ("elections_calendar" in cmd) == (side == "offline"):
+                self.calls.append((list(cmd), limit_s, cwd, log))
+                raise error
+            return super().__call__(cmd, limit_s=limit_s, cwd=cwd, log=log)
+
+    fake = Raising(tmp_path)
+    monkeypatch.setattr(live_check, "run_bounded", fake)
+    out = tmp_path / "out"
+    assert live_check.main(["--out", str(out)]) == 1
+    text = (_stamp_dir(out) / "live_check.md").read_text(encoding="utf-8")
+    line = f"the {side} run failed: {type(error).__name__}: {error}"
+    if side == "offline":
+        assert f"{line}; the live run was not started" in text
+        assert not any("scraper.py" in cmd for cmd, *_ in fake.calls)
+    else:
+        assert f"- {line}\n" in text
+        assert "Information" in text
+        assert "elapsed:" in text
+
+
 def test_dry_run_fits_the_live_check_limit() -> None:
     assert pipeline.DRY_RUN_SCRAPE_DEADLINE_S + 5 + 2 + 60 <= live_check.LIMIT_S
