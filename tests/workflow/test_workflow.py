@@ -95,7 +95,7 @@ def test_permissions_are_least() -> None:
     assert jobs()["publish"]["permissions"] == {"contents": "write"}
     assert set(jobs()) == {"gates", "scrape", "publish", "verdict"}
     # the Scrape step's own `secrets.token_hex` is Python's module, not the secrets context
-    assert not re.search(r"\$\{\{[^}]*secrets", TEXT)
+    assert not re.search(r"\$\{\{[^}]*\bsecrets\b", TEXT)
     assert "secrets:" not in TEXT
     assert "GITHUB_TOKEN" not in TEXT
 

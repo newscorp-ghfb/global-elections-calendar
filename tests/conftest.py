@@ -18,7 +18,7 @@ def _skipped_under_ci(session: pytest.Session) -> int:
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    if _skipped_under_ci(session):
+    if exitstatus == pytest.ExitCode.OK and _skipped_under_ci(session):
         session.exitstatus = pytest.ExitCode.TESTS_FAILED
     path = os.environ.get("GITHUB_STEP_SUMMARY")
     if path:
