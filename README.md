@@ -48,6 +48,63 @@ Run from the repository root. All four must pass before a commit.
 mypy (strict) and ruff are configured in `pyproject.toml`; import layering
 is in `importlinter.ini`. `ruff format` is not a gate.
 
+**RT-01, the gates fail on purpose:** `.venv/Scripts/python.exe -m scripts.prove_gates` extracts
+`git archive HEAD` into a temporary directory, adds one deliberate violation each for mypy, ruff
+and import-linter, and checks that each gate fails with its expected message (about 2 minutes;
+it proves the committed tree, and the CI gates job runs it as its last step).
+
+## CI
+
+`.github/workflows/update-elections.yml`. The workflow holds no logic: every decision is a
+function in `elections_calendar.ci` with a test, and the YAML only checks out, installs, moves
+the artifact and calls `python -m elections_calendar.ci <command>` or `scraper.py`. It first runs
+on GitHub in Plan 5c; until then its structure is proven offline by `tests/workflow/`.
+
+**Triggers (spec 11.1):**
+
+| Trigger | What runs | Can it publish? |
+|---|---|---|
+| `push` to any branch | `gates`, then `verdict` ("gates only") | no |
+| `schedule` (00:00 UTC daily) | all four jobs | yes, on `main` |
+| `workflow_dispatch` on `main`, `publish: true` | all four jobs | yes |
+| `workflow_dispatch` otherwise (a branch, or `publish: false`) | `gates`, `scrape`, `verdict` | no |
+
+**The four jobs:**
+
+- `gates` (read-only): installs the dev lock and Chromium, then runs pytest (with `CI=true`, so a
+  skipped test fails the session), mypy, ruff, import-linter and `scripts.prove_gates`.
+- `scrape` (read-only): reads the switch files, then (unless paused) runs
+  `scraper.py --live --out out` inside `::stop-commands::<random token>` so that page text in a log
+  cannot run a workflow command, writes the step summary, and uploads `out/` as the artifact
+  `generation` (kept 14 days, uploaded even after a crash; it holds `rejected/pages/`, the raw
+  bytes of invalid pages, up to 50 MiB).
+- `publish` (`contents: write`, its own concurrency group `publish-elections`, never cancelled):
+  only on `main` and only for the schedule or a dispatch with `publish: true`. It re-checks the
+  artifact (nothing outside the allowlist is written) and commits only `elections.json`,
+  `status.json`, `HEALTH.md` and `data/sources/**`, pushes, and polls the raw URL for up to 10
+  minutes to see the new digest served.
+- `verdict` (read-only, always runs): installs nothing; reads the other jobs' results and outputs
+  and the artifact's `verdict.json`, and fails the run unless the day is green.
+
+**Verdict headlines** (green unless marked red): `gates only`, `paused`,
+`published` (served `ok`, data green), `not published: healthy`; red: `gates failed`,
+`scrape failed`, `artifact incomplete`, `dry-run artifact`, `verdict.json is malformed`,
+`validation failed`, `validation failed (not published)`, `superseded`, `served_mismatch`,
+`git failed`, `artifact refused`, `publish failed`, `publish ran while paused`,
+`publish ran outside its context`, `publish disagrees with verdict.json`,
+`published with open warnings or errors`, `not published: open warnings or errors`,
+`alert test`, `unexpected jobs on a push`, and `unknown state: <NAME>` for any value outside the
+vocabularies (a missing or unknown state is never green).
+
+**A `superseded` day** (`main` moved during the run, so nothing was committed) is recovered by a
+**new** `workflow_dispatch` on `main` with `publish: true`. Never use "Re-run jobs": it keeps the
+run's original commit, so it is superseded again (P5A-06).
+
+**Switch files** (at the repository root; present means on, whatever they hold, a dangling link
+included): `PAUSE_PUBLISHING` skips the scrape and the publish, and the day's verdict is green
+`paused`; `ALERT_TEST` turns the run red (`alert test`) after every other check, to prove that
+the failure email reaches its readers.
+
 ## Updating dependencies
 
 Edit `requirements.in` (runtime) or `requirements-dev.in` (development),
