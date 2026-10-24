@@ -1,0 +1,12 @@
+# Reviewed reschedules for scripts/live_check.py (Plan 5a P125, R2-02).
+# A national contest of 2026-10-16.yaml that the live feed shows on another date is a material
+# "possible reschedule" line until the user has reviewed it. Only then is a row added here.
+# A row has exactly these keys, and one row links one expected entry:
+#   place:        the entry's place, e.g. "iso:BR"
+#   office:       the entry's office
+#   round:        the entry's round (an integer, or null)
+#   jurisdiction: only when the entry names one
+#   from:         the entry's date, as written in 2026-10-16.yaml
+#   to:           the new date: YYYY-MM-DD, YYYY-MM or YYYY-MM-DD to YYYY-MM-DD (quoted)
+#   note:         who reviewed it, and what they saw (non-empty text)
+[]
