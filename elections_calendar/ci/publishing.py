@@ -149,13 +149,13 @@ def publish(
         if git.run("rev-parse", "FETCH_HEAD") != code_sha:
             return _stopped("superseded", "main moved during the run")
         commit = _commit(artifact, git)
-        pushed = git.push(_PUSH_TO_MAIN)
+        pushed, reason = git.push(_PUSH_TO_MAIN)
     except GitError as exc:
         return _stopped("git_failed", str(exc))
     if pushed == "rejected":
         return _stopped("superseded", "main moved before the push")
     if pushed == "failed":
-        return _stopped("git_failed", "git push failed")
+        return _stopped("git_failed", f"git push failed: {reason}")
     served = "not_checked"
     if artifact.outcome == "published":
         served = served_check(

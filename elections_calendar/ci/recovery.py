@@ -32,6 +32,7 @@ _COMMIT: Final = re.compile(r"[0-9a-f]{40}")
 _DIGEST: Final = re.compile(r"[0-9a-f]{64}")
 _PAIRS_HEADING: Final = "## Recovery pairs"
 _SEPARATOR: Final = re.compile(r":?-+:?")
+_PAIRS_HEADER: Final = ("Name", "Commit", "`elections.json` SHA-256", "Checked")
 
 
 class RecoveryError(ValueError):
@@ -67,7 +68,12 @@ def releases_pairs(text: str) -> dict[str, str]:
         if not in_section or not line.startswith("|"):
             continue
         cells = [c.strip() for c in line.removeprefix("|").removesuffix("|").split("|")]
-        if not seen_header:  # the table's header row
+        if not seen_header:  # the table's header row, which must be there
+            if tuple(cells) != _PAIRS_HEADER:
+                raise RecoveryError(
+                    "RELEASES.md: the recovery pairs table has no header row "
+                    f"({' | '.join(_PAIRS_HEADER)})"
+                )
             seen_header = True
             continue
         if all(_SEPARATOR.fullmatch(c) for c in cells):
@@ -142,7 +148,10 @@ def republished_feed(original: bytes, *, now: datetime) -> bytes:
         raise RecoveryError("the feed is not a JSON object")
     doc["published_at"] = _utc_iso(now)
     doc["republished_from_sha256"] = hashlib.sha256(original).hexdigest()
-    new = (json.dumps(doc, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
+    try:
+        new = (json.dumps(doc, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
+    except UnicodeEncodeError:  # a lone surrogate: not text that can be written as UTF-8
+        raise RecoveryError("the feed holds a lone surrogate; it is not UTF-8 text") from None
     problems = republished_problems(new, wall_clock=now)
     if problems:
         raise RecoveryError(f"the republished feed is invalid: {problems[0]}")

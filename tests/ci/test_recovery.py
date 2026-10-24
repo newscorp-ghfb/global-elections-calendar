@@ -31,6 +31,7 @@ from elections_calendar.ci.recovery import (
 )
 from elections_calendar.ci.switches import switches
 from elections_calendar.fetch import Deadline
+from elections_calendar.publish import write_atomic
 from elections_calendar.validate import (
     legacy_feed_problems,
     republished_problems,
@@ -879,3 +880,120 @@ def test_an_interleaved_publisher_is_superseded(tmp_path: Path) -> None:
     assert git_bytes(repos.origin, "cat-file", "blob", "main:elections.json") == feed
     assert git(runner, "rev-parse", "HEAD") == repos.head
     assert git(runner, "status", "--porcelain") == ""
+
+
+# --- the final fix wave (final review T6-M3, T8-M1 to T8-M4) ------------------------------------
+
+
+def test_blob_is_none_only_for_a_path_that_is_not_there(tmp_path: Path) -> None:
+    repos = origin_and_clone(tmp_path)
+    runner = Git(repos.clone)
+    assert runner.blob(repos.head, "elections.json") == V1_FEED.read_bytes()
+    assert runner.blob(repos.head, "no/such/file.json") is None
+    with pytest.raises(GitError, match="git ls-tree failed"):
+        runner.blob("0" * 40, "elections.json")  # an unknown commit is not "absent"
+    with pytest.raises(GitError, match="git ls-tree failed"):
+        Git(tmp_path / "not-a-repository").blob(repos.head, "elections.json")
+
+
+def test_blob_raises_when_the_blob_cannot_be_read(tmp_path: Path) -> None:
+    repos = origin_and_clone(tmp_path, files={"data/x.json": b"{}"})
+    runner = Git(repos.clone)
+    # A tree is listed, but is not a blob: cat-file fails, which is an error, not "absent".
+    with pytest.raises(GitError, match="git cat-file failed"):
+        runner.blob(repos.head, "data")
+
+
+def test_a_deleted_or_changed_pairs_header_is_refused() -> None:
+    good = pair_row("1" * 40, "a" * 64)
+    no_header = TEMPLATE.replace("| Name | Commit | `elections.json` SHA-256 | Checked |\n", "")
+    assert no_header != TEMPLATE
+    with pytest.raises(RecoveryError, match="has no header row"):
+        releases_pairs(no_header + good)
+    renamed = TEMPLATE.replace("| Name |", "| Label |")
+    with pytest.raises(RecoveryError, match="has no header row"):
+        releases_pairs(renamed + good)
+    assert releases_pairs(TEMPLATE + good) == {"1" * 40: "a" * 64}
+
+
+def test_an_unknown_sha_on_a_side_branch_is_unknown_before_it_is_off_main(tmp_path: Path) -> None:
+    """Check 2 (the commit exists) runs before check 3 (the branch is main)."""
+    repos = origin_and_clone(tmp_path)
+    git(repos.clone, "checkout", "-q", "-b", "feat/x")
+    runner = Git(repos.clone)
+    with pytest.raises(RecoveryError, match="is not in this repository"):
+        recorded_pair(runner, "9" * 40, "")
+    with pytest.raises(RecoveryError, match="republish runs on branch main, not feat/x"):
+        recorded_pair(runner, repos.head, "")
+
+
+FOREIGN = ['"\\ud800"', "NaN", "Infinity", "-Infinity"]
+
+
+@pytest.mark.parametrize("tail", FOREIGN, ids=["lone surrogate", "NaN", "Infinity", "-Infinity"])
+def test_a_recorded_feed_json_cannot_hold_is_refused_not_a_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], tail: str
+) -> None:
+    repos = origin_and_clone(tmp_path)
+    clone = repos.clone
+    doc = dict(V1_DOC)
+    doc["errors"] = ["@@"]
+    raw = (json.dumps(doc, ensure_ascii=False, separators=(",", ":")) + "\n").replace('"@@"', tail)
+    (clone / "elections.json").write_bytes(raw.encode("utf-8"))
+    recorded = commit_all(clone, "a feed json cannot hold")
+    (clone / "RELEASES.md").write_text(
+        releases(pair_row(recorded, sha(raw.encode("utf-8")))), encoding="utf-8", newline=""
+    )
+    before = state(clone)
+    with pytest.raises(RecoveryError):
+        republish(Git(clone), recorded, now=LATER, releases_text=releases(
+            pair_row(recorded, sha(raw.encode("utf-8")))
+        ), code_sha=CODE)
+    code, out, err = run_script(clone, recorded, capsys)
+    assert (code, out) == (1, "")
+    assert err.strip() and "Traceback" not in err
+    assert state(clone) == before
+
+
+def test_the_script_names_what_it_replaced_when_a_write_fails(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    p = published(tmp_path)
+    clone = p.repos.clone
+    real = write_atomic
+    calls: list[str] = []
+
+    def second_fails(path: Path, data: bytes) -> None:
+        calls.append(path.name)
+        if len(calls) == 2:
+            raise PermissionError("status.json is locked")
+        real(path, data)
+
+    monkeypatch.setattr(republish_script, "write_atomic", second_fails)
+    code, out, err = run_script(clone, p.commit, capsys)
+    assert (code, out) == (1, "")
+    assert err == (
+        "cannot write status.json: status.json is locked (elections.json already replaced); "
+        "run again\n"
+    )
+    assert calls == ["elections.json", "status.json"]
+
+    calls.clear()
+
+    def first_fails(path: Path, data: bytes) -> None:
+        raise PermissionError("elections.json is locked")
+
+    monkeypatch.setattr(republish_script, "write_atomic", first_fails)
+    code, out, err = run_script(clone, p.commit, capsys)
+    assert code == 1
+    assert err == "cannot write elections.json: elections.json is locked (nothing replaced); run again\n"
+
+
+def test_an_unreadable_releases_md_is_an_exit_1_not_a_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repos = origin_and_clone(tmp_path)
+    (repos.clone / "RELEASES.md").mkdir()  # exists, but cannot be read as a file
+    code, out, err = run_script(repos.clone, repos.head, capsys)
+    assert (code, out) == (1, "")
+    assert err.strip() and "Traceback" not in err

@@ -39,6 +39,7 @@ GOOD_OUTCOMES: Final = ("ok", "valid_empty")
 LOG_TAIL_LINES: Final = 40
 _REVIEWED_NAME: Final = "reviewed_reschedules.yaml"
 _REVIEWED_KEYS: Final = frozenset({"place", "office", "round", "from", "to", "note"})
+_TASKKILL_NOT_FOUND: Final = 128  # the process is already gone
 _DATE_PART: Final = re.compile(r"[0-9]{4}-[0-9]{2}(-[0-9]{2})?")
 _DAY: Final = timedelta(days=1)
 _Span = tuple[date, date]  # first day, and the day after the last
@@ -48,18 +49,35 @@ _Span = tuple[date, date]  # first day, and the day after the last
 
 
 def kill_tree(process: subprocess.Popen[bytes]) -> None:
-    """Kill ``process`` and everything it started."""
+    """Kill ``process`` and everything it started; raises when that could not be done.
+
+    On Windows ``taskkill`` gets ``REAP_S`` seconds. Exit 128 ("not found") means the tree is
+    already gone; any other non-zero exit, or a timeout, raises ``RuntimeError``.
+    """
     if sys.platform == "win32":
-        subprocess.run(
-            ["taskkill", "/T", "/F", "/PID", str(process.pid)], capture_output=True, check=False
-        )
+        try:
+            done = subprocess.run(
+                ["taskkill", "/T", "/F", "/PID", str(process.pid)],
+                capture_output=True,
+                check=False,
+                timeout=REAP_S,
+            )
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(f"taskkill ran over {REAP_S} s") from None
+        if done.returncode not in (0, _TASKKILL_NOT_FOUND):
+            raise RuntimeError(f"taskkill exited with code {done.returncode}")
     else:
         with contextlib.suppress(ProcessLookupError):  # start_new_session: the pgid is the pid
             os.killpg(process.pid, signal.SIGKILL)
 
 
 def run_bounded(cmd: Sequence[str], *, limit_s: float, cwd: Path, log: Path) -> int | None:
-    """Run ``cmd`` in its own process group, output to ``log``; None when killed at the limit."""
+    """Run ``cmd`` in its own process group, output to ``log``; None when killed at the limit.
+
+    Raises ``RuntimeError`` when the kill failed (``kill_tree`` raised, so the child's own
+    children may remain) or the child outlived it by ``REAP_S`` seconds; the child itself has
+    been killed in the first case. An interrupt kills the run too, and propagates.
+    """
     with log.open("wb") as sink:
         if sys.platform == "win32":
             process = subprocess.Popen(
@@ -155,6 +173,13 @@ def _posix_alive(pid: int) -> bool:
 # --- dates -------------------------------------------------------------------------------------
 
 
+def _next_day(day: date) -> date:
+    try:
+        return day + _DAY
+    except OverflowError:  # 9999-12-31 has no next day
+        raise ValueError(f"{day} is the last day this check can read") from None
+
+
 def _span(text: str) -> _Span:
     """YYYY-MM-DD is a day, YYYY-MM a month, ``A to B`` runs from A through B."""
     if " to " in text:
@@ -169,7 +194,7 @@ def _span(text: str) -> _Span:
         start = date.fromisoformat(f"{text}-01")
         return start, date(start.year + (start.month == 12), start.month % 12 + 1, 1)
     day = date.fromisoformat(text)
-    return day, day + _DAY
+    return day, _next_day(day)
 
 
 def _overlaps(a: _Span, b: _Span) -> bool:
@@ -180,7 +205,7 @@ def _card_span(card: Mapping[str, Any]) -> _Span:
     if card["date_precision"] == "month":
         return _span(str(card["date"])[:7])
     start = date.fromisoformat(card["date"])
-    return start, date.fromisoformat(card.get("end_date") or card["date"]) + _DAY
+    return start, _next_day(date.fromisoformat(card.get("end_date") or card["date"]))
 
 
 # --- the reviewed reschedules ------------------------------------------------------------------
@@ -368,6 +393,12 @@ def _compare_verdict(live: Path, material: list[str], info: list[str]) -> None:
     _guarded("live verdict.json", material, read)
 
 
+def _entry_name(entry: Any) -> str:
+    if isinstance(entry, Mapping):
+        return f"{entry.get('place', '?')} {entry.get('office', '?')}"
+    return repr(entry)[:60]
+
+
 def _contest(entry: Mapping[str, Any]) -> str:
     rnd = "" if entry["round"] is None else f" round {entry['round']}"
     return f"{entry['place']} {entry['office']}{rnd} {entry['date']}"
@@ -423,14 +454,18 @@ def _compare_contests(
         cards = [card for month in feed["months"].values() for card in month]
         used: set[int] = set()
         for entry in entries:
-            if entry["level"] != "national":
-                continue
             try:
+                if not isinstance(entry, Mapping):
+                    raise ValueError("is not a mapping")
+                if entry["level"] != "national":
+                    continue
                 wanted = _span(str(entry["date"]))
+            except KeyError as exc:
+                name = _entry_name(entry)
+                material.append(f"cannot read expected entry {name}: missing key {exc}")
+                continue
             except ValueError as exc:
-                material.append(
-                    f"cannot read expected entry {entry['place']} {entry['office']}: {exc}"
-                )
+                material.append(f"cannot read expected entry {_entry_name(entry)}: {exc}")
                 continue
             if not _overlaps(wanted, window):
                 continue
@@ -547,6 +582,25 @@ def _attempt(cmd: Sequence[str], *, limit_s: float, log: Path) -> tuple[int | No
         return None, f"{type(exc).__name__}: {exc}"
 
 
+def _make_folders(out: Path, folder: Path, *repos: Path) -> str | None:
+    """Create the report folder and the two repository folders; the reason when that fails."""
+    for parent in (out, *out.parents):
+        if parent.exists() and not parent.is_dir():
+            return f"{parent} is not a directory"
+    target = folder
+    try:
+        folder.mkdir(parents=True)
+        for target in repos:
+            target.mkdir()
+    except FileExistsError:
+        if target is folder:
+            return f"{folder} already exists (two runs in one second); run again"
+        return f"cannot create {target}: it already exists"
+    except OSError as exc:
+        return f"cannot create {target}: {exc}"
+    return None
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     try:
         args = _parser().parse_args(argv)
@@ -559,14 +613,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     folder: Path = args.out.resolve() / stamp  # the children run with cwd = the repository root
-    try:
-        folder.mkdir(parents=True)
-    except FileExistsError:
-        print(f"{folder} already exists (two runs in one second); run again", file=sys.stderr)
-        return 1
     offline_repo, live_repo = folder / "repo-offline", folder / "repo-live"
-    offline_repo.mkdir()
-    live_repo.mkdir()
+    if (problem := _make_folders(args.out.resolve(), folder, offline_repo, live_repo)) is not None:
+        print(problem, file=sys.stderr)
+        return 1
     report = folder / "live_check.md"
 
     offline_cmd = [

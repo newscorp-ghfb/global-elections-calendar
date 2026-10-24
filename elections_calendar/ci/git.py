@@ -29,6 +29,13 @@ def _last_line(stderr: bytes) -> str:
     return lines[-1].strip()[:_STDERR_SHOWN] if lines else "no error output"
 
 
+def _reason(stderr: bytes) -> str:
+    """The last three non-empty lines of ``stderr`` on one line, capped."""
+    lines = [ln.strip() for ln in stderr.decode("utf-8", errors="replace").splitlines()]
+    kept = [ln for ln in lines if ln][-3:]
+    return " | ".join(kept)[:_STDERR_SHOWN] if kept else "no error output"
+
+
 @dataclass(frozen=True, slots=True)
 class Git:
     """The git of one repository. ``deadline`` is the publish stage's (P127)."""
@@ -80,21 +87,30 @@ class Git:
         return self._exec(*args).returncode == 0
 
     def blob(self, commit: str, path: str) -> bytes | None:
-        """The raw bytes of ``path`` at ``commit``, or None when it is not there."""
-        spec = f"{commit}:{path}"
-        if self._exec("cat-file", "-e", spec).returncode != 0:
+        """The raw bytes of ``path`` at ``commit``, or None when it is not there.
+
+        Absent means ``git ls-tree`` succeeded and listed nothing; any other failure raises.
+        """
+        listed = self._exec("ls-tree", "-z", commit, "--", path)
+        if listed.returncode != 0:
+            raise GitError(f"git ls-tree failed: {_last_line(listed.stderr)}")
+        if not listed.stdout:
             return None
-        done = self._exec("cat-file", "blob", spec)
+        done = self._exec("cat-file", "blob", f"{commit}:{path}")
         if done.returncode != 0:
             raise GitError(f"git cat-file failed: {_last_line(done.stderr)}")
         return done.stdout
 
-    def push(self, refspec: str) -> PushResult:
-        """Push to ``origin``: ``[rejected]`` is ``rejected``; ``[remote rejected]`` is not."""
+    def push(self, refspec: str) -> tuple[PushResult, str]:
+        """Push to ``origin``: ``[rejected]`` is ``rejected``; ``[remote rejected]`` is not.
+
+        The second item is git's reason (the tail of its stderr, capped) when the push ``failed``,
+        else ``""``. It is for the summary and the log, never for a job output.
+        """
         done = self._exec("push", "--porcelain", "origin", refspec)
         if done.returncode == 0:
-            return "pushed"
+            return "pushed", ""
         lines = done.stdout.decode("utf-8", errors="replace").splitlines()
         if any(line.startswith("!") and "[rejected]" in line for line in lines):
-            return "rejected"
-        return "failed"
+            return "rejected", ""
+        return "failed", _reason(done.stderr)

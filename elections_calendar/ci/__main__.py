@@ -117,7 +117,9 @@ def _publish(args: argparse.Namespace) -> int:
     summary = _env_path("GITHUB_STEP_SUMMARY")
     if summary is not None:
         head = f"## Publish: {result.outcome}, served {result.served}"
-        lines = [head, "", md_text(result.detail)]
+        lines = [head]
+        if result.detail != result.commit:  # a published run's detail is the commit: show it once
+            lines += ["", md_text(result.detail)]
         if result.commit is not None:
             lines += ["", f"Commit: `{result.commit}`"]
         append_summary(summary, "\n".join(lines) + "\n")

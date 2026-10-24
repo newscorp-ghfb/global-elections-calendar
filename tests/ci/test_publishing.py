@@ -696,7 +696,7 @@ class Racing(Git):
     origin: Path = Path()
     work: Path = Path()
 
-    def push(self, refspec: str) -> git_module.PushResult:
+    def push(self, refspec: str) -> tuple[git_module.PushResult, str]:
         push_competitor(self.origin, self.work)
         return Git.push(self, refspec)
 
@@ -955,3 +955,60 @@ def test_a_status_stamp_with_a_trailing_newline_is_refused_and_commits_nothing(
     result = run_publish(root, repos)
     assert result.outcome == "refused"
     assert git(repos.origin, "rev-parse", "main") == repos.head
+
+
+# --- the final fix wave (final review T6-M4, T6-M5) ---------------------------------------------
+
+
+def test_a_failed_push_keeps_gits_reason_in_the_summary_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repos = origin_and_clone(tmp_path)
+    root = fixture_artifact(tmp_path / "artifact", code_sha=repos.head)
+    hook = repos.origin / "hooks" / "pre-receive"
+    hook.write_bytes(b"#!/bin/sh\necho 'the vault is closed today' >&2\nexit 1\n")
+    hook.chmod(0o755)
+    command = Command(tmp_path, monkeypatch, root)
+    command.env("schedule", MAIN, "", repos.head)
+    assert command.run(repos.clone) == 0
+    assert command.output.read_text(encoding="utf-8") == "outcome=git_failed\nserved=not_checked\n"
+    text = command.summary.read_text(encoding="utf-8")
+    assert text.startswith("## Publish: git_failed, served not_checked\n")
+    assert md_text("git push failed: remote: the vault is closed today") in text
+    assert git(repos.origin, "rev-parse", "main") == repos.head
+
+
+def test_the_push_reason_is_the_tail_of_stderr_and_is_capped() -> None:
+    from elections_calendar.ci.git import _reason
+
+    assert _reason(b"") == "no error output"
+    assert _reason(b"\n  \n") == "no error output"
+    assert _reason(b"a\nb\nc\nd\n") == "b | c | d"
+    long = _reason(b"x" * 1000)
+    assert len(long) == git_module._STDERR_SHOWN
+
+
+def test_a_published_summary_shows_the_commit_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repos = origin_and_clone(tmp_path)
+    root = fixture_artifact(tmp_path / "artifact", code_sha=repos.head)
+    command = Command(tmp_path, monkeypatch, root)
+    command.env("schedule", MAIN, "", repos.head)
+    assert command.run(repos.clone) == 0
+    text = command.summary.read_text(encoding="utf-8")
+    assert text.count(git(repos.origin, "rev-parse", "main")) == 1
+    assert text.startswith("## Publish: published, served ok\n\nCommit: `")
+
+
+def test_an_invalid_sha_in_a_context_that_may_not_publish_is_not_allowed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repos = origin_and_clone(tmp_path)
+    root = fixture_artifact(tmp_path / "artifact", code_sha=repos.head)
+    command = Command(tmp_path, monkeypatch, root)
+    command.env("push", "refs/heads/feat/x", "", "abc123")
+    assert command.run(repos.clone) == 0
+    assert command.output.read_text(encoding="utf-8") == "outcome=not_allowed\nserved=not_checked\n"
+    assert "publishing is not allowed in this context" in command.summary.read_text(encoding="utf-8")
+    assert snapshot(repos) == unchanged(repos)
