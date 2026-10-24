@@ -42,9 +42,35 @@ def test_counts_go_to_the_step_summary(
 ) -> None:
     _inner(pytester)
     summary = tmp_path / "summary.md"
+    summary.write_text("earlier step\n", encoding="utf-8")
     monkeypatch.delenv("CI", raising=False)
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
     pytester.runpytest_subprocess("-p", "no:cacheprovider")
     assert summary.read_text(encoding="utf-8") == (
-        "pytest: 2 collected, 1 passed, 0 failed, 1 skipped, 0 xfailed\n"
+        "earlier step\npytest: 2 collected, 1 passed, 0 failed, 1 skipped, 0 xfailed\n"
     )
+
+
+def test_ci_without_a_skip_passes(
+    pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pytester.makeconftest(CONFTEST.read_text(encoding="utf-8"))
+    pytester.makepyfile("def test_passes():\n    pass\n")
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    monkeypatch.setenv("CI", "true")
+    assert pytester.runpytest_subprocess("-p", "no:cacheprovider").ret == pytest.ExitCode.OK
+
+
+def test_another_exit_status_is_kept_under_ci(
+    pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A skip plus an interrupted session stays INTERRUPTED (2); only a clean pass becomes 1."""
+    pytester.makeconftest(CONFTEST.read_text(encoding="utf-8"))
+    pytester.makepyfile(
+        INNER + "\ndef test_interrupts():\n    raise KeyboardInterrupt\n"
+    )
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    monkeypatch.setenv("CI", "true")
+    monkeypatch.setenv("PYTHONIOENCODING", "utf-8")  # the message holds a section sign
+    done = pytester.runpytest_subprocess("-p", "no:cacheprovider")
+    assert done.ret == pytest.ExitCode.INTERRUPTED

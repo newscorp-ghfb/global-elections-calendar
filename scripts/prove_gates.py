@@ -38,7 +38,7 @@ VIOLATIONS = (
         ("--config", "importlinter.ini"),
         "elections_calendar/model.py",
         "\nimport elections_calendar.pipeline  # RT-01\n",
-        "broken",
+        "elections_calendar.model -> elections_calendar.pipeline",
     ),
 )
 

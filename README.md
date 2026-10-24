@@ -50,7 +50,7 @@ is in `importlinter.ini`. `ruff format` is not a gate.
 
 **RT-01, the gates fail on purpose:** `.venv/Scripts/python.exe -m scripts.prove_gates` extracts
 `git archive HEAD` into a temporary directory, adds one deliberate violation each for mypy, ruff
-and import-linter, and checks that each gate fails with its expected message (about 2 minutes;
+and import-linter, and checks that each gate fails with its expected message (a few seconds;
 it proves the committed tree, and the CI gates job runs it as its last step).
 
 ## CI
@@ -90,7 +90,7 @@ on GitHub in Plan 5c; until then its structure is proven offline by `tests/workf
 `published` (served `ok`, data green), `not published: healthy`; red: `gates failed`,
 `scrape failed`, `artifact incomplete`, `dry-run artifact`, `verdict.json is malformed`,
 `validation failed`, `validation failed (not published)`, `superseded`, `served_mismatch`,
-`git failed`, `artifact refused`, `publish failed`, `publish ran while paused`,
+`git failed`, `artifact refused`, `publish refused its context`, `publish failed`, `publish ran while paused`,
 `publish ran outside its context`, `publish disagrees with verdict.json`,
 `published with open warnings or errors`, `not published: open warnings or errors`,
 `alert test`, `unexpected jobs on a push`, and `unknown state: <NAME>` for any value outside the

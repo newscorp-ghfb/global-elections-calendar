@@ -78,6 +78,10 @@ def test_the_violations_are_the_three_gates() -> None:
     assert [(v.gate, v.file, v.marker) for v in VIOLATIONS] == [
         ("mypy", "elections_calendar/text.py", "Incompatible types in assignment"),
         ("ruff", "elections_calendar/text.py", "F401"),
-        ("lint-imports", "elections_calendar/model.py", "broken"),
+        (
+            "lint-imports",
+            "elections_calendar/model.py",
+            "elections_calendar.model -> elections_calendar.pipeline",
+        ),
     ]
     assert prove_gates.main.__name__ == "main"
