@@ -17,6 +17,9 @@ const prevMonthLabel = $("prevMonthLabel");
 const nextMonthLabel = $("nextMonthLabel");
 const currentMonthLabel = $("currentMonthLabel");
 const statTotal      = $("statTotal");
+const statTotalLabel = $("statTotalLabel");
+const levelFilter    = $("levelFilter");
+const recordCount    = $("recordCount");
 const statHeld       = $("statHeld");
 const statHeldLabel  = $("statHeldLabel");
 const listTitle      = $("listTitle");
@@ -185,6 +188,7 @@ function renderCurrentMonth() {
   }
 
   // Update bento stats (always from full list, not filtered)
+  statTotalLabel.textContent = "Total Scheduled";
   statTotal.textContent = String(elections.length).padStart(2, "0");
   const heldCount = elections.filter(
     e => (e.status || "").toLowerCase() === "held"
@@ -237,6 +241,14 @@ function renderCurrentMonth() {
 
 export function renderLegacy(json, { pinned }) {
   pinnedCountries = pinned;
+  // The controls are shared with lib/render.js: take over what a v2 render left on them.
+  filterQuery = searchInput.value;
+  hide(levelFilter);
+  hide(recordCount);
+  [tabUpcoming, tabPast, tabAll].forEach(t => {
+    t.classList.toggle("active", t.dataset.filter === activeTab);
+    t.removeAttribute("aria-selected");
+  });
   // Support both old format (json.elections flat) and new format (json.months)
   if (json.months) {
     monthsData = json.months;
@@ -263,17 +275,26 @@ export function renderLegacy(json, { pinned }) {
 }
 
 // ── Event listeners ───────────────────────────────────────────
+// Act only while this renderer is the active one (popup.js sets body.dataset.renderer), since
+// lib/render.js listens on the same controls.
+function active() {
+  return document.body.dataset.renderer === "legacy";
+}
+
 searchInput.addEventListener("input", () => {
+  if (!active()) return;
   filterQuery = searchInput.value;
   renderCurrentMonth();
 });
 
 prevMonthBtn.addEventListener("click", () => {
+  if (!active()) return;
   const idx = availableMonths.indexOf(currentMonth);
   if (idx > 0) { currentMonth = availableMonths[idx - 1]; renderCurrentMonth(); }
 });
 
 nextMonthBtn.addEventListener("click", () => {
+  if (!active()) return;
   const idx = availableMonths.indexOf(currentMonth);
   if (idx < availableMonths.length - 1) {
     currentMonth = availableMonths[idx + 1];
@@ -283,6 +304,7 @@ nextMonthBtn.addEventListener("click", () => {
 
 [tabUpcoming, tabPast, tabAll].forEach(tab => {
   tab.addEventListener("click", () => {
+    if (!active()) return;
     [tabUpcoming, tabPast, tabAll].forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
     activeTab = tab.dataset.filter;

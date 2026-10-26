@@ -64,7 +64,7 @@
   <!-- Bento Stats -->
   <section class="bento" id="bentoStats">
     <div class="bento-card bento-primary">
-      <div class="bento-label">Total Scheduled</div>
+      <div class="bento-label" id="statTotalLabel">Total Scheduled</div>
       <div class="bento-value" id="statTotal">—</div>
     </div>
     <div class="bento-card bento-secondary">
@@ -76,6 +76,7 @@
   <!-- List header -->
   <div class="list-header">
     <span class="list-header-title" id="listTitle">Schedule</span>
+    <span class="record-count hidden" id="recordCount"></span>
     <button class="icon-btn filter-btn" id="filterToggle" title="Filter" aria-label="Filter">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
@@ -100,6 +101,11 @@
   <div class="filter-bar hidden" id="filterBar">
     <input class="search-input" id="searchInput" type="text"
            placeholder="Filter by country, type, or status…" aria-label="Filter elections" />
+    <select class="level-filter hidden" id="levelFilter" aria-label="Level">
+      <option value="all">All</option>
+      <option value="national">National + unclassified</option>
+      <option value="subnational">Subnational + unclassified</option>
+    </select>
   </div>
 
   <!-- States -->
