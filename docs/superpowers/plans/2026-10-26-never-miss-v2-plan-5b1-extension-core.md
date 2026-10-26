@@ -2058,6 +2058,13 @@ discovery's 5b-2 outline (Tasks 7–13) stands, with these additions.
 | R52 | `lib/legacy.js` still builds cards with `innerHTML` and `escHtml`, and opens feed links as they are. 5b-2 Task 9 removes both | Plan 5b-2 | S5-T18 on the legacy renderer | 5b-2 Task 9 |
 | R53 | The gates job's measured time (R41) includes `playwright install --with-deps chromium` and the extension suite | Plan 5c | the branch run's step times, in the ledger | 5c |
 | R54 | `help.html` explains the nine banner conditions (P133), the label texts (P134), the tabs (P135), the month rule (P138) and the Past tab's rename | Plan 5b-2 | S5-T20's doc check | 5b-2 Task 12 |
+| R55 | `options.js` (v1.0.2) still sends `FETCH_DATA`, which the v2 worker ignores. On a fresh install the options page lists no countries; after an upgrade it lists v1.0.2's last `elections_cache`, frozen for good, so a new country can never be pinned. The options page reads `elections_cache_v2` (or asks the worker with `CHECK`) and never relies on `FETCH_DATA` (Plan 5b-1 Task 4 ruling; final review I2) | Plan 5b-2 | an options-page test listing the v2 feed's countries on a fresh install and after an upgrade | 5b-2 Task 10 |
+| R56 | An acknowledgement whose `until` has passed still counts (grey, "(acknowledged until <past date>)"); `health.issues` never compares `until` with `now`. P133 and the spec are silent, so 5b-2 rules on it in a new P-row before changing what readers see (final review m3) | Plan 5b-2 | an `issues`/`bannerState` row with an expired `until` | 5b-2 pre-flight, with Task 12 |
+| R57 | With warnings the banner reads "7 warnings 7 warnings": P133 row 7's text equals its counts. Hide `#bannerCounts` when it equals the text (final review m4) | Plan 5b-2 | a popup assertion on the artifact pair | 5b-2 Task 12 |
+| R58 | `feedFormat` runs the legacy checks before the schema walk (decide on a single walk with R51's numbers). The 30 s deadline does not abort the fetch, and the size limit applies after buffering (an `AbortController` and a streamed cap) (Plan 5b-1 O5, M6) | Plan 5b-2 / 5c | R51's measurement; a hung response is aborted | 5b-2 Task 11 or 5c |
+| R59 | The two-line footer at narrow width and 200 % zoom (§12.7): the list's 96 px bottom padding assumes one line (Plan 5b-1 P5) | Plan 5b-2 | §12.7's narrow-width and zoom check | 5b-2 Task 11 |
+| R60 | When R52 removes `innerHTML`, `test_no_feed_text_through_inner_html_in_v2_code` covers `legacy.js` too and also rejects `DOMParser` and `createContextualFragment` (Plan 5b-1 P6) | Plan 5b-2 | that test | 5b-2 Task 9 |
+| R61 | The renderer × feed matrix includes legacy → v2 and v2 → legacy → v2 inside one open popup, and a format change through a successful check (a real rollback), not only the failed-check path (Plan 5b-1 Q2, Q5) | Plan 5b-2 | S5-T17 | 5b-2 (S5-T17's task) |
 
 ## After Plan 5b-1
 
@@ -2070,4 +2077,4 @@ discovery's 5b-2 outline (Tasks 7–13) stands, with these additions.
   - "Data as of" and "Checked";
   - tabs and counters that agree;
   - after a rollback, the legacy renderer and the mismatch banner.
-- **Next:** write Plan 5b-2 (discovery Tasks 7–13 plus R47–R52 and R54) against this code.
+- **Next:** write Plan 5b-2 (discovery Tasks 7–13 plus R47–R52 and R54–R61) against this code.
