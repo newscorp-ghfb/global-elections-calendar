@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Elections Calendar</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Top App Bar -->
+  <header class="topbar">
+    <span class="topbar-title">Elections</span>
+    <div style="display:flex;gap:4px;align-items:center;">
+    <button class="icon-btn" id="helpBtn" title="How to use" aria-label="Help">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </button>
+    <button class="icon-btn" id="refreshBtn" title="Refresh data" aria-label="Refresh">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+        <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+        <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/>
+      </svg>
+    </button>
+    </div>
+  </header>
+
+  <!-- Month Navigation -->
+  <nav class="month-nav">
+    <button class="icon-btn nav-arrow" id="prevMonthBtn" aria-label="Previous month">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+    <div class="month-label-group">
+      <span class="month-adj" id="prevMonthLabel"></span>
+      <div class="month-current-wrap">
+        <span class="month-current" id="currentMonthLabel"></span>
+        <div class="month-dot"></div>
+      </div>
+      <span class="month-adj" id="nextMonthLabel"></span>
+    </div>
+    <button class="icon-btn nav-arrow" id="nextMonthBtn" aria-label="Next month">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </button>
+  </nav>
+
+  <!-- Bento Stats -->
+  <section class="bento" id="bentoStats">
+    <div class="bento-card bento-primary">
+      <div class="bento-label">Total Scheduled</div>
+      <div class="bento-value" id="statTotal">—</div>
+    </div>
+    <div class="bento-card bento-secondary">
+      <div class="bento-label" id="statHeldLabel">Held This Month</div>
+      <div class="bento-value secondary" id="statHeld">—</div>
+    </div>
+  </section>
+
+  <!-- List header -->
+  <div class="list-header">
+    <span class="list-header-title" id="listTitle">Schedule</span>
+    <button class="icon-btn filter-btn" id="filterToggle" title="Filter" aria-label="Filter">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+        <line x1="4" y1="6" x2="20" y2="6"/>
+        <line x1="8" y1="12" x2="16" y2="12"/>
+        <line x1="11" y1="18" x2="13" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Pin bar (shown when pinned-country filter is active) -->
+  <div class="pin-bar hidden" id="pinBar">
+    <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"
+         stroke-linecap="round" stroke-linejoin="round" width="11" height="11">
+      <line x1="12" y1="17" x2="12" y2="22"/>
+      <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
+    </svg>
+    <span id="pinBarText">Pinned view</span>
+  </div>
+
+  <!-- Filter bar (hidden by default) -->
+  <div class="filter-bar hidden" id="filterBar">
+    <input class="search-input" id="searchInput" type="text"
+           placeholder="Filter by country, type, or status…" aria-label="Filter elections" />
+  </div>
+
+  <!-- States -->
+  <div class="state" id="stateLoading">
+    <div class="spinner"></div>
+    <p>Fetching election data…</p>
+  </div>
+  <div class="state hidden" id="stateError">
+    <div class="state-icon error-icon">&#x26A0;</div>
+    <p class="error-msg" id="errorMsg">Could not load election data.</p>
+    <button class="retry-btn" id="retryBtn">Try again</button>
+  </div>
+  <div class="state hidden" id="stateEmpty">
+    <div class="state-icon">&#x1F4C5;</div>
+    <p>No elections found for this period.</p>
+  </div>
+
+  <!-- Election list -->
+  <ul class="election-list hidden" id="electionList" role="list"></ul>
+
+  <!-- Footer timestamp -->
+  <footer class="footer" id="footer"></footer>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="nav-tab active" id="tabUpcoming" data-filter="upcoming">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      <span>Upcoming</span>
+    </button>
+    <button class="nav-tab" id="tabResults" data-filter="held">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <span>Results</span>
+    </button>
+    <button class="nav-tab" id="tabAll" data-filter="all">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+        <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+        <line x1="8" y1="18" x2="21" y2="18"/>
+        <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
+        <line x1="3" y1="18" x2="3.01" y2="18"/>
+      </svg>
+      <span>All</span>
+    </button>
+  </nav>
+
+  <script src="popup.js"></script>
+</body>
+</html>
