@@ -1,8 +1,8 @@
 // v1.0.2's renderer (applyDataToUI, renderCurrentMonth, buildCard), moved here from popup.js.
 // What changed: it takes the feed document and the pinned countries as arguments; its tabs filter
-// on upcoming / past (status Held) / all; the footer no longer ends with " · cached" (there is
-// no isStale argument); and the search box is no longer reset on each load (popup.js used to
-// clear it in fetchData). It keeps v1.0.2's innerHTML cards and footer text until later tasks
+// on upcoming / past (status Held) / all; it no longer writes the footer (the popup does, from
+// lib/health.js); and the search box is no longer reset on each load (popup.js used to
+// clear it in fetchData). It keeps v1.0.2's innerHTML cards until later tasks
 // replace them.
 
 const $ = (id) => document.getElementById(id);
@@ -10,7 +10,6 @@ const stateLoading   = $("stateLoading");
 const stateError     = $("stateError");
 const stateEmpty     = $("stateEmpty");
 const electionList   = $("electionList");
-const footerEl       = $("footer");
 const searchInput    = $("searchInput");
 const prevMonthBtn   = $("prevMonthBtn");
 const nextMonthBtn   = $("nextMonthBtn");
@@ -254,25 +253,6 @@ export function renderLegacy(json, { pinned }) {
   // Default to the server's current month
   if (!currentMonth || !monthsData[currentMonth]) {
     currentMonth = serverCurrentMonth;
-  }
-
-  const lastUpdated = json.generated_at ? new Date(json.generated_at) : null;
-  const genAt = lastUpdated
-    ? lastUpdated.toLocaleString("en-US", {
-        month: "short", day: "numeric",
-        hour: "2-digit", minute: "2-digit",
-      })
-    : "unknown";
-
-  const STALE_THRESHOLD = 48 * 60 * 60 * 1000;
-  const isDataStale = lastUpdated && (Date.now() - lastUpdated > STALE_THRESHOLD);
-
-  if (isDataStale) {
-    footerEl.classList.add("stale-data-warning");
-    footerEl.textContent = `⚠️ WARNING: Stale Data. Last Updated: ${genAt}`;
-  } else {
-    footerEl.classList.remove("stale-data-warning");
-    footerEl.textContent = `Updated ${genAt}`;
   }
 
   if (json.errors && json.errors.length > 0) {

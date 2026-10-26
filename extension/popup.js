@@ -1,4 +1,6 @@
-import { KEYS, loadSchemas, storedFeed } from "./lib/load.js";
+import { KEYS, loadSchemas, storedFeed, storedStatus } from "./lib/load.js";
+import { bannerState, footerState, NO_HEALTH, panelRows } from "./lib/health.js";
+import { isLinked } from "./lib/order.js";
 import { renderLegacy } from "./lib/legacy.js";
 
 const PINNED_COUNTRIES_KEY = "pinned_countries";
@@ -13,6 +15,8 @@ const refreshBtn   = $("refreshBtn");
 const helpBtn      = $("helpBtn");
 const retryBtn     = $("retryBtn");
 const filterToggle = $("filterToggle");
+const banner       = $("banner");
+const healthPanel  = $("healthPanel");
 
 let schemas = null;
 let inFlight = 0; // checks started and not finished; the page is settled at 0
@@ -24,13 +28,57 @@ function showError(message) {
   document.body.dataset.state = "error";
 }
 
+// The panel's rows, as text only. Rebuilt on every render, so an open panel is never out of date.
+function drawPanel(rows, note) {
+  const noteEl = $("healthNote");
+  noteEl.textContent = note;
+  noteEl.hidden = note === "";
+  const list = $("healthList");
+  list.replaceChildren();
+  for (const row of rows) {
+    const item = document.createElement("li");
+    item.dataset.source = row.source;
+    item.dataset.severity = row.severity;
+    const title = document.createElement("strong");
+    title.textContent = row.name;
+    item.append(title);
+    for (const line of row.lines) {
+      const para = document.createElement("div");
+      para.textContent = line;
+      item.append(para);
+    }
+    list.append(item);
+  }
+}
+
+// The banner, the panel and the footer for the feed just drawn.
+function drawHealth(record, statusRecord, check) {
+  const now = Date.now();
+  const status = statusRecord === null ? null : statusRecord.data;
+  const linked = isLinked(record.sha256, status);
+  const args = { format: record.format, doc: record.data, status, linked };
+  const state = bannerState({ ...args, now });
+  banner.dataset.level = state.level;
+  $("bannerText").textContent = state.text;
+  $("bannerCounts").textContent = state.counts;
+  banner.classList.remove("hidden");
+  const rows = panelRows(args);
+  drawPanel(rows, record.format === "v2" ? "" : NO_HEALTH);
+  const foot = footerState({ doc: record.data, check, now });
+  $("footerData").textContent = foot.data;
+  $("footerChecked").textContent = foot.checked;
+}
+
 // Render the cached feed, if the stored record is valid. True when something was drawn.
 async function render() {
-  const stored = await chrome.storage.local.get([KEYS.feed, PINNED_COUNTRIES_KEY]);
+  const stored = await chrome.storage.local.get([
+    KEYS.feed, KEYS.status, KEYS.check, PINNED_COUNTRIES_KEY,
+  ]);
   const record = storedFeed(stored[KEYS.feed], schemas);
   if (record === null) return false;
   const pinned = Array.isArray(stored[PINNED_COUNTRIES_KEY]) ? stored[PINNED_COUNTRIES_KEY] : [];
   renderLegacy(record.data, { pinned });
+  drawHealth(record, storedStatus(stored[KEYS.status], schemas), stored[KEYS.check]);
   document.body.dataset.state = "ready";
   return true;
 }
@@ -74,6 +122,11 @@ function again() {
 refreshBtn.addEventListener("click", again);
 retryBtn.addEventListener("click", again);
 helpBtn.addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("help.html") }));
+
+banner.addEventListener("click", () => {
+  const open = healthPanel.classList.toggle("hidden") === false;
+  banner.setAttribute("aria-expanded", String(open));
+});
 
 filterToggle.addEventListener("click", () => {
   filterBar.classList.toggle("hidden");
