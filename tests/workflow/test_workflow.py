@@ -6,6 +6,7 @@ outputs first runs in Plan 5c's branch run.
 
 import inspect
 import re
+import tomllib
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -269,7 +270,7 @@ def test_gates_job_runs_the_canonical_gates() -> None:
     assert runs[0]["name"] == "Install"
     after = runs[1:]
     assert [s["run"] for s in after] == [
-        ".venv/bin/python -m playwright install chromium",
+        ".venv/bin/python -m playwright install --with-deps chromium",
         ".venv/bin/python -m pytest -q",
         ".venv/bin/mypy",
         ".venv/bin/ruff check",
@@ -279,6 +280,18 @@ def test_gates_job_runs_the_canonical_gates() -> None:
     assert after[1]["env"] == {"CI": "true"}
     assert all("env" not in s for s in after[2:])
     assert [s["run"] for s in after[1:5]] == _readme_linux_block()
+
+
+def test_gates_job_runs_the_extension_suite() -> None:
+    runs = [s for s in steps("gates") if "run" in s]
+    (pytest_step,) = [s for s in runs if "pytest" in s["run"]]
+    assert pytest_step["run"] == ".venv/bin/python -m pytest -q"
+    assert pytest_step["env"] == {"CI": "true"}
+    names = [s.get("name") for s in steps("gates")]
+    assert names.index("Install Chromium") < names.index(pytest_step["name"])
+    config = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    assert config["tool"]["pytest"]["ini_options"]["testpaths"] == ["tests"]
+    assert list((ROOT / "tests" / "extension").glob("test_*.py"))
 
 
 def test_scrape_job_fits_its_timeout() -> None:

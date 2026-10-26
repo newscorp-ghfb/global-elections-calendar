@@ -45,6 +45,9 @@ Run from the repository root. All four must pass before a commit.
 .venv/bin/lint-imports --config importlinter.ini
 ```
 
+The extension suite (`tests/extension/`) runs headless Chromium build 1248; install it once
+with `.venv\Scripts\python.exe -m playwright install chromium` (CI uses `--with-deps`).
+
 mypy (strict) and ruff are configured in `pyproject.toml`; import layering
 is in `importlinter.ini`. `ruff format` is not a gate.
 

@@ -32,7 +32,7 @@ jobs:
           python -m venv .venv
           .venv/bin/python -m pip install --require-hashes -r requirements-dev.txt
       - name: Install Chromium
-        run: .venv/bin/python -m playwright install chromium
+        run: .venv/bin/python -m playwright install --with-deps chromium
       - name: pytest
         env:
           CI: "true"
