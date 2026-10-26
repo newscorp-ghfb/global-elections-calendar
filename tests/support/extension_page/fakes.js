@@ -59,20 +59,24 @@ export async function runCheck(spec) {
 
 const RUN_VALUE = { ok: true, changed: true, marker: 1 };
 
-// spec: {call: "installed" | "startup" | "alarm" | "message", arg, due: bool}.
-// Each fake settles on a later turn before it logs, so the log shows whether calls wait.
+// spec: {call: "installed" | "startup" | "alarm" | "message", arg, due: bool, helpRejects: bool}.
+// Each fake logs `name:start` when called and `name:end` when it settles. The delays shrink along
+// the usual call order (openHelp longest), so a handler that does not wait for a call would show
+// the next call starting before the earlier one ended.
 export async function runHandlers(spec) {
   const log = [];
-  const later = (name, value) => async () => {
-    await new Promise((resolve) => setTimeout(resolve, 5));
-    log.push(name);
+  const later = (name, ms, value, rejects = false) => async () => {
+    log.push(`${name}:start`);
+    await new Promise((resolve) => setTimeout(resolve, ms));
+    log.push(`${name}:end`);
+    if (rejects) throw new Error(`${name} failed`);
     return value;
   };
   const h = handlers({
-    runCheck: later("runCheck", RUN_VALUE),
-    ensureAlarm: later("ensureAlarm"),
-    isDue: later("isDue", spec.due),
-    openHelp: later("openHelp"),
+    openHelp: later("openHelp", 40, undefined, spec.helpRejects === true),
+    ensureAlarm: later("ensureAlarm", 25),
+    isDue: later("isDue", 15, spec.due),
+    runCheck: later("runCheck", 5, RUN_VALUE),
   });
   const result = await h[spec.call](spec.arg);
   return { log, result: result === undefined ? null : result, undefinedResult: result === undefined };

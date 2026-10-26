@@ -15,6 +15,7 @@ const retryBtn     = $("retryBtn");
 const filterToggle = $("filterToggle");
 
 let schemas = null;
+let inFlight = 0; // checks started and not finished; the page is settled at 0
 
 function showError(message) {
   errorMsgEl.textContent = `Could not load data: ${message}`;
@@ -35,6 +36,7 @@ async function render() {
 }
 
 async function check(force) {
+  inFlight += 1;
   document.body.dataset.checking = "true";
   refreshBtn.classList.add("spinning");
   try {
@@ -52,8 +54,11 @@ async function check(force) {
   } catch (err) {
     showError(err instanceof Error ? err.message : String(err));
   } finally {
-    refreshBtn.classList.remove("spinning");
-    document.body.dataset.checking = "false";
+    inFlight -= 1;
+    if (inFlight === 0) {
+      refreshBtn.classList.remove("spinning");
+      document.body.dataset.checking = "false";
+    }
   }
 }
 
