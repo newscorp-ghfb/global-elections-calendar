@@ -1,7 +1,9 @@
-// v1.0.2's renderer (applyDataToUI, renderCurrentMonth, buildCard), moved here unchanged except
-// that it takes the feed document, its tabs filter on upcoming / past (status Held) / all, and
-// the pinned countries come in as an argument. It keeps v1.0.2's innerHTML cards and footer text
-// until later tasks replace them.
+// v1.0.2's renderer (applyDataToUI, renderCurrentMonth, buildCard), moved here from popup.js.
+// What changed: it takes the feed document and the pinned countries as arguments; its tabs filter
+// on upcoming / past (status Held) / all; the footer no longer ends with " · cached" (there is
+// no isStale argument); and the search box is no longer reset on each load (popup.js used to
+// clear it in fetchData). It keeps v1.0.2's innerHTML cards and footer text until later tasks
+// replace them.
 
 const $ = (id) => document.getElementById(id);
 const stateLoading   = $("stateLoading");

@@ -11,6 +11,7 @@ import pytest
 from playwright.sync_api import Page
 
 from tests.support.extension import (
+    PAGE_NOW,
     PAGE_NOW_MS,
     Ext,
     artifact_pair,
@@ -438,9 +439,18 @@ def test_worker_handlers(
         "async s => (await import('/test/fakes.js')).runHandlers(s)",
         {"call": call, "arg": arg, "due": due},
     )
-    assert ran["log"] == calls
+    assert ran["log"] == [f"{name}:{edge}" for name in calls for edge in ("start", "end")]
     assert ran["result"] == result
     assert ran["undefinedResult"] is (result is None)
+
+
+def test_a_failing_help_tab_does_not_stop_the_install_check(lab: Page) -> None:
+    ran = lab.evaluate(
+        "async s => (await import('/test/fakes.js')).runHandlers(s)",
+        {"call": "installed", "arg": {"reason": "install"}, "due": True, "helpRejects": True},
+    )
+    calls = ["openHelp", "ensureAlarm", "runCheck"]
+    assert ran["log"] == [f"{name}:{edge}" for name in calls for edge in ("start", "end")]
 
 
 def test_a_failed_write_in_the_worker_keeps_the_cache(
@@ -482,14 +492,16 @@ async () => {
 def test_a_real_quota_failure_keeps_the_previous_pair(fresh_ext: Ext, pair: tuple[bytes, bytes]) -> None:
     feed, status = pair
     f2, f3 = _at(feed, T2), _at(feed, T3)
-    s2, s3 = _links(f2, status), _links(f3, status)
+    s2 = _links(f2, status)
     seeded = {FEED: feed_record(f2), STATUS: status_record(s2)}
     fresh_ext.seed(seeded)
     lab = fresh_ext.lab()
     assert lab.evaluate(_FILL) == 100_000
     big = json.loads(f3)
     big["padding"] = "x" * 400_000  # an unknown top-level key: ignored by validation
-    fresh_ext.served.set("elections.json", _dump(big))
+    served = _dump(big)
+    s3 = _links(served, status)  # describes the feed that is served, so it is in the write set
+    fresh_ext.served.set("elections.json", served)
     fresh_ext.served.set("status.json", s3)
     reply = _send_check(lab)
     assert reply["ok"] is False
@@ -500,6 +512,7 @@ def test_a_real_quota_failure_keeps_the_previous_pair(fresh_ext: Ext, pair: tupl
     lab.evaluate("() => chrome.storage.local.remove('filler')")
     assert _send_check(lab)["ok"] is True
     assert fresh_ext.storage()[FEED]["order_key"] == T3
+    assert fresh_ext.storage()[STATUS]["sha256"] == _sha(s3)
 
 
 def test_offline_with_and_without_a_cache(ext: Ext, pair: tuple[bytes, bytes]) -> None:
@@ -615,3 +628,35 @@ def test_schemas_are_retried_after_a_failed_load(fresh_ext: Ext, pair: tuple[byt
         hidden.rename(schema)
     assert _send_check(lab)["ok"] is True
     assert fresh_ext.storage()[FEED]["sha256"] == _sha(feed)
+
+
+_HOLD_FIRST_CHECK = """() => {
+  const real = chrome.runtime.sendMessage.bind(chrome.runtime);
+  let held = false;
+  chrome.runtime.sendMessage = (msg) => {
+    if (!held && msg && msg.type === 'CHECK') {
+      held = true;
+      return new Promise((resolve) => { window.__release = () => resolve({ ok: true }); });
+    }
+    return real(msg);
+  };
+}"""
+
+
+def test_the_popup_settles_only_when_every_check_is_done(ext: Ext, pair: tuple[bytes, bytes]) -> None:
+    feed, status = pair
+    ext.served.set("elections.json", feed)
+    ext.served.set("status.json", status)
+    ext.context.clock.set_fixed_time(PAGE_NOW)
+    page = ext.context.new_page()
+    page.on("pageerror", lambda error: ext.page_errors.append(str(error)))
+    page.add_init_script(script=f"({_HOLD_FIRST_CHECK})()")
+    page.goto(f"chrome-extension://{ext.ext_id}/popup.html")
+    page.wait_for_function("() => typeof window.__release === 'function'")  # check 1 is held
+    page.click("#refreshBtn")  # check 2 goes through the worker and finishes
+    page.wait_for_function("() => document.body.dataset.state === 'ready'")
+    assert page.locator("body").get_attribute("data-checking") == "true"  # check 1 is still open
+    page.evaluate("() => window.__release()")
+    _settled(page)
+    assert _cards(page) == 30 and ext.served.log.count("elections.json") == 1
+    assert ext.page_errors == []

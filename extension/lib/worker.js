@@ -8,7 +8,13 @@ export const ALARM_NAME = "elections-refresh";
 export function handlers({ runCheck, ensureAlarm, isDue, openHelp }) {
   return {
     async installed(details) {
-      if (details.reason === "install") await openHelp();
+      if (details.reason === "install") {
+        try {
+          await openHelp();
+        } catch (err) {
+          console.error(err); // a help tab that cannot open must not stop the alarm or the check
+        }
+      }
       await ensureAlarm();
       await runCheck();
     },
