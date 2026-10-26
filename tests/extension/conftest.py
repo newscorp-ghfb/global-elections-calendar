@@ -12,7 +12,12 @@ from tests.support.extension import Ext, extension_copy, launch
 @pytest.fixture(scope="session")
 def _working(playwright: Playwright, tmp_path_factory: pytest.TempPathFactory) -> Iterator[Ext]:
     base = tmp_path_factory.mktemp("working-extension")
-    running = launch(playwright, base / "profile", extension_copy(base / "ext", legacy=False))
+    running = launch(
+        playwright,
+        base / "profile",
+        extension_copy(base / "ext", legacy=False),
+        settle_install_check=True,
+    )
     yield running
     running.close()
 
@@ -39,7 +44,12 @@ def legacy_ext(_legacy: Ext) -> Ext:
 
 @pytest.fixture
 def fresh_ext(playwright: Playwright, tmp_path: Path) -> Iterator[Ext]:
-    running = launch(playwright, tmp_path / "profile", extension_copy(tmp_path / "ext", legacy=False))
+    running = launch(
+        playwright,
+        tmp_path / "profile",
+        extension_copy(tmp_path / "ext", legacy=False),
+        settle_install_check=True,
+    )
     yield running
     running.close()
 

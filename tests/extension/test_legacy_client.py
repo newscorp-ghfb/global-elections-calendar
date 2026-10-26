@@ -9,6 +9,9 @@ def _october(legacy_ext: Ext, feed: bytes) -> tuple[list[str], str, str]:
     legacy_ext.served.set("elections.json", feed)
     page = legacy_ext.open("popup.html")
     page.wait_for_selector("#electionList:not(.hidden) .election-item")
+    # the page is v1.0.2's: "Results" is its tab, and "Past" does not exist yet
+    assert page.locator("#tabResults").count() == 1
+    assert page.locator("#tabPast").count() == 0
     names = page.locator("#electionList .election-country").all_text_contents()
     month = page.locator("#currentMonthLabel").text_content() or ""
     return names, month, page.locator("#footer").text_content() or ""

@@ -118,6 +118,7 @@ function walk(value, schema, p, root, refChecks, out) {
 
 // At most 20 problems, each "<pointer>: <what>"; [] when the value passes.
 export function schemaProblems(value, schema, refChecks = {}) {
+  if (!isObject(schema)) return ["/: no schema"];
   const out = { problems: [], limit: MAX_PROBLEMS };
   walk(value, schema, "", schema, refChecks, out);
   return out.problems;

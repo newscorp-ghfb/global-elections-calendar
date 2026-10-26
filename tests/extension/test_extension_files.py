@@ -1,6 +1,7 @@
 """The extension folders as files (no browser)."""
 
 import hashlib
+import json
 import re
 from typing import Final
 
@@ -23,7 +24,7 @@ V1_SHA256: Final[dict[str, str]] = {
 }
 
 
-PURE_MODULES: Final = ("dates.js", "labels.js", "schema.js", "validate.js")
+PURE_MODULES: Final = ("dates.js", "labels.js", "schema.js", "validate.js", "order.js", "worker.js")
 # A bare word must not touch an identifier character, so `expected_window` is not `window`.
 BROWSER_TOKENS: Final = (
     "chrome.",
@@ -62,3 +63,24 @@ def test_schema_copies_match() -> None:
     for name in ("feed-v2.schema.json", "status-v1.schema.json"):
         copy = ROOT / "extension" / "schemas" / name
         assert copy.read_bytes() == (ROOT / "schemas" / name).read_bytes(), name
+
+
+def test_permissions_are_v1_0_2s() -> None:
+    now = json.loads((ROOT / "extension" / "manifest.json").read_text(encoding="utf-8"))
+    was = json.loads((V1_EXTENSION / "manifest.json").read_text(encoding="utf-8"))
+    assert now["background"].pop("type") == "module"
+    assert now == was
+    assert "key" not in now and "content_security_policy" not in now
+
+
+def test_the_worker_wires_its_handlers() -> None:
+    text = (ROOT / "extension" / "background.js").read_text(encoding="utf-8")
+    assert re.search(r"import \{[^}]*\bhandlers\b[^}]*\} from \"\./lib/worker\.js\"", text)
+    for event in (
+        "chrome.runtime.onInstalled",
+        "chrome.runtime.onStartup",
+        "chrome.alarms.onAlarm",
+        "chrome.runtime.onMessage",
+    ):
+        assert text.count(event + ".addListener(") == 1, event
+    assert text.count("const DATA_URL = ") == 1

@@ -1,35 +1,92 @@
-"use strict";
+import { KEYS, REQUEST_TIMEOUT_MS, check, due, loadSchemas } from "./lib/load.js";
+import { ALARM_NAME, handlers } from "./lib/worker.js";
 
-const DATA_URL   = "https://raw.githubusercontent.com/newscorp-ghfb/global-elections-calendar/main/elections.json";
-const CACHE_KEY  = "elections_cache";
-const ALARM_NAME = "elections-refresh";
+const DATA_URL = "https://raw.githubusercontent.com/newscorp-ghfb/global-elections-calendar/main/elections.json";
+const STATUS_URL = new URL("status.json", DATA_URL).href;
 
-async function fetchAndCache() {
-  const resp = await fetch(DATA_URL, { cache: "no-store" });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
-  const data = await resp.json();
-  await chrome.storage.local.set({ [CACHE_KEY]: { ts: Date.now(), data } });
-  return data;
+// The schema files are read once per worker life; a failed read is not remembered, so the next
+// check tries again.
+let schemasLoading = null;
+function schemas() {
+  if (schemasLoading === null) {
+    schemasLoading = loadSchemas((path) => chrome.runtime.getURL(path)).catch((err) => {
+      schemasLoading = null;
+      throw err;
+    });
+  }
+  return schemasLoading;
 }
 
-chrome.runtime.onInstalled.addListener((details) => {
-  if (details.reason === "install") {
-    chrome.tabs.create({ url: chrome.runtime.getURL("help.html") });
+async function fetchBytes(url) {
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return new Uint8Array(await response.arrayBuffer());
+}
+
+async function checkOnce() {
+  let loaded = null;
+  try {
+    loaded = await schemas();
+  } catch (err) {
+    console.error("schemas", err);
   }
-  fetchAndCache().catch(console.error);
-  chrome.alarms.create(ALARM_NAME, { periodInMinutes: 60 });
+  return check({
+    feedUrl: DATA_URL,
+    statusUrl: STATUS_URL,
+    fetchBytes,
+    get: (keys) => chrome.storage.local.get(keys),
+    set: (items) => chrome.storage.local.set(items),
+    now: () => Date.now(),
+    schemas: loaded,
+    timeoutMs: REQUEST_TIMEOUT_MS,
+  });
+}
+
+// One check at a time: a second request joins the running one. A failed check releases it too.
+let running = null;
+function runCheck() {
+  if (running === null) {
+    running = checkOnce().finally(() => {
+      running = null;
+    });
+  }
+  return running;
+}
+
+async function ensureAlarm() {
+  if (!(await chrome.alarms.get(ALARM_NAME))) {
+    await chrome.alarms.create(ALARM_NAME, { periodInMinutes: 60 });
+  }
+}
+
+async function isDue() {
+  const stored = await chrome.storage.local.get(KEYS.check);
+  return due(stored[KEYS.check], Date.now());
+}
+
+async function openHelp() {
+  await chrome.tabs.create({ url: chrome.runtime.getURL("help.html") });
+}
+
+const handle = handlers({ runCheck, ensureAlarm, isDue, openHelp });
+
+chrome.runtime.onInstalled.addListener((details) => {
+  handle.installed(details).catch(console.error);
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  handle.startup().catch(console.error);
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === ALARM_NAME) fetchAndCache().catch(console.error);
+  handle.alarm(alarm).catch(console.error);
 });
 
-// Popup/options pages send {type:"FETCH_DATA"} to trigger a fresh fetch.
-// Background is not subject to CORS for host_permissions URLs.
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg.type !== "FETCH_DATA") return false;
-  fetchAndCache()
-    .then(data => sendResponse({ ok: true, data }))
-    .catch(err  => sendResponse({ ok: false, error: err.message }));
-  return true; // keep message channel open for async response
+  const reply = handle.message(msg);
+  if (reply === undefined) return false;
+  reply.then(sendResponse, (err) => {
+    sendResponse({ ok: false, error: err instanceof Error ? err.message : String(err) });
+  });
+  return true; // the reply is asynchronous
 });
