@@ -350,6 +350,13 @@ def test_acknowledged_issues_describe_the_real_condition(
     got = found(other_page)
     assert got["acknowledged"] == [] and len(got["errors"]) == 1
 
+    for field, other in (("stage", "another_stage"), ("year", 1999)):
+        assert reason[field] != other
+        differs = copy.deepcopy(doc)
+        _source(differs, "ipu")["acknowledged"][0][field] = other
+        got = found(differs)
+        assert got["acknowledged"] == [] and len(got["errors"]) == 1, field
+
     with_run = copy.deepcopy(feed_doc)
     base_reason = {"code": "worker_failed", "stage": "run", "year": None, "page": None}
     with_run["run"]["reasons"] = [

@@ -1,9 +1,12 @@
 """The harness itself: routing, the worker's stop, relaunching and the module importer."""
 
-import pytest
-from playwright.sync_api import Page
+import time
+from pathlib import Path
 
-from tests.support.extension import RAW_BASE, Ext, js
+import pytest
+from playwright.sync_api import BrowserContext, BrowserType, Page, Playwright
+
+from tests.support.extension import RAW_BASE, Ext, extension_copy, js, launch
 
 
 def test_pure_modules_import_in_an_extension_page(lab: Page) -> None:
@@ -46,7 +49,7 @@ def test_the_worker_can_be_stopped_and_woken(ext: Ext) -> None:
     assert not ext.worker_running()
     page = ext.open("test/test.html")
     page.evaluate("() => chrome.runtime.sendMessage({type: 'PING'}).catch(() => null)")
-    page.wait_for_timeout(500)
+    assert ext.worker(wait_s=5).evaluate("() => 1") == 1
     assert ext.worker_running()
 
 
@@ -69,5 +72,28 @@ def test_a_stopped_worker_is_not_the_live_one(ext: Ext) -> None:
 def test_page_errors_are_collected(ext: Ext) -> None:
     page = ext.open("test/test.html")
     page.evaluate("() => queueMicrotask(() => { throw new Error('boom'); })")
-    page.wait_for_timeout(300)
+    deadline = time.monotonic() + 5
+    while not ext.page_errors and time.monotonic() < deadline:
+        page.wait_for_timeout(25)
     assert ext.page_errors == ["boom"]
+
+
+def test_launch_closes_the_browser_when_the_extension_never_starts(
+    playwright: Playwright, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    folder = extension_copy(tmp_path / "ext", legacy=False)
+    (folder / "manifest.json").unlink()  # not a loadable extension: no worker ever appears
+    created: list[BrowserContext] = []
+    real = BrowserType.launch_persistent_context
+
+    def spy(self: BrowserType, *args: object, **kwargs: object) -> BrowserContext:
+        context = real(self, *args, **kwargs)  # type: ignore[arg-type]
+        created.append(context)
+        return context
+
+    monkeypatch.setattr(BrowserType, "launch_persistent_context", spy)
+    with pytest.raises(Exception, match="serviceworker|Timeout"):
+        launch(playwright, tmp_path / "profile", folder, worker_wait_s=1)
+    assert len(created) == 1
+    browser = created[0].browser
+    assert browser is not None and not browser.is_connected()  # the Chromium process is gone

@@ -264,8 +264,12 @@ def launch(
     *,
     timezone_id: str = "UTC",
     settle_install_check: bool = False,
+    worker_wait_s: float = 10,
 ) -> Ext:
-    """Launch ``folder``; ``settle_install_check`` (working extension only) waits for its check."""
+    """Launch ``folder``; ``settle_install_check`` (working extension only) waits for its check.
+
+    Any failure after the browser is up closes it and re-raises.
+    """
     started_ms = int(time.time() * 1000)
     context = playwright.chromium.launch_persistent_context(
         str(profile),
@@ -279,21 +283,26 @@ def launch(
             "--host-resolver-rules=MAP * ~NOTFOUND",
         ],
     )
-    context.set_default_timeout(10_000)
-    served = Served()
-    context.route(RAW_BASE + "*", served.handle)
-    found = [w for w in context.service_workers if w.url.startswith("chrome-extension://")]
-    worker = found[0] if found else context.wait_for_event("serviceworker", timeout=10_000)
-    ext_id = worker.url.split("/")[2]
-    running = Ext(
-        playwright, context, ext_id, served, profile, folder, timezone_id, settle_install_check
-    )
-    if settle_install_check:
-        try:
+    try:
+        context.set_default_timeout(10_000)
+        served = Served()
+        context.route(RAW_BASE + "*", served.handle)
+        found = [w for w in context.service_workers if w.url.startswith("chrome-extension://")]
+        worker = (
+            found[0]
+            if found
+            else context.wait_for_event("serviceworker", timeout=int(worker_wait_s * 1000))
+        )
+        ext_id = worker.url.split("/")[2]
+        running = Ext(
+            playwright, context, ext_id, served, profile, folder, timezone_id, settle_install_check
+        )
+        if settle_install_check:
             running.wait_for_install_check(started_ms)
-        except BaseException:
-            running.close()
-            raise
+    except BaseException:
+        with contextlib.suppress(Exception):  # the original error is the one to raise
+            context.close()
+        raise
     return running
 
 

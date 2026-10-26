@@ -355,6 +355,13 @@ def _delete_generated(feed: dict[str, Any]) -> None:
     del feed["generated_at"]
 
 
+def _delete(key: str) -> Callable[[dict[str, Any]], None]:
+    def edit(feed: dict[str, Any]) -> None:
+        del feed[key]
+
+    return edit
+
+
 def _rename_month(feed: dict[str, Any]) -> None:
     feed["months"]["2026-1"] = feed["months"].pop("2026-09")
 
@@ -374,7 +381,11 @@ LEGACY_ROWS: Final[list[tuple[str, Callable[[dict[str, Any]], None]]]] = [
     ("no generated_at", _delete_generated),
     ("generated_at x", _set(generated_at="x")),
     ("generated_at newline", _set(generated_at="2026-10-16T00:02:31Z\n")),
+    ("bad published_at", _set(published_at="x")),
     ("current_month", _set(current_month="2026-1")),
+    ("missing current_month", _delete("current_month")),
+    ("missing errors", _delete("errors")),
+    ("months not an object", _set(months="x")),
     ("errors", _set(errors="x")),
     ("months empty list", _set(months=[])),
     ("months key", _rename_month),
@@ -384,6 +395,7 @@ LEGACY_ROWS: Final[list[tuple[str, Callable[[dict[str, Any]], None]]]] = [
     ("card type", _edit_card(type=5)),
     ("card status", _edit_card(status="Held\n")),
     ("card sources", _edit_card(sources=[{"name": 5, "link": "x"}])),
+    ("card sources not a list", _edit_card(sources="x", source_names=[], links=[])),
     ("card source_names", _different_names),
     ("card links", _different_links),
     ("republished_from_sha256", _set(republished_from_sha256="ABC")),
