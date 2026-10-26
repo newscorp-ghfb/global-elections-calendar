@@ -23,7 +23,7 @@ V1_SHA256: Final[dict[str, str]] = {
 }
 
 
-PURE_MODULES: Final = ("dates.js", "labels.js")
+PURE_MODULES: Final = ("dates.js", "labels.js", "schema.js", "validate.js")
 # A bare word must not touch an identifier character, so `expected_window` is not `window`.
 BROWSER_TOKENS: Final = (
     "chrome.",
@@ -56,3 +56,9 @@ def test_v1_extension_fixture_is_v1_0_2() -> None:
     found = {p.relative_to(V1_EXTENSION).as_posix(): p for p in V1_EXTENSION.rglob("*") if p.is_file()}
     assert sorted(found) == sorted(V1_SHA256)
     assert {name: hashlib.sha256(p.read_bytes()).hexdigest() for name, p in found.items()} == V1_SHA256
+
+
+def test_schema_copies_match() -> None:
+    for name in ("feed-v2.schema.json", "status-v1.schema.json"):
+        copy = ROOT / "extension" / "schemas" / name
+        assert copy.read_bytes() == (ROOT / "schemas" / name).read_bytes(), name
