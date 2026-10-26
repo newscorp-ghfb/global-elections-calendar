@@ -78,10 +78,11 @@ on GitHub in Plan 5c; until then its structure is proven offline by `tests/workf
   cannot run a workflow command, writes the step summary, and uploads `out/` as the artifact
   `generation` (kept 14 days, uploaded even after a crash; it holds `rejected/pages/`, the raw
   bytes of invalid pages, up to 50 MiB).
-- `publish` (`contents: write`, its own concurrency group `publish-elections`): a running publish
+- `publish` (`contents: write`, its own concurrency group `publish-elections`): it runs only on
+  `main` and only for the schedule or a dispatch with `publish: true`. A running publish
   job is not cancelled by a newer run, but a pending one is replaced by the newer one, and a
   timeout (25 minutes) or a user's cancel stops a running one. Each of these makes the verdict red
-  with `publish failed`. It runs only on `main` and only for the schedule or a dispatch with `publish: true`. It re-checks the
+  with `publish failed`. It re-checks the
   artifact (nothing outside the allowlist is written) and commits only `elections.json`,
   `status.json`, `HEALTH.md` and `data/sources/**`, pushes, and polls the raw URL for up to 10
   minutes to see the new digest served.
