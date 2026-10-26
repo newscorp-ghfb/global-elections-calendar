@@ -6,7 +6,7 @@
   <title>Global Elections Calendar</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body data-state="loading" data-checking="true">
 
   <!-- Top App Bar -->
   <header class="topbar">
@@ -119,7 +119,7 @@
 
   <!-- Bottom Nav -->
   <nav class="bottom-nav">
-    <button class="nav-tab active" id="tabUpcoming" data-filter="upcoming">
+    <button class="nav-tab" id="tabUpcoming" data-filter="upcoming">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -128,15 +128,15 @@
       </svg>
       <span>Upcoming</span>
     </button>
-    <button class="nav-tab" id="tabResults" data-filter="held">
+    <button class="nav-tab" id="tabPast" data-filter="past">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
         <circle cx="12" cy="12" r="10"/>
         <polyline points="12 6 12 12 16 14"/>
       </svg>
-      <span>Results</span>
+      <span>Past</span>
     </button>
-    <button class="nav-tab" id="tabAll" data-filter="all">
+    <button class="nav-tab active" id="tabAll" data-filter="all">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
         <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
@@ -148,6 +148,6 @@
     </button>
   </nav>
 
-  <script src="popup.js"></script>
+  <script type="module" src="popup.js"></script>
 </body>
 </html>

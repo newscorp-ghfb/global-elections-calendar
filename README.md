@@ -48,6 +48,13 @@ Run from the repository root. All four must pass before a commit.
 The extension suite (`tests/extension/`) runs headless Chromium build 1248; install it once
 with `.venv\Scripts\python.exe -m playwright install chromium` (CI uses `--with-deps`).
 
+The extension's worker is a module (`extension/background.js`) that only wires Chrome's events to
+`lib/worker.js`. `lib/load.js` does one ordered, linked check of `elections.json` and
+`status.json` and writes the result in a single `storage.set`; `lib/order.js` holds the
+publication order and the status selection, `lib/validate.js` and `lib/schema.js` the validation,
+and `lib/legacy.js` v1.0.2's renderer, which the popup uses until the v2 renderer replaces it.
+The popup reads `elections_cache_v2`, `status_cache` and `check_state_v2` from storage.
+
 mypy (strict) and ruff are configured in `pyproject.toml`; import layering
 is in `importlinter.ini`. `ruff format` is not a gate.
 

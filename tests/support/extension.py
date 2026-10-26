@@ -6,16 +6,24 @@ test touches the network. The worker is stopped with CDP ``Target.closeTarget`` 
 ``chrome.runtime.reload()`` (it loses the extension under ``--load-extension``).
 """
 
+import base64
 import contextlib
+import hashlib
+import json
+import re
 import shutil
 import time
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Final, Literal
 from urllib.parse import urlsplit
 
 from playwright.sync_api import BrowserContext, Page, Playwright, Route, Worker
 
+from elections_calendar.ci.recovery import republished_feed
+from elections_calendar.feed import Attempt, status_doc
+from elections_calendar.model import stored_json
 from tests.support.artifact import _built
 from tests.support.git_repos import V1_FEED
 
@@ -24,6 +32,8 @@ V1_EXTENSION: Final = ROOT / "tests" / "fixtures" / "v1" / "extension"
 PAGE_FILES: Final = Path(__file__).resolve().parent / "extension_page"
 RAW_BASE: Final = "https://raw.githubusercontent.com/newscorp-ghfb/global-elections-calendar/main/"
 PAGE_NOW: Final = "2026-10-19T14:00:00Z"  # 2 h after the fixture artifact's generated_at
+PAGE_NOW_MS: Final = int(datetime(2026, 10, 19, 14, tzinfo=UTC).timestamp() * 1000)
+_INSTALL_CHECK_WAIT_S: Final = 10
 
 _STEP_S: Final = 0.1
 Response = bytes | int | None | Literal["hang"]
@@ -100,6 +110,7 @@ class Ext:
         profile: Path,
         folder: Path,
         timezone_id: str,
+        settle_install_check: bool = False,
     ) -> None:
         self.context = context
         self.ext_id = ext_id
@@ -108,6 +119,7 @@ class Ext:
         self.folder = folder
         self._playwright = playwright
         self._timezone_id = timezone_id
+        self._settle_install_check = settle_install_check
         self._lab: Page | None = None
         self._anchor: Page = context.pages[0] if context.pages else context.new_page()
         self._successor: Ext | None = None
@@ -149,6 +161,34 @@ class Ext:
         page.on("pageerror", lambda error: self.page_errors.append(str(error)))
         page.goto(self._prefix() + path)
         return page
+
+    def popup(self, *, now: str | None = PAGE_NOW) -> Page:
+        """The popup, once its first check has replied (``data-checking`` is ``false``)."""
+        page = self.open("popup.html", now=now)
+        page.wait_for_function(
+            "() => document.body.dataset.state !== 'loading'"
+            " && document.body.dataset.checking === 'false'"
+        )
+        return page
+
+    def wait_for_install_check(self, started_ms: int) -> None:
+        """Wait until the check the worker runs on install has stored its result.
+
+        The worker's clock is the real clock, so a result is this launch's when its time is not
+        before ``started_ms`` (a relaunch keeps the old storage).
+        """
+        deadline = time.monotonic() + _INSTALL_CHECK_WAIT_S
+        while True:
+            state = self.storage().get("check_state_v2")
+            if isinstance(state, dict):
+                newest = max(state.get("ok_at") or 0, state.get("failed_at") or 0)
+                if newest >= started_ms:
+                    return
+            if time.monotonic() > deadline:
+                raise TimeoutError(
+                    f"the install check stored no result within {_INSTALL_CHECK_WAIT_S} s"
+                )
+            self._anchor.wait_for_timeout(int(_STEP_S * 1000))
 
     def lab(self) -> Page:
         if self._lab is None or self._lab.is_closed():
@@ -200,7 +240,11 @@ class Ext:
         """Close the browser and launch the same profile and folder again."""
         self.context.close()
         again = launch(
-            self._playwright, self.profile, self.folder, timezone_id=self._timezone_id
+            self._playwright,
+            self.profile,
+            self.folder,
+            timezone_id=self._timezone_id,
+            settle_install_check=self._settle_install_check,
         )
         self._successor = again
         return again
@@ -214,8 +258,15 @@ class Ext:
 
 
 def launch(
-    playwright: Playwright, profile: Path, folder: Path, *, timezone_id: str = "UTC"
+    playwright: Playwright,
+    profile: Path,
+    folder: Path,
+    *,
+    timezone_id: str = "UTC",
+    settle_install_check: bool = False,
 ) -> Ext:
+    """Launch ``folder``; ``settle_install_check`` (working extension only) waits for its check."""
+    started_ms = int(time.time() * 1000)
     context = playwright.chromium.launch_persistent_context(
         str(profile),
         channel="chromium",
@@ -234,7 +285,16 @@ def launch(
     found = [w for w in context.service_workers if w.url.startswith("chrome-extension://")]
     worker = found[0] if found else context.wait_for_event("serviceworker", timeout=10_000)
     ext_id = worker.url.split("/")[2]
-    return Ext(playwright, context, ext_id, served, profile, folder, timezone_id)
+    running = Ext(
+        playwright, context, ext_id, served, profile, folder, timezone_id, settle_install_check
+    )
+    if settle_install_check:
+        try:
+            running.wait_for_install_check(started_ms)
+        except BaseException:
+            running.close()
+            raise
+    return running
 
 
 def js(page: Page, module: str, name: str, *args: Any) -> Any:
@@ -242,3 +302,101 @@ def js(page: Page, module: str, name: str, *args: Any) -> Any:
     return page.evaluate(
         "async ([m, n, a]) => (await import(m))[n](...a)", ["/" + module, name, list(args)]
     )
+
+
+def _real_timestamp(value: str) -> bool:
+    pattern = r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z"
+    if not re.fullmatch(pattern, value):
+        return False
+    try:
+        datetime.fromisoformat(value[:-1] + "+00:00")
+    except ValueError:
+        return False
+    return True
+
+
+def _order_key(doc: Mapping[str, Any]) -> str | None:
+    """P132's key: a valid ``published_at``, else a valid ``generated_at``, else None."""
+    for name in ("published_at", "generated_at"):
+        value = doc.get(name)
+        if isinstance(value, str) and _real_timestamp(value):
+            return value
+    return None
+
+
+def feed_record(feed: bytes, *, fmt: str = "v2", received_at: int = 0) -> dict[str, Any]:
+    """The stored record (``elections_cache_v2``) of ``feed`` as the worker would write it."""
+    doc = json.loads(feed)
+    return {
+        "data": doc,
+        "sha256": hashlib.sha256(feed).hexdigest(),
+        "order_key": _order_key(doc),
+        "format": fmt,
+        "received_at": received_at,
+    }
+
+
+def status_record(status: bytes) -> dict[str, Any]:
+    """The stored record (``status_cache``) of ``status``."""
+    return {
+        "data": json.loads(status),
+        "sha256": hashlib.sha256(status).hexdigest(),
+        "received_at": 0,
+    }
+
+
+def republication(original: bytes, *, now: datetime) -> tuple[bytes, bytes]:
+    """``(elections.json, status.json)`` as ``recovery.republish`` builds them from ``original``."""
+    feed = republished_feed(original, now=now)
+    status = stored_json(
+        status_doc(
+            attempt=Attempt(now, "local", "republish", "0" * 40),
+            outcome="republished",
+            severity="ok",
+            sources=(),
+            run_reasons=(),
+            serving=feed,
+        )
+    )
+    return feed, status
+
+
+def _wire(response: Response) -> dict[str, Any]:
+    if response is None:
+        return {"fail": True}
+    if response == "hang":
+        return {"hang": True}
+    if isinstance(response, bytes):
+        return {"b64": base64.b64encode(response).decode("ascii")}
+    return {"http": response}
+
+
+def run_check(
+    lab: Page,
+    *,
+    feed: Sequence[Response],
+    status: Sequence[Response],
+    stored: Mapping[str, Any],
+    now: int,
+    set_fails: str | None = None,
+    timeout_ms: int = 50,
+    schemas: bool = True,
+) -> dict[str, Any]:
+    """Run ``load.check`` on fakes in the lab page: ``{result, stored, log, sets}``.
+
+    Each request takes the next response of its list and the last repeats; ``"hang"`` never
+    answers, so the deadline does. ``schemas=False`` passes none.
+    """
+    spec = {
+        "feed": [_wire(r) for r in feed],
+        "status": [_wire(r) for r in status],
+        "stored": dict(stored),
+        "now": now,
+        "setFails": set_fails,
+        "timeoutMs": timeout_ms,
+        "schemas": schemas,
+    }
+    ran: dict[str, Any] = lab.evaluate(
+        "async s => (await import('/test/fakes.js')).runCheck(s)", spec
+    )
+    return ran
