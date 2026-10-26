@@ -1,9 +1,10 @@
 """The extension folders as files (no browser)."""
 
 import hashlib
+import re
 from typing import Final
 
-from tests.support.extension import V1_EXTENSION
+from tests.support.extension import ROOT, V1_EXTENSION
 
 # Copied from tests/fixtures/v1/PROVENANCE.md (the blobs of ff30417:extension/).
 V1_SHA256: Final[dict[str, str]] = {
@@ -20,6 +21,35 @@ V1_SHA256: Final[dict[str, str]] = {
     "popup.js": "9b0db4589d09320d9396d188a8018f500a5d605907188884ab968a19d9a923cf",
     "styles.css": "2ef2e9bd0fd737e7c4d02c5b6148ba34f426649760b246651d2fed56a69ae515",
 }
+
+
+PURE_MODULES: Final = ("dates.js", "labels.js")
+# A bare word must not touch an identifier character, so `expected_window` is not `window`.
+BROWSER_TOKENS: Final = (
+    "chrome.",
+    "document",
+    "window",
+    "fetch(",
+    "Date.now",
+    "localStorage",
+    "innerHTML",
+)
+
+
+def _uses(text: str, token: str) -> bool:
+    if not token.isalpha():  # "chrome.", "fetch(", "Date.now" are matched as written
+        return token in text
+    return re.search(r"(?<![A-Za-z0-9_])" + token + r"(?![A-Za-z0-9_])", text) is not None
+
+
+def test_pure_modules_use_no_browser_api() -> None:
+    for name in PURE_MODULES:
+        path = ROOT / "extension" / "lib" / name
+        assert path.is_file(), f"{name} is missing"
+        text = path.read_text(encoding="utf-8")
+        for token in BROWSER_TOKENS:
+            assert not _uses(text, token), f"{name} contains {token!r}"
+        assert ("new Date(" in text) == (name == "dates.js"), f"{name}: new Date( placement"
 
 
 def test_v1_extension_fixture_is_v1_0_2() -> None:
