@@ -265,6 +265,32 @@ def test_check_records_failures_and_keeps_the_cache(lab: Page, pair: tuple[bytes
         assert ran["log"] == ["elections.json"]
 
 
+def test_a_digest_failure_is_a_failed_check(lab: Page, pair: tuple[bytes, bytes]) -> None:
+    feed, status = pair
+    cached = {
+        FEED: feed_record(feed),
+        STATUS: status_record(status),
+        CHECK: {"ok_at": PAGE_NOW_MS - 1, "failed_at": None, "error": None},
+    }
+    lab.evaluate(
+        """() => {
+  window.__digest = crypto.subtle.digest;
+  crypto.subtle.digest = () => Promise.reject(new Error('no digest'));
+}"""
+    )
+    try:
+        ran = _check(lab, feed=[feed], status=[status], stored=cached)
+    finally:
+        lab.evaluate("() => { crypto.subtle.digest = window.__digest; }")
+    assert ran["result"] == {
+        "ok": False,
+        "error": "elections.json: the response could not be checked",
+    }
+    assert ran["stored"][FEED] == cached[FEED] and ran["stored"][STATUS] == cached[STATUS]
+    assert ran["stored"][CHECK]["ok_at"] == PAGE_NOW_MS - 1
+    assert ran["stored"][CHECK]["failed_at"] == PAGE_NOW_MS
+
+
 def test_a_failed_write_keeps_the_previous_pair(lab: Page, pair: tuple[bytes, bytes]) -> None:
     feed, status = pair
     f2, f3 = _at(feed, T2), _at(feed, T3)
@@ -607,6 +633,31 @@ def test_a_check_cut_short_leaves_the_previous_pair(ext: Ext, pair: tuple[bytes,
     ext.served.set("status.json", s3)
     assert _send_check(lab)["ok"] is True
     assert ext.storage()[FEED]["order_key"] == T3
+
+
+def test_a_check_cut_short_after_the_feed_arrived_writes_nothing(
+    ext: Ext, pair: tuple[bytes, bytes]
+) -> None:
+    feed, status = pair
+    f2, f3 = _at(feed, T2), _at(feed, T3)
+    s2 = _links(f2, status)
+    state = {"ok_at": 1, "failed_at": None, "error": None}
+    seeded = {FEED: feed_record(f2), STATUS: status_record(s2), CHECK: state}
+    ext.seed(seeded)
+    ext.served.set("elections.json", f3)  # a newer, valid feed arrives ...
+    ext.served.set("status.json", "hang")  # ... but the status never does
+    lab = ext.lab()
+    lab.evaluate(
+        "() => { chrome.runtime.sendMessage({ type: 'CHECK', force: true }).catch(() => null); }"
+    )
+    deadline = time.monotonic() + 10
+    while "status.json" not in ext.served.log:
+        assert time.monotonic() < deadline, "the check never requested status.json"
+        lab.wait_for_timeout(50)
+    ext.stop_worker()
+    stored = ext.storage()
+    assert stored[FEED] == seeded[FEED] and stored[STATUS] == seeded[STATUS]
+    assert stored[CHECK] == state
 
 
 def test_schemas_are_retried_after_a_failed_load(fresh_ext: Ext, pair: tuple[bytes, bytes]) -> None:

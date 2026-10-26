@@ -99,7 +99,11 @@ async function fetchDocument(deps, url, limit) {
   } catch {
     return { error: "not UTF-8 JSON" };
   }
-  return { data, sha256: await sha256Hex(bytes) };
+  try {
+    return { data, sha256: await sha256Hex(bytes) };
+  } catch {
+    return { error: "the response could not be checked" };
+  }
 }
 
 // {record} or {error: "elections.json: ..."}.

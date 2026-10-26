@@ -331,6 +331,46 @@ def test_stale_fetch_date_is_shown(lab: Page) -> None:
     assert notes(PAGE_NOW_MS, unknown) == ["Unverified: the source data's date is unknown"]
 
 
+def test_fallback_dates_report_the_oldest_and_the_latest(lab: Page) -> None:
+    older, newer = "2026-10-14T09:00:00Z", "2026-10-16T14:39:00Z"
+    sources = [
+        source(selected=True, status_claim="held", fallback=True, fetched_at=older),
+        source(selected=True, status_claim="held", fallback=True, fetched_at=newer),
+    ]
+    for ordered in (sources, sources[::-1]):
+        child = kid(occurrence_confirmed=True, sources=ordered)
+        notes = [
+            "Using source data from 14 Oct 2026",  # the OLDEST of the selected fallbacks
+            "Confirmed by source data from 16 Oct 2026",  # the LATEST of the held claims
+        ]
+        check(lab, HELD_DAY, child, "held", "Held", notes=notes)
+
+
+@pytest.mark.parametrize(
+    ("meaning", "kind", "text"),
+    [
+        ("voting_period", "past", "Past"),
+        ("expected_window", "past_expected", "Past expected period — not confirmed"),
+    ],
+)
+def test_no_tentative_chip_on_past_cards(lab: Page, meaning: str, kind: str, text: str) -> None:
+    c = dated("2026-10-04", "2026-10-04", "day", meaning, status="Held", date_status="tentative")
+    check(lab, c, kid(occurrence_confirmed=False), kind, text, [])
+
+
+def test_a_tentative_held_card_has_no_tentative_chip(lab: Page) -> None:
+    c = dated("2026-10-04", "2026-10-04", status="Held", date_status="tentative")
+    check(lab, c, kid(occurrence_confirmed=True), "held", "Held", [])
+
+
+def test_one_child_has_no_k_of_n_suffix(lab: Page) -> None:
+    one = [label(lab, NOW_RANGE, kid(status_conflict=True))]
+    assert js(lab, L, "cardLabel", NOW_RANGE, one) == {
+        "kind": "possibly_postponed",
+        "text": "Possibly postponed — sources disagree",
+    }
+
+
 def test_provisional_source_note(lab: Page) -> None:
     on = source(provisional=True, fetched_at="2026-10-19T08:57:34Z")
     assert js(lab, L, "sourceNote", on) == "Newer data from an incomplete fetch on 19 Oct 2026"
