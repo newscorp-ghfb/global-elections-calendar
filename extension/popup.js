@@ -1,7 +1,10 @@
 import { KEYS, loadSchemas, storedFeed, storedStatus } from "./lib/load.js";
 import { bannerState, footerState, NO_HEALTH, panelRows } from "./lib/health.js";
 import { isLinked } from "./lib/order.js";
+// render.js loads before legacy.js, so on a click its listener runs first and legacy's second.
+import { renderV2 } from "./lib/render.js";
 import { renderLegacy } from "./lib/legacy.js";
+import { localToday } from "./lib/dates.js";
 
 const PINNED_COUNTRIES_KEY = "pinned_countries";
 
@@ -77,7 +80,14 @@ async function render() {
   const record = storedFeed(stored[KEYS.feed], schemas);
   if (record === null) return false;
   const pinned = Array.isArray(stored[PINNED_COUNTRIES_KEY]) ? stored[PINNED_COUNTRIES_KEY] : [];
-  renderLegacy(record.data, { pinned });
+  if (record.format === "v2") {
+    const now = Date.now();
+    document.body.dataset.renderer = "v2";
+    renderV2(record.data, { pinned, today: localToday(now), now });
+  } else {
+    document.body.dataset.renderer = "legacy";
+    renderLegacy(record.data, { pinned });
+  }
   drawHealth(record, storedStatus(stored[KEYS.status], schemas), stored[KEYS.check]);
   document.body.dataset.state = "ready";
   return true;

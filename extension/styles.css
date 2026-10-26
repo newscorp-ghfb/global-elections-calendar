@@ -522,3 +522,50 @@ body {
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
+
+/* ── v2 cards, level filter, record count ───────────────────── */
+.record-count {
+  font-size: 10px;
+  color: var(--on-surf-var);
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.level-filter {
+  width: 100%;
+  margin-top: 6px;
+  background: var(--surface-high);
+  border: 1px solid var(--outline-var);
+  border-radius: var(--r-lg);
+  color: var(--on-surface);
+  font-size: 12px;
+  padding: 6px 10px;
+  font-family: var(--font-body);
+}
+
+.election-item-v2 { cursor: default; }
+.election-item-v2:hover { background: var(--surface-low); }
+
+.card-label {
+  font-size: 11px;
+  color: var(--on-surface);
+  margin-top: 2px;
+}
+
+.card-match {
+  font-size: 10px;
+  color: var(--on-surf-var);
+}
+.card-match:empty { display: none; }
+
+.chip-tentative { background: var(--orange-soft); color: var(--orange); }
+.chip-subnational { background: var(--gray-soft); color: var(--on-surf-var); }
+
+.card-notes {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  font-size: 10px;
+  color: var(--on-surf-var);
+}
+.card-notes:empty { display: none; }
