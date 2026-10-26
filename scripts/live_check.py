@@ -460,6 +460,7 @@ def _compare_contests(
                 if entry["level"] != "national":
                     continue
                 wanted = _span(str(entry["date"]))
+                _ = entry["place"], entry["office"], entry["round"]  # each key must exist
             except KeyError as exc:
                 name = _entry_name(entry)
                 material.append(f"cannot read expected entry {name}: missing key {exc}")
@@ -584,9 +585,12 @@ def _attempt(cmd: Sequence[str], *, limit_s: float, log: Path) -> tuple[int | No
 
 def _make_folders(out: Path, folder: Path, *repos: Path) -> str | None:
     """Create the report folder and the two repository folders; the reason when that fails."""
-    for parent in (out, *out.parents):
-        if parent.exists() and not parent.is_dir():
-            return f"{parent} is not a directory"
+    try:
+        for parent in (out, *out.parents):
+            if parent.exists() and not parent.is_dir():
+                return f"{parent} is not a directory"
+    except OSError as exc:
+        return f"cannot check {parent}: {exc}"
     target = folder
     try:
         folder.mkdir(parents=True)

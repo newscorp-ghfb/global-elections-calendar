@@ -1055,9 +1055,12 @@ def test_a_live_card_ending_on_9999_12_31_is_a_material_line_and_the_report_is_w
     [
         ({"place": "iso:ZZ", "office": "Parliament", "round": None, "level": "national"}, "'date'"),
         ({"place": "iso:ZZ", "office": "Parliament", "round": None, "date": "2026-10-05"}, "'level'"),
+        ({"office": "Parliament", "round": None, "level": "national", "date": "2026-10-05"}, "'place'"),
+        ({"place": "iso:ZZ", "round": None, "level": "national", "date": "2026-10-05"}, "'office'"),
+        ({"place": "iso:ZZ", "office": "Parliament", "level": "national", "date": "2026-10-05"}, "'round'"),
         ("not an entry", "is not a mapping"),
     ],
-    ids=["no date", "no level", "not a mapping"],
+    ids=["no date", "no level", "no place", "no office", "no round", "not a mapping"],
 )
 def test_a_malformed_expected_entry_is_a_material_line_and_does_not_skip_the_rest(
     tmp_path: Path, bad: Any, said: str
@@ -1077,6 +1080,30 @@ def test_a_malformed_expected_entry_is_a_material_line_and_does_not_skip_the_res
     assert len(material) == 2, material
     assert material[0].startswith("cannot read expected entry ") and said in material[0]
     assert material[1] == "expected and not found: iso:ZY Parliament 2026-10-05"
+
+
+def test_an_unreadable_report_parent_is_a_reason(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fake = Fake(tmp_path)
+    monkeypatch.setattr(live_check, "run_bounded", fake)
+    out = (tmp_path / "out").resolve()
+    stamp_dir = out / "20261024T120000Z"
+    real = Path.exists
+
+    def refusing(self: Path, *args: Any, **kwargs: Any) -> bool:
+        if self == out:
+            raise PermissionError("denied")
+        return real(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "exists", refusing)
+    problem = live_check._make_folders(out, stamp_dir)
+    assert problem is not None and problem.startswith("cannot check ")
+    assert problem.endswith("denied")
+    assert live_check.main(["--out", str(out)]) == 1
+    err = capsys.readouterr().err
+    assert err.startswith("cannot check ") and err.rstrip().endswith("denied")
+    assert fake.calls == []
 
 
 def test_an_out_that_is_a_file_is_not_a_directory(

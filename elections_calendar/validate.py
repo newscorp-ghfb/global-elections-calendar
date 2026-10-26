@@ -55,10 +55,13 @@ def _ecma(pattern: str) -> re.Pattern[str]:
     """``pattern`` as ECMA-262 reads it without the ``m`` flag: a final unescaped ``$`` is the end.
 
     Python's ``$`` also matches just before a final newline, so it is read as ``\\Z``. A test keeps
-    every schema pattern to one ``$``, at the end.
+    every schema pattern to one ``$``, at the end. The ``$`` is an anchor when an even number of
+    backslashes (zero included) precede it.
     """
-    if pattern.endswith("$") and not pattern.endswith("\\$"):
-        return re.compile(pattern[:-1] + "\\Z")
+    body = pattern[:-1]
+    backslashes = len(body) - len(body.rstrip("\\"))
+    if pattern.endswith("$") and backslashes % 2 == 0:
+        return re.compile(body + "\\Z")
     return re.compile(pattern)
 
 

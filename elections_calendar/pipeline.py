@@ -369,7 +369,7 @@ def rejected_pages(
 
 
 def _write_rejected_pages(out: Path, parsed: Sequence[_Parsed]) -> None:
-    """Write the kept bodies and ``rejected/pages/index.json``; nothing when none is kept."""
+    """Write the kept bodies and ``rejected/pages/index.json``; nothing when no page is listed."""
     order = {name: n for n, name in enumerate(SOURCE_ORDER)}
     rows: list[dict[str, Any]] = []
     total = 0

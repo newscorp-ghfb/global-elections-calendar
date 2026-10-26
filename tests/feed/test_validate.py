@@ -254,6 +254,15 @@ def test_every_schema_object_is_closed_and_complete() -> None:
         assert optional == (OPTIONAL_PROPERTIES if path == FEED_SCHEMA else set())
 
 
+def test_ecma_reads_an_escaped_backslash_before_the_end() -> None:
+    escaped_backslash = validate._ecma("a\\\\$")  # pattern text: a\\$
+    assert escaped_backslash.search("a\\") is not None
+    assert escaped_backslash.search("a\\\n") is None
+    escaped_dollar = validate._ecma("a\\$")  # pattern text: a\$
+    assert escaped_dollar.search("a$") is not None
+    assert validate._ecma("a$").search("a\n") is None
+
+
 def test_v1_feed_is_not_a_v2_feed() -> None:
     problems = validate_feed(V1_FEED.read_bytes(), served=[], wall_clock=WALL)
     assert problems and "schema" in prefixes(problems)

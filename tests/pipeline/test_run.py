@@ -488,7 +488,7 @@ def test_a_future_health_state_is_ack_invalid(tmp_path: Path) -> None:
 def test_a_failed_parse_is_worker_failed_not_deadline_or_layout_not_recognised(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The source's own reasons only (P108); the test above checks the status file."""
+    """The source's own reasons only (P108); test_a_parse_failure_shows_one_worker_failed_and_no_deadline checks the status file."""
     fail_the_parse_of_an_unfinished_run(monkeypatch)
     _, out = go(tmp_path, None)
     codes = reason_codes(osce_entry(out))
