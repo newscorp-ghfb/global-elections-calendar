@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-25T00:02:44Z",
+  "generated_at": "2026-10-26T00:02:33Z",
   "current_month": "2026-10",
   "months": {
     "2026-09": [
@@ -463,24 +463,6 @@
       },
       {
         "date": "2026-10-25",
-        "country": "Brazil",
-        "type": "2026 General Elections (2nd round)",
-        "status": "Held",
-        "source_names": [
-          "A-WEB"
-        ],
-        "links": [
-          "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052"
-        ],
-        "sources": [
-          {
-            "name": "A-WEB",
-            "link": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052"
-          }
-        ]
-      },
-      {
-        "date": "2026-10-25",
         "country": "Japan",
         "type": "Fukushima , Governor",
         "status": "Held",
@@ -501,7 +483,7 @@
         "date": "2026-10-26",
         "country": "Canada",
         "type": "Ontario , municipal elections Hamilton , municipal elections Ottawa , municipal elections York Region municipal elections Toronto , municipal elections",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
