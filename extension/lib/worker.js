@@ -4,8 +4,18 @@
 export const ALARM_NAME = "elections-refresh";
 
 // Each handler returns a promise, except `message`, which returns undefined at once for a
-// message that is not a check request (so the caller knows not to hold the reply channel open).
-export function handlers({ runCheck, ensureAlarm, isDue, openHelp }) {
+// message that is not one of ours (so the caller knows not to hold the reply channel open).
+// `migratePins` and `editPin` never reject in production; a rejection is logged all the same,
+// because a pin migration that fails must not stop the alarm or the check (P140).
+export function handlers({ runCheck, ensureAlarm, isDue, openHelp, migratePins, editPin }) {
+  async function migrate() {
+    try {
+      const done = await migratePins();
+      if (done && done.ok === false) console.error("pins", done.error);
+    } catch (err) {
+      console.error("pins", err);
+    }
+  }
   return {
     async installed(details) {
       if (details.reason === "install") {
@@ -15,10 +25,12 @@ export function handlers({ runCheck, ensureAlarm, isDue, openHelp }) {
           console.error(err); // a help tab that cannot open must not stop the alarm or the check
         }
       }
+      await migrate();
       await ensureAlarm();
       await runCheck();
     },
     async startup() {
+      await migrate();
       await ensureAlarm();
       await runCheck();
     },
@@ -31,7 +43,10 @@ export function handlers({ runCheck, ensureAlarm, isDue, openHelp }) {
       }
     },
     message(msg) {
-      if (typeof msg !== "object" || msg === null || msg.type !== "CHECK") return undefined;
+      if (typeof msg !== "object" || msg === null) return undefined;
+      if (msg.type === "PINS") return migratePins();
+      if (msg.type === "PIN_EDIT") return editPin({ op: msg.op, value: msg.value });
+      if (msg.type !== "CHECK") return undefined;
       return (async () => {
         await ensureAlarm();
         if (msg.force || (await isDue())) return runCheck();

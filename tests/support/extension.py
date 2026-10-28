@@ -422,3 +422,131 @@ def run_check(
         "async s => (await import('/test/fakes.js')).runCheck(s)", spec
     )
     return ran
+
+
+def run_pins(
+    lab: Page,
+    *,
+    stored: Mapping[str, Any],
+    verify_mismatch: bool = False,
+    get_fails: str | None = None,
+    set_fails: str | None = None,
+) -> dict[str, Any]:
+    """Run ``pins.migratePins`` once on a fake storage: ``{result, stored, sets}``.
+
+    ``sets`` lists the keys of each ``set``. ``verify_mismatch`` makes the migrated places read
+    back as something else, ``get_fails`` rejects every ``get`` and ``set_fails`` every ``set``,
+    with that message.
+    """
+    spec = {
+        "stored": dict(stored),
+        "verifyMismatch": verify_mismatch,
+        "getFails": get_fails,
+        "setFailsAll": set_fails is not None,
+        "setFailsWith": set_fails,
+    }
+    ran: dict[str, Any] = lab.evaluate(
+        "async s => (await import('/test/fakes.js')).runPins(s)", spec
+    )
+    return ran
+
+
+def run_pin_edits(
+    lab: Page,
+    *,
+    stored: Mapping[str, Any],
+    edits: Sequence[Mapping[str, Any]],
+    set_delay_ms: int = 30,
+    set_fails: Sequence[int] = (),
+) -> dict[str, Any]:
+    """Send every edit to one ``pins.editQueue`` without waiting: ``{replies, stored, sets}``.
+
+    The fake storage's ``set``s take ``set_delay_ms``; ``set_fails`` holds the indexes of the
+    ``set`` calls that reject (with "quota"). The replies come back in edit order.
+    """
+    spec = {
+        "stored": dict(stored),
+        "edits": [dict(e) for e in edits],
+        "setDelayMs": set_delay_ms,
+        "setFails": list(set_fails),
+        "setFailsWith": "quota",
+    }
+    ran: dict[str, Any] = lab.evaluate(
+        "async s => (await import('/test/fakes.js')).runPinEdits(s)", spec
+    )
+    return ran
+
+
+_WRAP_PIN_MESSAGES: Final = """mode => {
+  const real = chrome.runtime.sendMessage.bind(chrome.runtime);
+  let armed = true;
+  chrome.runtime.sendMessage = async (message, ...rest) => {
+    if (!armed || !message || message.type !== 'PIN_EDIT') return real(message, ...rest);
+    armed = false;
+    if (mode === 'reject-before') {
+      throw new Error('Could not establish connection. Receiving end does not exist.');
+    }
+    if (mode === 'no-reply') return undefined;
+    const reply = real(message, ...rest);
+    if (mode === 'reject-after') {
+      await reply;
+      throw new Error('The message port closed before a response was received.');
+    }
+    const gate = new Promise((resolve) => { window.__releasePinReply = resolve; });
+    window.__pinReplyHeld = reply;
+    await gate;
+    return reply;
+  };
+}"""
+
+_WRAP_PIN_READS: Final = """mode => {
+  const real = chrome.storage.local.get.bind(chrome.storage.local);
+  let armed = mode === 'hold-next';
+  chrome.storage.local.get = async (keys, ...rest) => {
+    const isPinRead = Array.isArray(keys) && keys.includes('pinned_places_v2');
+    if (!isPinRead) return real(keys, ...rest);
+    if (mode === 'fail') throw new Error('boom');
+    if (!armed) return real(keys, ...rest);
+    armed = false;
+    const value = await real(keys, ...rest);
+    window.__pinReadHeld = value;
+    await new Promise((resolve) => { window.__releasePinRead = resolve; });
+    return value;
+  };
+}"""
+
+_RELEASE: Final = """async name => {
+  window[name]();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}"""
+
+
+def wrap_pin_messages(page: Page, mode: str) -> None:
+    """Change the options page's next ``PIN_EDIT`` message only (and no other message).
+
+    ``mode``: ``"hold"`` forwards it and keeps the real reply until ``release_pin_reply``;
+    ``"reject-before"`` rejects without forwarding; ``"reject-after"`` forwards, awaits the real
+    reply, then rejects; ``"no-reply"`` resolves ``undefined`` without forwarding.
+    """
+    assert mode in ("hold", "reject-before", "reject-after", "no-reply"), mode
+    page.evaluate(_WRAP_PIN_MESSAGES, mode)
+
+
+def release_pin_reply(page: Page) -> None:
+    """Deliver the held reply; returns once one task has passed."""
+    page.evaluate(_RELEASE, "__releasePinReply")
+
+
+def wrap_pin_reads(page: Page, mode: str) -> None:
+    """Change ``chrome.storage.local.get`` calls that read the pin keys.
+
+    ``"hold-next"`` holds the next one's result until ``release_pin_read`` (``window.__pinReadHeld``
+    is the value the real read returned); ``"fail"`` rejects every one with "boom".
+    """
+    assert mode in ("hold-next", "fail"), mode
+    page.evaluate(_WRAP_PIN_READS, mode)
+
+
+def release_pin_read(page: Page) -> None:
+    """Deliver the held read; returns once one task has passed."""
+    page.evaluate(_RELEASE, "__releasePinRead")

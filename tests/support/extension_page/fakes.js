@@ -1,5 +1,6 @@
 // In-memory fakes for lib/load.js and lib/worker.js, driven from Python (tests/support/extension.py).
-import { check, loadSchemas } from "../lib/load.js";
+import { check, loadPlaces, loadSchemas } from "../lib/load.js";
+import { editQueue, migratePins } from "../lib/pins.js";
 import { handlers } from "../lib/worker.js";
 
 const FEED_URL = "https://raw.githubusercontent.com/x/y/main/elections.json";
@@ -88,13 +89,15 @@ export async function runCheck(spec) {
 }
 
 const RUN_VALUE = { ok: true, changed: true, marker: 1 };
+const MIGRATE_VALUE = { ok: true, migrated: true, marker: 2 };
 
 // spec: {call: "installed" | "startup" | "alarm" | "message", arg, due: bool, helpRejects: bool,
-// runCheckRejects: bool}. Returns {log, result, undefinedResult, rejected}: `rejected` is the
+// runCheckRejects: bool, migrateRejects: bool}. Returns {log, result, undefinedResult, rejected}: `rejected` is the
 // message the handler rejected with, or null.
 // Each fake logs `name:start` when called and `name:end` when it settles. The delays shrink along
 // the usual call order (openHelp longest), so a handler that does not wait for a call would show
-// the next call starting before the earlier one ended.
+// the next call starting before the earlier one ended. `editPin` logs `editPin:start` and
+// `editPin:end` and returns {ok: true, edited: <the edit>}.
 export async function runHandlers(spec) {
   const log = [];
   const later = (name, ms, value, rejects = false) => async () => {
@@ -106,6 +109,8 @@ export async function runHandlers(spec) {
   };
   const h = handlers({
     openHelp: later("openHelp", 40, undefined, spec.helpRejects === true),
+    migratePins: later("migratePins", 10, MIGRATE_VALUE, spec.migrateRejects === true),
+    editPin: async (edit) => later("editPin", 5, { ok: true, edited: edit })(),
     ensureAlarm: later("ensureAlarm", 25),
     isDue: later("isDue", 15, spec.due),
     runCheck: later("runCheck", 5, RUN_VALUE, spec.runCheckRejects === true),
@@ -123,4 +128,55 @@ export async function runHandlers(spec) {
     undefinedResult: result === undefined,
     rejected,
   };
+}
+
+// A fake chrome.storage.local over `stored` (cloned): `get(keys)` and `set(items)`. `sets` logs the
+// keys of every `set`; `setDelayMs` makes a `set` take that long; `failSets` holds the indexes
+// (in call order, from 0) of the `set`s that reject, `setFailsAll` makes every `set` reject, with
+// the message `setFailsWith`; `getFails` is a message that rejects every `get`.
+function pinStorage(spec, stored, sets) {
+  let calls = 0;
+  const failing = new Set(spec.setFails ?? []);
+  return {
+    get: async (keys) => {
+      if (spec.getFails) throw new Error(spec.getFails);
+      const out = {};
+      for (const key of keys) if (key in stored) out[key] = structuredClone(stored[key]);
+      return out;
+    },
+    set: async (items) => {
+      const index = calls;
+      calls += 1;
+      sets.push(Object.keys(items));
+      if (spec.setDelayMs) await new Promise((resolve) => setTimeout(resolve, spec.setDelayMs));
+      if (spec.setFailsAll || failing.has(index)) throw new Error(spec.setFailsWith ?? "set failed");
+      for (const [key, value] of Object.entries(items)) {
+        // verifyMismatch stores a different list than the one written, so the read-back differs
+        stored[key] = structuredClone(spec.verifyMismatch && key === "pinned_places_v2" ? ["x:garbled"] : value);
+      }
+    },
+  };
+}
+
+// One migration over a fake storage. spec: {stored, verifyMismatch, getFails, setFailsAll,
+// setFailsWith}. Returns {result, stored, sets}.
+export async function runPins(spec) {
+  const sets = [];
+  const stored = structuredClone(spec.stored);
+  const table = await loadPlaces((p) => chrome.runtime.getURL(p));
+  const { get, set } = pinStorage(spec, stored, sets);
+  const result = await migratePins({ get, set, table });
+  return { result, stored, sets };
+}
+
+// Every edit goes to one editQueue without waiting. spec: {stored, edits, setDelayMs, setFails:
+// [index of the sets that reject], setFailsWith}. Returns {replies (in edit order), stored, sets}.
+export async function runPinEdits(spec) {
+  const sets = [];
+  const stored = structuredClone(spec.stored);
+  const table = await loadPlaces((p) => chrome.runtime.getURL(p));
+  const { get, set } = pinStorage(spec, stored, sets);
+  const edit = editQueue({ get, set, table });
+  const replies = await Promise.all(spec.edits.map((e) => edit(e)));
+  return { replies, stored, sets };
 }

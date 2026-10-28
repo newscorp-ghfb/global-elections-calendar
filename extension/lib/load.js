@@ -74,6 +74,17 @@ export async function loadSchemas(getURL) {
   return { feed, status };
 }
 
+// The place table (extension/places.json): {names, places}. Throws when it cannot be read.
+export async function loadPlaces(getURL) {
+  const response = await fetch(getURL("places.json"));
+  if (!response.ok) throw new Error(`HTTP ${response.status} for places.json`);
+  const table = await response.json();
+  if (!isObject(table) || !isObject(table.names) || !isObject(table.places)) {
+    throw new Error("places.json is not a place table");
+  }
+  return table;
+}
+
 class Deadline extends Error {}
 
 export class OverLimit extends Error {

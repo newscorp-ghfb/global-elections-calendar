@@ -3,6 +3,7 @@
 // link (R47; 5b-2 adds the source entries).
 import { view, recordText } from "./count.js";
 import { badge, monthName, monthYear } from "./dates.js";
+import { pinMatcher } from "./pins.js";
 
 const $ = (id) => document.getElementById(id);
 const stateLoading      = $("stateLoading");
@@ -27,7 +28,8 @@ const pinBarText        = $("pinBarText");
 const tabs = [$("tabUpcoming"), $("tabPast"), $("tabAll")];
 
 let doc = null;       // the v2 feed document drawn last
-let pinned = [];
+let pinned = [];     // the pinned place ids
+let matches = () => true;
 let today = "";
 let now = 0;
 let month = "";       // "YYYY-MM" shown
@@ -92,7 +94,7 @@ function buildCard(entry) {
 function draw() {
   const months = doc.window.months;
   const idx = months.indexOf(month);
-  const shown = view(doc, { month, tab, level, query, pinned, today, now });
+  const shown = view(doc, { month, tab, level, query, pins: matches, today, now });
 
   // tabs: the shown one only
   for (const t of tabs) {
@@ -147,6 +149,7 @@ function draw() {
 export function renderV2(feed, opts) {
   doc = feed;
   pinned = opts.pinned;
+  matches = pinMatcher(pinned, opts.table);
   today = opts.today;
   now = opts.now;
   if (!doc.window.months.includes(month)) month = doc.current_month;

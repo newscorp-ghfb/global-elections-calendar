@@ -105,7 +105,7 @@ body {
   border-radius: 4px;
 }
 
-/* ── Country item (checkbox row) ────────────────────────────── */
+/* ── Country item (a place and its pin button) ────────────────────────────── */
 .country-item {
   display: flex;
   align-items: center;
@@ -116,20 +116,21 @@ body {
 }
 .country-item:hover { background: var(--surface-mid); }
 
-.country-item input[type="checkbox"] {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  accent-color: var(--primary);
-  cursor: pointer;
+.country-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-
-.country-item label {
+.country-name {
   font-size: 13px;
   color: var(--on-surface);
-  cursor: pointer;
-  flex: 1;
-  user-select: none;
+  overflow-wrap: anywhere;
+}
+.also-shows {
+  font-size: 11px;
+  color: var(--outline);
 }
 
 /* ── Pin button ─────────────────────────────────────────────── */
@@ -148,7 +149,10 @@ body {
   opacity: 0;
 }
 .country-item:hover .pin-btn,
+.pin-btn:focus-visible,
 .pin-btn.active { opacity: 1; }
+.pin-btn:focus-visible, .remove-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.pin-btn[aria-busy="true"], .remove-btn[aria-busy="true"] { opacity: 0.5; cursor: progress; }
 .pin-btn:hover  { color: var(--primary); }
 .pin-btn.active { color: var(--primary); }
 .pin-btn.active svg { fill: var(--primary); }
@@ -159,7 +163,7 @@ body {
   border-left: 2px solid var(--primary);
   padding-left: 14px;
 }
-.country-item.pinned label { color: var(--primary); font-weight: 600; }
+.country-item.pinned .country-name { color: var(--primary); font-weight: 600; }
 
 /* ── Pin summary banner ─────────────────────────────────────── */
 .pin-summary {
@@ -181,49 +185,30 @@ body {
   color: var(--outline);
 }
 
-/* ── Footer buttons ─────────────────────────────────────────── */
-.options-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-shrink: 0;
-}
+/* ── Save and pin problems ──────────────────────────────────── */
+.pin-problem { font-size: 12px; color: #ffb4ab; }
+.pin-problem:empty { display: none; }
 
-.footer-actions-left {
-  display: flex;
-  gap: 8px;
+/* ── Pins from version 1 that match no known country ─────────── */
+.unresolved {
+  background: var(--surface-low);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 12px 16px;
 }
-
-.btn-secondary {
+.unresolved-title { font-size: 13px; font-weight: 700; color: var(--on-surface); }
+.unresolved-note { font-size: 12px; color: var(--outline); margin: 4px 0 8px; }
+.unresolved-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.unresolved-item { display: flex; align-items: center; gap: 12px; }
+.unresolved-name { flex: 1; font-size: 13px; overflow-wrap: anywhere; }
+.remove-btn {
   background: var(--surface-high);
   border: 1px solid var(--outline-var);
   border-radius: var(--r-lg);
   color: var(--on-surf-var);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-family: var(--font-body);
-  padding: 8px 14px;
-  transition: background 0.15s, color 0.15s;
+  padding: 4px 10px;
 }
-.btn-secondary:hover { background: var(--surface-highest); color: var(--on-surface); }
-
-.btn-primary {
-  background: var(--primary-soft);
-  border: 1px solid var(--primary);
-  border-radius: var(--r-lg);
-  color: var(--primary);
-  cursor: pointer;
-  font-size: 13px;
-  font-family: var(--font-body);
-  font-weight: 600;
-  padding: 8px 20px;
-  transition: background 0.15s, color 0.15s;
-}
-.btn-primary:hover { background: rgba(173, 198, 255, 0.2); }
-
-.btn-primary.btn-saved {
-  background: var(--green-soft);
-  border-color: var(--green);
-  color: var(--green);
-}
+.remove-btn:hover { background: var(--surface-highest); color: var(--on-surface); }

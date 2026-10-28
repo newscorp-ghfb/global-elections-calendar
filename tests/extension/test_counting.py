@@ -17,7 +17,10 @@ OCT: Final = "2026-10"
 
 _VIEW_JS: Final = """async ([doc, opts]) => {
   const { view } = await import('/lib/count.js');
-  const v = view(doc, opts);
+  const { pinMatcher } = await import('/lib/pins.js');
+  const { loadPlaces } = await import('/lib/load.js');
+  const table = await loadPlaces((p) => chrome.runtime.getURL(p));
+  const v = view(doc, { ...opts, pins: pinMatcher(opts.pinned, table) });
   return {
     records: v.records, groupings: v.groupings, held: v.held,
     cards: v.cards.map((c) => ({
@@ -440,7 +443,7 @@ def test_only_the_active_renderer_handles_controls(ext: Ext, pair: tuple[bytes, 
 
 
 def test_v2_shares_the_legacy_states(ext: Ext, pair: tuple[bytes, bytes]) -> None:
-    ext.seed({"pinned_countries": ["Czech Republic"]})
+    ext.seed({"pins_migrated_v2": True, "pinned_places_v2": ["iso:CZ"], "unresolved_pins_v2": []})
     page = _open(ext, pair)
     assert page.locator("#pinBar").is_visible()
     assert _text(page, "#pinBarText") == "Pinned view · 1 country"
@@ -462,7 +465,7 @@ def test_v2_shares_the_legacy_states(ext: Ext, pair: tuple[bytes, bytes]) -> Non
     assert page.locator("#nextMonthBtn").evaluate("e => e.style.visibility") == "hidden"
     assert _text(page, "#nextMonthLabel") == ""
 
-    ext.seed({"pinned_countries": []})
+    ext.seed({"pinned_places_v2": []})
     page.click("#refreshBtn")
     _settled(page)
     assert page.locator("#pinBar").is_hidden()
