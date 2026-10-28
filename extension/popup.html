@@ -108,6 +108,15 @@
     </select>
   </div>
 
+  <!-- Attention and undated items (v2 feeds only; collapsed until opened) -->
+  <section class="attention hidden" id="attention">
+    <button type="button" class="attention-toggle" id="attentionToggle" aria-expanded="false" aria-controls="attentionList"></button>
+    <p class="attention-note" id="attentionNote" hidden></p>
+    <ul class="attention-list" id="attentionList" hidden></ul>
+    <p class="attention-shown" id="attentionShown" hidden></p>
+    <button type="button" class="attention-more" id="attentionMore" hidden></button>
+  </section>
+
   <!-- States -->
   <div class="state" id="stateLoading">
     <div class="spinner"></div>

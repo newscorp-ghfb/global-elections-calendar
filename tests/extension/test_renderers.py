@@ -187,11 +187,20 @@ def test_renderer_switches_inside_one_popup(ext: Ext) -> None:
         if index == 1:  # expand a card while v2 is shown; the open set outlives the renderer
             brazil.locator("button.card-toggle").click()
             assert brazil.locator(".child-entry").count() == 18
+            page.click("#attentionToggle")  # the attention section is opened while v2 is shown
+            assert page.locator("#attentionToggle").get_attribute("aria-expanded") == "true"
+            assert page.locator("#attentionList > li.attention-row").count() > 0
         if index == 2:  # legacy: nothing of the v2 disclosure remains
             assert page.locator("#electionList .card-details, .card-toggle").count() == 0
+            assert page.locator("#attention").is_hidden()
+            assert page.locator("#attentionToggle").is_hidden()
         if index == 3:  # v2 again: the card is open again (remembered by group_id)
             assert brazil.locator("button.card-toggle").get_attribute("aria-expanded") == "true"
             assert brazil.locator(".child-entry").count() == 18
+            # ... and so is the attention section, open again
+            assert page.locator("#attentionToggle").is_visible()
+            assert page.locator("#attentionToggle").get_attribute("aria-expanded") == "true"
+            assert page.locator("#attentionList > li.attention-row").count() > 0
         after = _state(page)
         assert after["renderer"] == renderer and after[other] == 0, index
         assert after["active_tabs"] == [tab], index

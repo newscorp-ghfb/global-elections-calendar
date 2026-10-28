@@ -249,8 +249,8 @@ class Ext:
                     # a tab on a stubbed https URL can still end on Chrome's error page
                     if url.startswith("chrome-error://") and pending:
                         url = pending.pop(0)
-                    elif url in pending:
-                        pending.remove(url)
+                    elif url.split("#")[0] in pending:  # a request carries no fragment
+                        pending.remove(url.split("#")[0])
                     urls.append(url)
             return urls + pending
         finally:
@@ -644,3 +644,72 @@ def wrap_pin_reads(page: Page, mode: str) -> None:
 def release_pin_read(page: Page) -> None:
     """Deliver the held read; returns once one task has passed."""
     page.evaluate(_RELEASE, "__releasePinRead")
+
+
+def _fresh_ids(doc: Mapping[str, Any]) -> Callable[[], str]:
+    """A source of 12-hex ids that appear nowhere in ``doc``."""
+    taken = set(re.findall(r'"([0-9a-f]{12})"', json.dumps(doc)))
+    counter = iter(range(10**9))
+
+    def fresh() -> str:
+        while True:
+            candidate = hashlib.sha256(f"synthetic-{next(counter)}".encode()).hexdigest()[:12]
+            if candidate not in taken:
+                taken.add(candidate)
+                return candidate
+
+    return fresh
+
+
+def synthetic_feed(
+    base: bytes, *, cards: int = 0, children: int = 0, items: int = 0, truncated: int = 0
+) -> bytes:
+    """``base`` (a v2 feed) with October grown, as bytes; schema-valid and under 4,000,000 bytes.
+
+    October gains ``cards`` one-child cards and, when ``children`` > 0, one card with ``children``
+    children. ``items`` > 0 replaces the attention items by that many fresh ones ("Synthetic item
+    <n>", source ``wikipedia``; at most 500, the schema's cap). ``attention_truncated`` is
+    ``truncated``. Every new id is a fresh 12-hex value.
+    """
+    assert 0 <= items <= 500, items
+    doc = json.loads(base)
+    fresh = _fresh_ids(doc)
+    october: list[dict[str, Any]] = doc["months"]["2026-10"]
+
+    def grown(country: str, count: int) -> dict[str, Any]:
+        card: dict[str, Any] = json.loads(json.dumps(october[0]))
+        card.update(
+            group_id=fresh(), country=country, status="Upcoming", level="national",
+            date="2026-10-26", end_date="2026-10-26", date_precision="day",
+            date_meaning="voting_period", date_status="confirmed", umbrellas=[],
+            umbrella_sources=[],
+        )
+        child = card["children"][0]
+        child.update(
+            occurrence_confirmed=False, status_conflict=False, date_conflict=False,
+            possible_matches=[], possible_matches_outside=0, rescheduled_from=[],
+            provisional_date=None,
+        )
+        child["sources"] = child["sources"][:1]
+        child["sources"][0].update(selected=True, fallback=False, provisional=False, status_claim=None)
+        card["children"] = [{**child, "child_id": fresh()} for _ in range(count)]
+        return card
+
+    october.extend(grown(f"Synthetic {n}", 1) for n in range(cards))
+    if children > 0:
+        october.append(grown("Synthetic Big", children))
+    if items > 0:
+        model = doc["attention_items"][0]
+        doc["attention_items"] = [
+            {
+                **model, "item_id": fresh(), "kind": "partial_unit", "source": "wikipedia",
+                "link": "https://en.wikipedia.org/wiki/Synthetic", "snapshot_id": None,
+                "date": None, "text": f"Synthetic item {n}", "possible_matches": [],
+                "possible_matches_outside": 0, "undated_id": None,
+            }
+            for n in range(items)
+        ]
+    doc["attention_truncated"] = truncated
+    out = _dump(doc)
+    assert len(out) < 4_000_000, len(out)
+    return out
