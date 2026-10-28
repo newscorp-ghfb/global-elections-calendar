@@ -4,17 +4,27 @@ import copy
 import json
 import time
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, Final
 
 import pytest
-from playwright.sync_api import Locator, Page
+from playwright.sync_api import Locator, Page, Playwright
 
-from tests.support.extension import Ext, artifact_pair, feed_record, js
+from tests.support.extension import (
+    Ext,
+    artifact_pair,
+    extension_copy,
+    feed_record,
+    js,
+    launch,
+    status_record,
+)
 
 DETAILS: Final = "lib/details.js"
 LINKS: Final = "lib/links.js"
 FEED: Final = "elections_cache_v2"
 CHECK: Final = "check_state_v2"
+STATUS: Final = "status_cache"
 EVIL: Final = "<img src=x onerror=alert(1)>"
 WIKI: Final = "https://en.wikipedia.org/"
 
@@ -28,7 +38,6 @@ SOUTH_SUDAN_PRESIDENCY: Final = "512ac66dc2b0"
 SOUTH_SUDAN_ASSEMBLY: Final = "31ce89602954"
 SOUTH_SUDAN_COUNCIL: Final = "6f60dcabc9d2"
 CAMEROON_DECEMBER: Final = "00d51e66e43c"
-CAMEROON_JANUARY: Final = "1e0beadfb091"
 KYRGYZSTAN: Final = "7e0ee894e09f"
 BRAZIL_BIG: Final = "c8c9844ab7a8"  # 18 governors, one Wikipedia umbrella
 BRAZIL_SMALL: Final = "54b356d5b5ea"  # 3 children, NDI and A-WEB umbrellas
@@ -171,6 +180,9 @@ def test_per_source_dates_for_date_conflicts(lab: Page, doc: dict[str, Any]) -> 
             "Wikipedia: 16 January",
             ipu,
         ]
+        _, child = _find(doc, child_id)
+        for line, src in zip(nigeria["sources"], child["sources"], strict=True):
+            assert line["link"] == _safe(lab, src["name"], src["link"])
     # the Presidency has no IPU source
     presidency = _details(lab, doc, NIGERIA_PRESIDENCY)
     assert _lines(presidency) == [
@@ -237,11 +249,11 @@ def test_source_lines_say_who_claims_what(lab: Page, doc: dict[str, Any]) -> Non
         fallback=True,
         fetched_at="2026-10-19T12:00:00Z",
         provisional=True,
-        evidence_kind="calendar",
+        evidence_kind="observation",
     )
     assert js(lab, DETAILS, "sourceLine", several) == (
-        "Wikipedia: 13 September · reports it cancelled · saved data from 19 Oct 2026"
-        " · Newer data from an incomplete fetch on 19 Oct 2026"
+        "Wikipedia: 13 September · reports it cancelled · observation mission dates"
+        " · saved data from 19 Oct 2026 · Newer data from an incomplete fetch on 19 Oct 2026"
     )
 
     # every claim and every kind of evidence has its own tag
@@ -330,8 +342,7 @@ def _entry_view(entry: Locator) -> dict[str, Any]:
 
 def test_cards_expand_on_demand(ext: Ext, pair: tuple[bytes, bytes], doc: dict[str, Any]) -> None:
     feed, status = pair
-    ext.served.set("elections.json", feed)
-    ext.served.set("status.json", status)
+    ext.seed({FEED: feed_record(feed), STATUS: status_record(status), CHECK: _fresh_check()})
     page = ext.popup()
     assert page.locator(".child-entry").count() == 0
     assert page.locator(".card-toggle").count() == 30
@@ -401,16 +412,15 @@ def _synthetic(doc: dict[str, Any], tag: str, country: str, **fields: Any) -> di
     return card
 
 
-def _lab_label(page: Page, doc: dict[str, Any], group_id: str, now: str) -> dict[str, Any]:
+def _lab_label(page: Page, doc: dict[str, Any], group_id: str, ms: float) -> dict[str, Any]:
     card = _card(doc, group_id)
     got: dict[str, Any] = page.evaluate(
-        """async ([card, now]) => {
+        """async ([card, ms]) => {
           const { childLabel } = await import('/lib/labels.js');
           const { localToday } = await import('/lib/dates.js');
-          const ms = new Date(now).getTime();
           return childLabel(card, card.children[0], { today: localToday(ms), now: ms });
         }""",
-        [card, now],
+        [card, ms],
     )
     return got
 
@@ -423,7 +433,9 @@ def _expected(label: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def test_expanded_labels_match_the_card_face(ext: Ext, pair: tuple[bytes, bytes]) -> None:
+def test_expanded_labels_match_the_card_face(
+    ext: Ext, playwright: Playwright, tmp_path: Path, pair: tuple[bytes, bytes]
+) -> None:
     clock = "2026-10-19T14:00:00Z"
     week_ms = 7 * 86400 * 1000
     p_ms = int(datetime(2026, 10, 19, 14, tzinfo=UTC).timestamp() * 1000)
@@ -445,7 +457,7 @@ def test_expanded_labels_match_the_card_face(ext: Ext, pair: tuple[bytes, bytes]
         face = _face(item)
         entry = _entry_view(item.locator(".child-entry"))
         assert entry == face
-        assert entry == _expected(_lab_label(page, doc, card["group_id"], clock))
+        assert entry == _expected(_lab_label(page, doc, card["group_id"], p_ms))
         seen.append(face["notes"][0].split(" ")[0])
     assert seen == ["Using", "Unverified"]
 
@@ -455,24 +467,37 @@ def test_expanded_labels_match_the_card_face(ext: Ext, pair: tuple[bytes, bytes]
     item = _item(page, inside["group_id"])
     assert item.locator(".child-entry").count() == 1
     assert _entry_view(item.locator(".child-entry")) == _face(item)
-    assert _face(item) == _expected(_lab_label(page, doc, inside["group_id"], clock))
+    assert _face(item) == _expected(_lab_label(page, doc, inside["group_id"], p_ms))
     assert ext.page_errors == []
     page.close()
 
-    # (b) the local date: a day card dated today, with the clock at 23:59 local
-    late = "2026-10-19T23:59:00"
+    # (b) the local date: a day card dated today, the clock at 23:59 in Sao Paulo (02:59Z on the
+    # 20th, so the browser's local date and the UTC date differ). Its own launch, in that zone.
+    late = "2026-10-19T23:59:00-03:00"
+    late_ms = datetime.fromisoformat(late).timestamp() * 1000
     doc = json.loads(pair[0])
     today_card = _synthetic(
         doc, "c3c3c3", "Zzyzx Today", date="2026-10-19", end_date="2026-10-19"
     )
-    page = _seed(ext, doc, now=late)
-    item = _item(page, today_card["group_id"])
-    item.locator("button.card-toggle").click()
-    face = _face(item)
-    assert face["text"] == "Scheduled voting period: today (approx.)"
-    assert _entry_view(item.locator(".child-entry")) == face
-    assert face == _expected(_lab_label(page, doc, today_card["group_id"], late))
-    assert ext.page_errors == []
+    zoned = launch(
+        playwright,
+        tmp_path / "profile",
+        extension_copy(tmp_path / "ext", legacy=False),
+        timezone_id="America/Sao_Paulo",
+        settle_install_check=True,
+    )
+    try:
+        page = _seed(zoned, doc, now=late)
+        assert page.evaluate("(ms) => new Date(ms).toISOString().slice(0, 10)", late_ms) == "2026-10-20"
+        item = _item(page, today_card["group_id"])
+        item.locator("button.card-toggle").click()
+        face = _face(item)
+        assert face["text"] == "Scheduled voting period: today (approx.)"
+        assert _entry_view(item.locator(".child-entry")) == face
+        assert face == _expected(_lab_label(page, doc, today_card["group_id"], late_ms))
+        assert zoned.page_errors == []
+    finally:
+        zoned.close()
 
 
 def test_source_entries_open_only_safe_links(
@@ -564,4 +589,56 @@ def test_card_details_text_is_inserted_as_text(ext: Ext, doc: dict[str, Any]) ->
     for tag in ("b", "i", "u", "s", "img"):
         assert item.locator(f".card-details {tag}").count() == 0, tag
     assert page.locator("#electionList img").count() == 0
+    assert ext.page_errors == []
+
+
+def test_face_chips_keep_the_order_they_are_first_seen_in(ext: Ext, doc: dict[str, Any]) -> None:
+    card = _synthetic(doc, "d4d4d4", "Zzyzx Chips", date_status="tentative", level="subnational")
+    first = card["children"][0]
+    second = copy.deepcopy(first)
+    second["child_id"] = "d4d4d4" + "2" * 6
+    # a conflicted child has no Tentative chip; each child has its own rescheduled chip
+    first.update(status_conflict=True, rescheduled_from=["1 March"])
+    second.update(rescheduled_from=["2 April"])
+    card["children"].append(second)
+    page = _seed(ext, doc)
+    item = _item(page, card["group_id"])
+    assert item.locator(".election-info .chip").all_text_contents() == [
+        "Subnational",
+        "Rescheduled from 1 March",
+        "Tentative",
+        "Rescheduled from 2 April",
+    ]
+    assert ext.page_errors == []
+
+
+def test_a_stale_v2_list_does_not_answer_the_legacy_renderer(
+    ext: Ext, pair: tuple[bytes, bytes]
+) -> None:
+    feed, status = pair
+    ext.seed({FEED: feed_record(feed), STATUS: status_record(status), CHECK: _fresh_check()})
+    page = ext.popup()
+    big = _item(page, BRAZIL_BIG)
+    small = _item(page, BRAZIL_SMALL)
+    big_toggle = big.locator("button.card-toggle")
+    small_toggle = small.locator("button.card-toggle")
+
+    # control: while v2 is the active renderer, the toggle and the Open button answer
+    small_toggle.click()
+    button = small.locator(".source-open").first
+    assert len(ext.opened(lambda: button.click())) == 1
+
+    # the list is still drawn but the legacy renderer is active: neither answers
+    page.evaluate("() => { document.body.dataset.renderer = 'legacy'; }")
+    big_toggle.click()
+    assert big_toggle.get_attribute("aria-expanded") == "false"
+    assert big.locator(".child-entry").count() == 0
+    assert ext.opened(lambda: button.click()) == []
+    small_toggle.click()
+    assert small_toggle.get_attribute("aria-expanded") == "true"  # not collapsed either
+
+    # and v2 answers again once it is the active renderer
+    page.evaluate("() => { document.body.dataset.renderer = 'v2'; }")
+    big_toggle.click()
+    assert big_toggle.get_attribute("aria-expanded") == "true"
     assert ext.page_errors == []

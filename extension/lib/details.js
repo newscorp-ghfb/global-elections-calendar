@@ -16,9 +16,6 @@ const EVIDENCE = {
   umbrella: "a listing covering several contests",
 };
 
-// The copy's last words, spelled in two parts: the purity scan bans the bare browser word.
-const OUTSIDE = "outside the monitored win" + "dow";
-
 // child_id -> {card, child}, over every card of every month.
 export function childIndex(doc) {
   const index = new Map();
@@ -50,7 +47,7 @@ export function possibleLines(ids, outside, index) {
   if (outside > 0) {
     lines.push(
       `Provisional: ${outside} possible ${outside === 1 ? "match" : "matches"} ` +
-        OUTSIDE,
+        "outside the monitored window",
     );
   }
   return lines;
