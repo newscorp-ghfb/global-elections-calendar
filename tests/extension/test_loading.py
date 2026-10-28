@@ -160,12 +160,18 @@ def test_a_retry_keeps_the_best_feed(lab: Page, pair: tuple[bytes, bytes]) -> No
     stale = _elsewhere(status, "2026-10-19T06:00:00Z")
     s1 = _links(f1, status, "2026-10-19T07:00:00Z")
     s2 = _links(f2, status, "2026-10-19T08:00:00Z")
+    s0 = _links(f0, status, "2026-10-19T05:00:00Z")
     rows: list[tuple[dict[str, Any], list[Any], list[Any], bytes, bytes, bool]] = [
         ({}, [f2, f1], [stale, s1], f2, s1, False),
         ({FEED: feed_record(f0)}, [f2, 503], [stale, stale], f2, stale, False),
         ({}, [f2, None], [stale, s2], f2, s2, True),
         ({}, [f1, f2], [stale, s2], f2, s2, True),
         ({FEED: feed_record(f2)}, [f2, f2], [stale, "hang"], f2, stale, False),
+        # B2: none of the statuses describes f2 (P132), so the latest attempt is kept
+        (
+            {FEED: feed_record(f0), STATUS: status_record(s0)},
+            [f2, f1], [stale, s1], f2, s1, False,
+        ),
     ]
     for stored, feeds, statuses, want_feed, want_status, linked in rows:
         ran = _check(lab, feed=feeds, status=statuses, stored=stored)
@@ -246,7 +252,7 @@ def test_check_records_failures_and_keeps_the_cache(lab: Page, pair: tuple[bytes
         (None, "elections.json: the request failed"),
         (b"\xff", "elections.json: not UTF-8 JSON"),
         (b"[]", "elections.json: unreadable feed: "),
-        (huge, "elections.json: 4000001 bytes is over the limit of 4000000"),
+        (huge, "elections.json: over the limit of 4000000 bytes"),
     ]
     for response, error in cases:
         ran = _check(lab, feed=[response], status=[status], stored=cached)
@@ -710,4 +716,251 @@ def test_the_popup_settles_only_when_every_check_is_done(ext: Ext, pair: tuple[b
     page.evaluate("() => window.__release()")
     _settled(page)
     assert _cards(page) == 30 and ext.served.log.count("elections.json") == 1
+    assert ext.page_errors == []
+
+
+# ── the check's error boundary and request limits (Plan 5b-2 Task 1; P147) ────
+
+BOOM: Final = "the check failed unexpectedly: boom"
+
+
+def _cached_pair(pair: tuple[bytes, bytes]) -> dict[str, Any]:
+    feed, status = pair
+    return {
+        FEED: feed_record(feed),
+        STATUS: status_record(status),
+        CHECK: {"ok_at": PAGE_NOW_MS - 1, "failed_at": None, "error": None},
+    }
+
+
+def test_an_unexpected_error_fails_the_check(lab: Page, pair: tuple[bytes, bytes]) -> None:
+    feed, status = pair
+    # no cache
+    ran = _check(lab, feed=[feed], status=[status], throw="boom")
+    assert ran["result"] == {"ok": False, "error": BOOM}
+    assert ran["stored"] == {CHECK: {"ok_at": None, "failed_at": PAGE_NOW_MS, "error": BOOM}}
+    assert ran["reported"] == ["boom"]
+    # a cached pair
+    cached = _cached_pair(pair)
+    ran = _check(lab, feed=[feed], status=[status], stored=cached, throw="boom")
+    assert ran["result"] == {"ok": False, "error": BOOM}
+    assert ran["stored"][FEED] == cached[FEED] and ran["stored"][STATUS] == cached[STATUS]
+    assert ran["stored"][CHECK] == {"ok_at": PAGE_NOW_MS - 1, "failed_at": PAGE_NOW_MS, "error": BOOM}
+    # a long message is cut
+    ran = _check(lab, feed=[feed], status=[status], stored=cached, throw="x" * 1000)
+    assert ran["result"]["error"] == "the check failed unexpectedly: " + "x" * 200 + "…"
+    # recovery: real schemas on the resulting storage, with the pair served
+    stored = _check(lab, feed=[feed], status=[status], stored=cached, throw="boom")["stored"]
+    later = _at(feed, T3)
+    served = _links(later, status)
+    ran = _check(lab, feed=[later], status=[served], stored=stored)
+    assert ran["result"] == {"ok": True, "changed": True}
+    assert _feed_sha(ran) == _sha(later) and _status_sha(ran) == _sha(served)
+    assert ran["stored"][CHECK] == {"ok_at": PAGE_NOW_MS, "failed_at": None, "error": None}
+    # a report that throws changes nothing
+    ran = _check(lab, feed=[feed], status=[status], stored=cached, throw="boom", report_throws=True)
+    assert ran["result"] == {"ok": False, "error": BOOM}
+    assert ran["reported"] == ["boom"]
+    assert ran["stored"][CHECK] == {"ok_at": PAGE_NOW_MS - 1, "failed_at": PAGE_NOW_MS, "error": BOOM}
+    # a first read that fails on use: ok_at comes from the boundary's own re-read
+    t0 = PAGE_NOW_MS - 600_000
+    old = cached | {CHECK: {"ok_at": t0, "failed_at": None, "error": None}}
+    ran = _check(lab, feed=[feed], status=[status], stored=old, stored_throws=True)
+    assert ran["result"] == {"ok": False, "error": BOOM}
+    assert ran["stored"][CHECK] == {"ok_at": t0, "failed_at": PAGE_NOW_MS, "error": BOOM}
+    assert ran["stored"][FEED] == old[FEED] and ran["stored"][STATUS] == old[STATUS]
+
+
+def test_a_failure_that_cannot_be_saved_still_settles(
+    lab: Page, pair: tuple[bytes, bytes]
+) -> None:
+    feed, status = pair
+    cached = _cached_pair(pair)
+    for kw, want in (
+        ({"feed": [503]}, {"ok": False, "error": "elections.json: HTTP 503"}),
+        ({"feed": [feed], "throw": "boom"}, {"ok": False, "error": BOOM}),
+    ):
+        ran = _check(lab, status=[status], stored=cached, set_fails_all=True, **kw)
+        assert ran["result"] == want
+        assert ran["stored"] == cached
+        assert ran["sets"] == [[CHECK]]  # the fake saw the failed set
+
+
+def test_the_alarm_is_kept_when_a_check_rejects(lab: Page) -> None:
+    ran = lab.evaluate(
+        "async s => (await import('/test/fakes.js')).runHandlers(s)",
+        {"call": "alarm", "arg": {"name": "elections-refresh"}, "runCheckRejects": True},
+    )
+    calls = ["runCheck", "ensureAlarm"]
+    assert ran["log"] == [f"{name}:{edge}" for name in calls for edge in ("start", "end")]
+    assert ran["rejected"] == "runCheck failed"
+
+
+def test_a_hung_request_is_aborted(ext: Ext, lab: Page, pair: tuple[bytes, bytes]) -> None:
+    feed, status = pair
+    ran = _check(lab, feed=["hang"], status=[status])
+    assert ran["result"] == {"ok": False, "error": "elections.json: no response in time"}
+    assert "elections.json:aborted" in ran["log"]
+    ran = _check(lab, feed=[feed], status=["hang"])
+    assert ran["result"]["ok"] is True and STATUS not in ran["stored"]
+    assert "status.json:aborted" in ran["log"]
+    assert ext.page_errors == []
+
+
+_READ_LIMITED = """
+async () => {
+  const { readLimited, OverLimit } = await import('/lib/load.js');
+  const out = {};
+  out.exact = (await readLimited(new Response(new Uint8Array(10)), 10)).length;
+  try {
+    await readLimited(new Response(new Uint8Array(10)), 9);
+  } catch (e) {
+    out.over = [e instanceof OverLimit, e.message, e.limit];
+  }
+  out.cancelled = false;
+  const endless = new ReadableStream({
+    pull(c) { c.enqueue(new Uint8Array(65536)); },
+    cancel() { out.cancelled = true; },
+  });
+  try {
+    await readLimited(new Response(endless), 1000000);
+  } catch (e) {
+    out.endless = [e instanceof OverLimit, e.message];
+  }
+  return out;
+}
+"""
+
+
+def test_a_body_is_read_up_to_its_limit(lab: Page) -> None:
+    started = time.monotonic()
+    got = lab.evaluate(_READ_LIMITED)
+    assert time.monotonic() - started < 2
+    assert got["exact"] == 10
+    assert got["over"] == [True, "over the limit of 9 bytes", 9]
+    assert got["endless"] == [True, "over the limit of 1000000 bytes"]
+    assert got["cancelled"] is True
+
+
+_FETCH_LIMITED = """
+async () => {
+  const { fetchLimited, OverLimit } = await import('/lib/load.js');
+  const out = { calls: [] };
+  const signal = new AbortController().signal;
+  const endless = new ReadableStream({
+    pull(c) { c.enqueue(new Uint8Array(65536)); },
+    cancel() { out.cancelled = true; },
+  });
+  const fake = (response) => (url, options) => {
+    out.calls.push([url, options.cache, options.signal === signal, Object.keys(options).sort()]);
+    return Promise.resolve(response);
+  };
+  try {
+    await fetchLimited(fake(new Response(endless)), 'https://x/y.json', { signal, limit: 1000000 });
+  } catch (e) {
+    out.endless = e instanceof OverLimit;
+  }
+  try {
+    await fetchLimited(fake(new Response('', { status: 503 })), 'https://x/y.json', { signal, limit: 10 });
+  } catch (e) {
+    out.http = e.message;
+  }
+  const body = await fetchLimited(fake(new Response(new Uint8Array(10))), 'https://x/y.json', { signal, limit: 10 });
+  out.length = body.length;
+  return out;
+}
+"""
+
+
+def test_the_real_fetch_reads_a_bounded_body(lab: Page) -> None:
+    started = time.monotonic()
+    got = lab.evaluate(_FETCH_LIMITED)
+    assert time.monotonic() - started < 2
+    assert got["endless"] is True and got["cancelled"] is True
+    assert got["http"] == "HTTP 503" and got["length"] == 10
+    assert got["calls"] == [["https://x/y.json", "no-store", True, ["cache", "signal"]]] * 3
+
+
+def test_an_oversized_feed_fails_the_check_in_the_worker(ext: Ext) -> None:
+    ext.served.set("elections.json", b" " * 4_000_001)
+    reply = _send_check(ext.lab())
+    assert reply == {"ok": False, "error": "elections.json: over the limit of 4000000 bytes"}
+
+
+def test_the_worker_recovers_after_an_unexpected_failure(
+    ext: Ext, pair: tuple[bytes, bytes]
+) -> None:
+    feed, status = pair
+    t0 = int(time.time() * 1000) - 60_000
+    ext.seed(
+        {
+            FEED: feed_record(feed),
+            STATUS: status_record(status),
+            CHECK: {"ok_at": t0, "failed_at": None, "error": None},
+        }
+    )
+    ext.served.set("elections.json", feed)
+    ext.served.set("status.json", status)
+    page = ext.popup()
+    assert ext.served.log == []  # no check was due
+    before = ext.storage()
+    ext.worker().evaluate(
+        """() => {
+  const area = chrome.storage.local;
+  const real = area.get.bind(area);
+  let once = true;
+  area.get = (keys) => {
+    if (!once) return real(keys);
+    once = false;
+    return Promise.resolve(new Proxy({}, {
+      get(_, prop) {
+        if (prop === 'then') return undefined;
+        throw new Error('boom');
+      },
+    }));
+  };
+}"""
+    )
+    started = int(time.time() * 1000)
+    page.click("#refreshBtn")
+    _settled(page)
+    assert _cards(page) == 30
+    stored = ext.storage()
+    state = stored[CHECK]
+    assert (state["ok_at"], state["error"]) == (t0, BOOM)
+    assert state["failed_at"] >= started
+    assert stored[FEED] == before[FEED] and stored[STATUS] == before[STATUS]
+    assert _alarm(page) is not None
+    page.click("#refreshBtn")
+    _settled(page)
+    state = ext.storage()[CHECK]
+    assert state["error"] is None and state["failed_at"] is None  # a new check ran
+    assert ext.page_errors == []
+
+
+def test_a_deeply_nested_unknown_value_is_stored_safely(
+    ext: Ext, pair: tuple[bytes, bytes]
+) -> None:
+    feed, status = pair
+    depth = 10_000
+    served = (
+        feed.rstrip()[:-1]
+        + b',"x_probe_extra":'
+        + b"[" * depth
+        + b"0"
+        + b"]" * depth
+        + b"}"
+    )
+    linked = _dump(json.loads(status) | {"serving_feed_sha256": _sha(served)})
+    ext.served.set("elections.json", served)
+    ext.served.set("status.json", linked)
+    lab = ext.lab()
+    assert _send_check(lab)["ok"] is True
+    record = ext.storage()[FEED]
+    assert record["sha256"] == _sha(served) and record["format"] == "v2"
+    want = json.dumps(json.loads(feed)["months"], sort_keys=True)
+    assert json.dumps(record["data"]["months"], sort_keys=True) == want
+    page = ext.popup()
+    assert _cards(page) == 30
+    assert _send_check(lab) == {"ok": True, "changed": False}
     assert ext.page_errors == []

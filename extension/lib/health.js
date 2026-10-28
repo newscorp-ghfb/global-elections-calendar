@@ -18,37 +18,45 @@ function isNumber(v) {
   return typeof v === "number" && Number.isFinite(v);
 }
 
-// Each error or warning reason of a source as {reason, level, until}; `until` is the end of the
-// matching acknowledgement (ms), or null. An acknowledgement matches one reason on code, stage,
-// year and page, and is used up by it. Info reasons are left out.
-function classify(reasons, acknowledgements) {
-  const unused = [...acknowledgements];
+// Each error or warning reason of a source as {reason, level, until, acknowledged, ended}.
+// `until` is the end of the matching acknowledgement (ms), or null. An acknowledgement matches one
+// reason on code, stage, year and page, and is used up by it. In-effect ones (`now < until`) are
+// matched first; ended ones are then matched against the reasons still unmatched, and such a reason
+// counts at its own level (`ended`, not `acknowledged`). Info reasons are left out.
+function classify(reasons, acknowledgements, now) {
+  const unused = acknowledgements.map((a) => ({ ack: a, until: parseTimestamp(a.until) }));
+  const same = (a, reason) =>
+    a.code === reason.code &&
+    a.stage === reason.stage &&
+    a.year === reason.year &&
+    a.page === reason.page;
   const found = [];
   for (const reason of reasons) {
     if (reason.level !== "error" && reason.level !== "warning") continue;
-    const at = unused.findIndex(
-      (a) =>
-        a.code === reason.code &&
-        a.stage === reason.stage &&
-        a.year === reason.year &&
-        a.page === reason.page,
-    );
-    let until = null;
-    if (at !== -1) {
-      until = parseTimestamp(unused[at].until);
-      unused.splice(at, 1);
-    }
-    found.push({ reason, level: reason.level, until, acknowledged: at !== -1 });
+    found.push({ reason, level: reason.level, until: null, acknowledged: false, ended: false });
   }
+  const match = (entry, inEffect) => {
+    const at = unused.findIndex(
+      (u) => u.until !== null && (now < u.until) === inEffect && same(u.ack, entry.reason),
+    );
+    if (at === -1) return;
+    entry.until = unused[at].until;
+    entry.acknowledged = inEffect;
+    entry.ended = !inEffect;
+    unused.splice(at, 1);
+  };
+  for (const entry of found) match(entry, true);
+  for (const entry of found) if (!entry.acknowledged) match(entry, false);
   return found;
 }
 
 // The error and warning reasons of a v2 feed, by source name (the run's as "Run"), sorted
-// into unacknowledged errors, unacknowledged warnings and acknowledged ones.
-export function issues(doc) {
+// into errors, warnings and acknowledged ones. A reason whose acknowledgement has ended is in
+// errors or warnings; `now` (ms) says which acknowledgements are in effect.
+export function issues(doc, now) {
   const out = { errors: [], warnings: [], acknowledged: [] };
   const take = (source, reasons, acknowledgements) => {
-    for (const c of classify(reasons, acknowledgements)) {
+    for (const c of classify(reasons, acknowledgements, now)) {
       const issue = { source, code: c.reason.code, text: c.reason.text, until: c.until };
       if (c.acknowledged) out.acknowledged.push(issue);
       else if (c.level === "error") out.errors.push(issue);
@@ -71,7 +79,7 @@ function counts(found) {
 // The first true row of P133's nine. `status` is the parsed status (or null) and
 // `linked` says it describes this feed.
 export function bannerState({ format, doc, status, linked, now }) {
-  const found = format === "v2" ? issues(doc) : null;
+  const found = format === "v2" ? issues(doc, now) : null;
   const tally = found === null ? "" : counts(found);
   const generated = parseTimestamp(doc.generated_at);
   const age = generated === null ? 0 : now - generated;
@@ -168,7 +176,7 @@ function worst(levels) {
 
 // One row per source of a v2 feed (and one for the run when it has reasons), led by the
 // latest attempt when the status describes this feed. Legacy and update_needed data have no rows.
-export function panelRows({ format, doc, status, linked }) {
+export function panelRows({ format, doc, status, linked, now }) {
   if (format !== "v2") return [];
   const rows = [];
   if (linked && status !== null) {
@@ -180,12 +188,12 @@ export function panelRows({ format, doc, status, linked }) {
     });
   }
   const lines = (reasons, acknowledgements) => {
-    const marked = new Map(classify(reasons, acknowledgements).map((c) => [c.reason, c.until]));
+    const marked = new Map(classify(reasons, acknowledgements, now).map((c) => [c.reason, c]));
     return reasons.map((reason) => {
-      const until = marked.get(reason);
-      return until === undefined || until === null
-        ? reason.text
-        : `${reason.text} (acknowledged until ${stampDate(until)})`;
+      const c = marked.get(reason);
+      if (c === undefined || c.until === null) return reason.text;
+      const word = c.ended ? "acknowledgement ended" : "acknowledged until";
+      return `${reason.text} (${word} ${stampDate(c.until)})`;
     });
   };
   for (const entry of doc.source_health) {

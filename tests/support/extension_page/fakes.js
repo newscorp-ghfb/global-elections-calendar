@@ -10,28 +10,51 @@ function fromBase64(text) {
 }
 
 // A response is {b64} | {http: n} | {fail: true} | {hang: true}; the last of a queue repeats.
+// A hung request settles only when its signal aborts: it logs `<name>:aborted` and rejects.
 function scripted(spec, log) {
   const taken = { "elections.json": 0, "status.json": 0 };
   const queues = { "elections.json": spec.feed, "status.json": spec.status };
-  return (url) => {
+  return (url, options) => {
     const name = url.split("/").pop();
     log.push(name);
     const queue = queues[name];
     const response = queue[Math.min(taken[name]++, queue.length - 1)];
-    if (response.hang) return new Promise(() => {});
+    if (response.hang) {
+      return new Promise((_, reject) => {
+        options?.signal?.addEventListener("abort", () => {
+          log.push(`${name}:aborted`);
+          reject(new DOMException("aborted", "AbortError"));
+        });
+      });
+    }
     if (response.fail) return Promise.reject(new TypeError("Failed to fetch"));
     if (response.http !== undefined) return Promise.reject(new Error(`HTTP ${response.http}`));
     return Promise.resolve(fromBase64(response.b64));
   };
 }
 
-// spec: {feed, status, stored, now, setFails, timeoutMs, schemas: bool}.
-// Returns {result, stored, log, sets}.
+// An object whose every property read throws (except `then`, so awaiting it still resolves).
+function hostile(message) {
+  return new Proxy({}, {
+    get(_, prop) {
+      if (prop === "then") return undefined;
+      throw new Error(message);
+    },
+  });
+}
+
+// spec: {feed, status, stored, now, setFails, setFailsAll, timeoutMs, schemas: bool, throw,
+// reportThrows, storedThrows}. `throw` makes the schemas an object whose reads throw that message;
+// `storedThrows` makes the first `get` resolve to such an object.
+// Returns {result, stored, log, sets, reported}.
 export async function runCheck(spec) {
   const log = [];
   const sets = [];
+  const reported = [];
+  let gets = 0;
   const stored = structuredClone(spec.stored);
-  const schemas = spec.schemas ? await loadSchemas((p) => chrome.runtime.getURL(p)) : null;
+  let schemas = spec.schemas ? await loadSchemas((p) => chrome.runtime.getURL(p)) : null;
+  if (spec.throw) schemas = hostile(spec.throw);
   // A check that never ends (a missing deadline) must fail the test, not hang it.
   const watchdog = new Promise((resolve) => {
     setTimeout(() => resolve({ ok: false, error: "watchdog: the check never finished" }), 5000);
@@ -41,25 +64,34 @@ export async function runCheck(spec) {
     statusUrl: STATUS_URL,
     fetchBytes: scripted(spec, log),
     get: async (keys) => {
+      gets += 1;
+      if (spec.storedThrows && gets === 1) return hostile("boom");
       const out = {};
       for (const key of keys) if (key in stored) out[key] = structuredClone(stored[key]);
       return out;
     },
     set: async (items) => {
       sets.push(Object.keys(items));
+      if (spec.setFailsAll) throw new Error("set failed");
       if (spec.setFails && "elections_cache_v2" in items) throw new Error(spec.setFails);
       for (const [key, value] of Object.entries(items)) stored[key] = structuredClone(value);
     },
     now: () => spec.now,
     schemas,
     timeoutMs: spec.timeoutMs,
+    report: (err) => {
+      reported.push(err instanceof Error ? err.message : String(err));
+      if (spec.reportThrows) throw new Error("report failed");
+    },
   })]);
-  return { result, stored, log, sets };
+  return { result, stored, log, sets, reported };
 }
 
 const RUN_VALUE = { ok: true, changed: true, marker: 1 };
 
-// spec: {call: "installed" | "startup" | "alarm" | "message", arg, due: bool, helpRejects: bool}.
+// spec: {call: "installed" | "startup" | "alarm" | "message", arg, due: bool, helpRejects: bool,
+// runCheckRejects: bool}. Returns {log, result, undefinedResult, rejected}: `rejected` is the
+// message the handler rejected with, or null.
 // Each fake logs `name:start` when called and `name:end` when it settles. The delays shrink along
 // the usual call order (openHelp longest), so a handler that does not wait for a call would show
 // the next call starting before the earlier one ended.
@@ -76,8 +108,19 @@ export async function runHandlers(spec) {
     openHelp: later("openHelp", 40, undefined, spec.helpRejects === true),
     ensureAlarm: later("ensureAlarm", 25),
     isDue: later("isDue", 15, spec.due),
-    runCheck: later("runCheck", 5, RUN_VALUE),
+    runCheck: later("runCheck", 5, RUN_VALUE, spec.runCheckRejects === true),
   });
-  const result = await h[spec.call](spec.arg);
-  return { log, result: result === undefined ? null : result, undefinedResult: result === undefined };
+  let result;
+  let rejected = null;
+  try {
+    result = await h[spec.call](spec.arg);
+  } catch (err) {
+    rejected = err.message;
+  }
+  return {
+    log,
+    result: result === undefined ? null : result,
+    undefinedResult: result === undefined,
+    rejected,
+  };
 }

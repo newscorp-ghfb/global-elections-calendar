@@ -1,4 +1,4 @@
-import { KEYS, REQUEST_TIMEOUT_MS, check, due, loadSchemas } from "./lib/load.js";
+import { KEYS, REQUEST_TIMEOUT_MS, check, due, fetchLimited, loadSchemas } from "./lib/load.js";
 import { ALARM_NAME, handlers } from "./lib/worker.js";
 
 const DATA_URL = "https://raw.githubusercontent.com/newscorp-ghfb/global-elections-calendar/main/elections.json";
@@ -17,11 +17,8 @@ function schemas() {
   return schemasLoading;
 }
 
-async function fetchBytes(url) {
-  const response = await fetch(url, { cache: "no-store" });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return new Uint8Array(await response.arrayBuffer());
-}
+// The body is read in chunks and cut off at `limit` bytes, and `signal` aborts the request.
+const fetchBytes = (url, options) => fetchLimited(fetch, url, options);
 
 async function checkOnce() {
   let loaded = null;
@@ -34,6 +31,7 @@ async function checkOnce() {
     feedUrl: DATA_URL,
     statusUrl: STATUS_URL,
     fetchBytes,
+    report: console.error,
     get: (keys) => chrome.storage.local.get(keys),
     set: (items) => chrome.storage.local.set(items),
     now: () => Date.now(),

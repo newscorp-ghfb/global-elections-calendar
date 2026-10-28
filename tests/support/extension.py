@@ -388,13 +388,21 @@ def run_check(
     stored: Mapping[str, Any],
     now: int,
     set_fails: str | None = None,
+    set_fails_all: bool = False,
     timeout_ms: int = 50,
     schemas: bool = True,
+    throw: str | None = None,
+    report_throws: bool = False,
+    stored_throws: bool = False,
 ) -> dict[str, Any]:
-    """Run ``load.check`` on fakes in the lab page: ``{result, stored, log, sets}``.
+    """Run ``load.check`` on fakes in the lab page: ``{result, stored, log, sets, reported}``.
 
     Each request takes the next response of its list and the last repeats; ``"hang"`` never
-    answers, so the deadline does. ``schemas=False`` passes none.
+    answers, so the deadline does (and the fake logs ``<name>:aborted``). ``schemas=False`` passes
+    none. ``set_fails`` rejects the sets that hold the feed, ``set_fails_all`` every set.
+    ``throw`` makes the schemas an object whose every property read throws that message,
+    ``report_throws`` makes ``deps.report`` throw, and ``stored_throws`` makes the first ``get``
+    resolve to an object whose every property read throws.
     """
     spec = {
         "feed": [_wire(r) for r in feed],
@@ -402,6 +410,10 @@ def run_check(
         "stored": dict(stored),
         "now": now,
         "setFails": set_fails,
+        "setFailsAll": set_fails_all,
+        "throw": throw,
+        "reportThrows": report_throws,
+        "storedThrows": stored_throws,
         "timeoutMs": timeout_ms,
         "schemas": schemas,
     }
