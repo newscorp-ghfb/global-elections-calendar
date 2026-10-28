@@ -403,13 +403,14 @@ def test_attention_text_is_inserted_as_text(ext: Ext, lab: Page, doc: dict[str, 
     assert ext.page_errors == []
 
 
-def test_synthetic_feed_is_schema_valid(pair: tuple[bytes, bytes]) -> None:
+def test_synthetic_feed_is_schema_valid(lab: Page, pair: tuple[bytes, bytes]) -> None:
     from jsonschema import Draft202012Validator
 
     schema = json.loads((ROOT / "schemas" / "feed-v2.schema.json").read_text(encoding="utf-8"))
     base = json.loads(pair[0])
     grown_bytes = synthetic_feed(pair[0], cards=3, children=40, items=500, truncated=7)
     grown = json.loads(grown_bytes)
+    _reads_as_v2(lab, grown_bytes)  # the extension's own checks, with cards and children grown
     assert list(Draft202012Validator(schema).iter_errors(grown)) == []
     assert len(grown_bytes) < 4_000_000
     assert len(grown["months"]["2026-10"]) == len(base["months"]["2026-10"]) + 4
@@ -434,7 +435,9 @@ def test_attention_search_reads_the_fields_a_reader_sees(
              "possible_matches": [], "possible_matches_outside": 0, "undated_id": "cccccccccccc"}
     second = {**first, "item_id": "bbbbbbbbbbbb", "source": "eeas", "text": "Beta item",
               "undated_id": None}
-    edited["attention_items"] = [first, second]
+    third = {**first, "item_id": "dddddddddddd", "source": "osce", "text": "Gamma item",
+             "undated_id": None}
+    edited["attention_items"] = [first, second, third]
     feed = _dump(edited)
     _reads_as_v2(lab, feed)
     page = _seed(ext, feed)
@@ -445,8 +448,9 @@ def test_attention_search_reads_the_fields_a_reader_sees(
         "eeas": ["Beta item"],
         "wikipedia": ["Alpha item"],
         "beta": ["Beta item"],
-        " item ": ["Alpha item", "Beta item"],
-        "": ["Alpha item", "Beta item"],
+        "ODIHR": ["Gamma item"],  # in the display name "OSCE/ODIHR", not in the key "osce"
+        " item ": ["Alpha item", "Beta item", "Gamma item"],
+        "": ["Alpha item", "Beta item", "Gamma item"],
         "nothing": [],
     }
     for term, texts in expect.items():
@@ -460,4 +464,48 @@ def test_attention_search_reads_the_fields_a_reader_sees(
     page.click("#tabUpcoming")
     page.select_option("#levelFilter", "national")
     assert _rows(page).locator(".attention-text").all_text_contents() == ["Beta item"]
+    assert ext.page_errors == []
+
+
+def test_attention_title_forms(lab: Page) -> None:
+    def title(k: int | None, included: int, total: int, months: list[str]) -> str:
+        got: str = js(lab, "lib/attention.js", "attentionTitle",
+                      {"k": k, "included": included, "total": total, "months": months})
+        return got
+
+    window = ["2026-09", "2026-10", "2026-11", "2026-12", "2027-01"]
+    assert title(None, 157, 157, window) == f"157 items {WINDOW}"
+    assert title(None, 5, 5, ["2026-10"]) == "5 items across the monitored window (Oct)"
+    assert title(None, 1, 1, ["2026-10"]) == "1 item across the monitored window (Oct)"
+    assert title(None, 3, 3, []) == "3 items across the monitored window"
+    assert title(None, 0, 0, ["2026-10"]) == "0 items across the monitored window (Oct)"
+    assert title(1, 1, 1, ["2026-10"]) == "1 of 1 item across the monitored window (Oct)"
+    assert title(2, 157, 157, window) == f"2 of 157 items {WINDOW}"
+    assert title(1, 1, 3, []) == "1 of the 1 item in this data match (3 in total)"
+    assert title(0, 500, 1700, ["2026-10"]) == (
+        "0 of the 500 items in this data match (1700 in total, Oct)"
+    )
+    assert title(7, 500, 1700, window) == "7 of the 500 items in this data match (1700 in total, Sep–Jan)"
+    assert js(lab, "lib/attention.js", "truncationNote", {"included": 5, "total": 5}) == ""
+    assert js(lab, "lib/attention.js", "shownLine", 5, 5) == ""
+    assert js(lab, "lib/attention.js", "shownLine", 0, 0) == ""
+    assert js(lab, "lib/attention.js", "shownLine", 200, 500) == "Showing 200 of 500"
+
+
+def test_an_update_needed_feed_hides_the_section(ext: Ext, pair: tuple[bytes, bytes]) -> None:
+    feed, status = pair
+    page = _seed(ext, feed, status)
+    _open_section(page)
+    assert _rows(page).count() > 0
+    unknown = json.loads(feed)
+    unknown["schema_version"] = 3
+    ext.seed({FEED: feed_record(_dump(unknown), fmt="update_needed"), CHECK: _fresh_check()})
+    page.click("#refreshBtn")
+    page.wait_for_function(
+        "() => document.body.dataset.state === 'ready' && document.body.dataset.checking === 'false'"
+    )
+    assert page.evaluate("document.body.dataset.renderer") == "legacy"
+    assert page.locator("#bannerText").text_content() == "This data is newer than this extension — update the extension"
+    assert page.locator("#attention").is_hidden()
+    assert page.locator("#attentionList").evaluate("e => e.children.length") == 0
     assert ext.page_errors == []

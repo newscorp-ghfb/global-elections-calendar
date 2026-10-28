@@ -3,7 +3,7 @@ import { bannerState, footerState, NO_HEALTH, panelRows } from "./lib/health.js"
 import { isLinked } from "./lib/order.js";
 import { PIN_KEYS, currentPins } from "./lib/pins.js";
 // render.js loads before legacy.js, so on a click its listener runs first and legacy's second.
-import { renderV2 } from "./lib/render.js";
+import { hideAttention, renderV2 } from "./lib/render.js";
 import { renderLegacy } from "./lib/legacy.js";
 import { localToday } from "./lib/dates.js";
 
@@ -88,7 +88,7 @@ async function render() {
     renderV2(record.data, { pinned, table, today: localToday(now), now });
   } else {
     document.body.dataset.renderer = "legacy";
-    $("attention").classList.add("hidden"); // the section is v2's only
+    hideAttention(); // the section is v2's only
     renderLegacy(record.data, { pinned, table });
   }
   drawHealth(record, storedStatus(stored[KEYS.status], schemas), stored[KEYS.check], now);
