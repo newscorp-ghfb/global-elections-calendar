@@ -2,8 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Revision 3 (2026-10-27), APPROVED by the user on 2026-10-27.** The open choices listed in the
-replies and the execution method are still to be confirmed before Task 1. It is revision 2 plus a Task 2 addendum from the red-team
+**Revision 3 (2026-10-27), APPROVED by the user on 2026-10-27.** **The open choices were
+confirmed on 2026-10-28, and the execution method is subagent-driven** (see "Rulings on the open
+choices (2026-10-28)"; rows marked **(2026-10-28)**). It is revision 2 plus a Task 2 addendum from the red-team
 review of revision 2 (`Downloads/plan-5b2-r2-red-team-review-2026-10-27.md`, which reviewed
 revision 2 at SHA-256 `f125ae38…`). Nothing else changes except one Task 7 mutation row:
 - **N01:** the options page repaints pins only from a fresh storage read, guarded by a
@@ -564,7 +565,7 @@ the named test passing and its mutation killed.
 | P146, S5-T19, S5-T21 (large collections), R59, R51, R26 | Decision, spec acceptance, requirements | As in Spec corrections | T6 `test_keyboard_and_aria_semantics`, **(rev 2)** `test_focus_survives_a_redraw`, `test_layout_in_a_narrow_or_short_popup`, `test_large_collections_render_bounded`, `test_popup_renders_the_fixture_feed_within_the_budget` | planned |
 | P148, S5-T20, R54 | Decision, spec acceptance, requirement | As in Spec corrections | T7 `test_the_zip_is_built_from_the_explicit_list`, `test_the_zip_is_reproducible`, `test_zip_checks_refuse`, `test_every_extension_file_is_listed`, `test_help_explains_v2`, `test_release_notes_cover_the_update`, `test_the_manifest_is_2_0_0` | planned |
 | S5-T16, RT-06, R49 | Spec acceptance, requirement | Relaunch on the same profile | T8 `test_real_zip_same_folder_upgrade` | planned |
-| Tooling preservation | Review correction | Out-of-repo copy (unless the user rules otherwise) | Step 0 | planned |
+| Tooling preservation | Review correction | Out-of-repo copy, confirmed 2026-10-28, refreshed after every task that adds or changes a table | Step 0, then every task | planned |
 | I2 (Plan 3 final review) | A ruling for the user's veto | Unchanged; no 5b-2 dependency | — | open (the user's) |
 | R37 | Parked by the user | Unchanged | — | open (parked) |
 
@@ -584,6 +585,28 @@ them: they remain the user's to veto, as I2 does.
 | Ruling 31 (Q1–Q5 parked) | **Q1 closed** by P145 (Task 4) |
 | Ruling 35 (m3 and m4 left for 5b-2) | **Closed** by Task 1: m3 is R56/P139, m4 is R57 |
 | Ruling 37 (the deep-nesting gap parked into R58) | **Closed** by Task 1 (P147) |
+
+## Rulings on the open choices (2026-10-28)
+
+The user confirmed all ten open choices and the help sentence, following
+`Downloads/plan-5b2-open-decisions-2026-10-28.md`, and chose subagent-driven execution. Each
+condition below was checked against this plan's text, the code and the workflow. Where a
+condition was not yet pinned by a test or a step, the row names the addition, marked
+**(2026-10-28)** in its task. These are recorded decisions: they are not reopened.
+
+| Choice | Ruling | Conditions kept, and where they are pinned |
+|---|---|---|
+| P147: a 25 s deadline | Confirmed | Per request, and it covers the body: the deadline races the whole `fetchBytes` call, which is `fetchLimited` reading the body through `readLimited`, and it aborts that request's `AbortController` (Task 1 Step 5). The cache is kept, the checking state clears and the next check runs (`test_a_hung_request_is_aborted`, `test_the_worker_recovers_after_an_unexpected_failure`). Not a guarantee that Chrome cannot end the worker first ("Known limits") |
+| P140/P141: only the worker writes pins | Confirmed | The migration's coordination, fresh reads, idempotent ops and read-back verification (P140). N01 and N02 stay: a late reply never repaints an older state, and a rejected or lost reply releases the button and reconciles, also after a save that succeeded (`test_a_late_pin_reply_never_repaints_an_older_state`, `test_a_lost_pin_reply_is_reconciled`) |
+| P144: the attention wording departs from §12.4 | Confirmed as a spec correction | Total, included, matched and shown counts stay distinct. **(2026-10-28)** Spec §12.4's last bullet now points to P144, so the old wording is no longer a competing requirement |
+| P148: ZIP reproducibility for one Python and zlib | Confirmed | Fixed entry order, times, `create_system` and `external_attr`; identical bytes across trees with different mtimes (`test_the_zip_is_reproducible`); the printed row names `platform.python_version()` and `zlib.ZLIB_RUNTIME_VERSION`. **(2026-10-28)** Task 7's ledger entry records them with the ZIP's SHA-256. Another toolchain carries no identical-byte promise |
+| R48: a parent pin includes its subdivisions | Confirmed, through the registry's `parent` only | "Also shows" and each place's own name (P141). No relationship is inferred from names. **(2026-10-28)** `test_a_parent_pin_includes_its_places` also checks that a subdivision pin matches neither its parent nor a sibling |
+| P142: an unknown source opens nothing | Confirmed | Its source text and evidence stay, with no Open control. A known source with an unacceptable URL opens its home page (`test_safe_links`, `test_source_entries_open_only_safe_links`, `test_attention_links_are_safe`) |
+| R62: the `RELEASES.md` row moves to Plan 5c | Confirmed | **(2026-10-28)** Task 7 records the build's code SHA, ZIP SHA-256, file count, Python and zlib versions and the four checks' results in the 5b-2 ledger. 5c writes the row against the final release build; R62 stays open until then |
+| The attention section is collapsed by default | Confirmed | The toggle, its count and `#attentionNote` stay visible while collapsed, also when no card matches. **(2026-10-28)** `test_a_search_over_cut_items_says_what_it_searched` checks that case. Keyboard access (Task 6), the open state kept within the popup, and the health banners under their own rules |
+| R58: the narrowed acceptance | Confirmed | `test_a_deeply_nested_unknown_value_is_stored_safely` compares `months` only, and never claims that unknown values round-trip. Every boundary, abort, cache, cleanup and recovery test stays (Task 1) |
+| The tooling in `handovers/elections-v2-tooling/` | Confirmed | Step 0 copies it and proves the copied runner. **(2026-10-28)** After every task that adds or changes a mutation table (and `supp5b2.py`), the controller refreshes the copy and records that in the ledger. `.scratch/` is kept |
+| The help sentence | Added **(2026-10-28)** | Task 7's `help.html` states it, and `test_help_explains_v2` pins it. Checked against `update-elections.yml`: the `generation` artifact uploads `out/` with `retention-days: 14`, and `pipeline.py` writes `out/attention_full.json`. The limit is the artifact's; items already in the extension do not expire |
 
 ## How to execute this plan
 
@@ -642,6 +665,9 @@ them: they remain the user's to veto, as I2 does.
   - Each task names a mutation for each test; pick the `old` text yourself.
   - After every task, run `.scratch/plan5a/mut_unique.py` over `plan5b2-*.json`, and re-run every
     earlier `plan5b1-*` and `plan5b2-*` table whose file the task touched.
+  - **(2026-10-28)** Then the controller copies every new or changed table (and `supp5b2.py`
+    when it changed) to `handovers/elections-v2-tooling/`, and records the refresh in the
+    ledger.
 - **Supplements:** `.scratch/supp5b2.py` (a copy of `supp5b1.py` pointed at this plan) gives each
   brief the Global Constraints, the errata and the cited P-rows verbatim.
 - **Runtime:**
@@ -1030,7 +1056,8 @@ markup from strings).
   - **`test_a_parent_pin_includes_its_places`** (`lab`; pure, then `view` on the fixture):
     - `pinMatcher(["iso:GE"], table)` matches `x:south-ossetia` and `x:abkhazia`, but not
       `iso:RU` or `null`;
-    - `pinMatcher(["x:south-ossetia"])` does not match `iso:GE`;
+    - `pinMatcher(["x:south-ossetia"])` does not match `iso:GE`, nor its sibling `x:abkhazia`
+      **(2026-10-28)**;
     - an id not in the table matches only itself;
     - on the fixture, `view` with `[iso:GE]` in 2026-09 shows the one South Ossetia card;
     - `[iso:MD]` in 2026-11 shows Moldova's card, and in 2026-12 Transnistria's;
@@ -1566,7 +1593,9 @@ markup from strings).
     synthetic feed, where one included item mentions "Lesotho" and 250 mention "Peru"). Rows:
     - **a match only among the cut items** (a word no included item has): "0 of the 500 items in
       this data match (1700 in total, Sep–Jan)", and the note still says searches do not cover
-      the other 1200;
+      the other 1200. **(2026-10-28)** With the section collapsed, no card matches either: the
+      empty state shows below the section, and the toggle with its count and `#attentionNote`
+      stay visible;
     - **one match:** "1 of the 500 items in this data match (1700 in total, Sep–Jan)", 1 row, no
       shown line;
     - **250 matches:** 200 rows, "Showing 200 of 250"; "Show 50 more" → 250 rows;
@@ -1805,6 +1834,9 @@ markup from strings).
     - the month rule: "A month shows every election whose dates overlap it";
     - the sources: the ten names of P148, and "five months";
     - the attention section: "items across the monitored window";
+    - **(2026-10-28)** the full list: "When items are omitted from the feed, the full attention
+      list is in attention_full.json in the publishing run's generation artifact; retrieving it
+      may require operator access, and the artifact is retained for 14 days after upload.";
     - the pins: "A pinned country also shows the places that belong to it";
     - the update: "Delete the folder's contents", "Click Reload", "Don't remove the extension".
 
@@ -1849,6 +1881,10 @@ markup from strings).
 
 - [ ] **Step 6: Run the gates, then commit.**
   `git commit -m "feat(extension): v2.0.0 manifest, help, release notes and the checked ZIP build (Plan 5b-2 Task 7)"`.
+  - **(2026-10-28, the controller, R62):** run `build_extension_zip.py` at the task's commit and
+    record in the 5b-2 ledger the code SHA, the ZIP's SHA-256 and file count, the Python and zlib
+    versions from the printed row, and the four checks' results. This is build evidence, not the
+    release row, which 5c writes against the final release build.
 
 ### Task 8: The real-ZIP same-folder upgrade (S5-T16, RT-06, R49)
 
