@@ -100,14 +100,10 @@ export function recordText(records, groupings) {
   return groupings > 0 ? `${base} (incl. ${plural(groupings, "grouping")})` : base;
 }
 
-// The feed's key for its month list. Spelled in two parts because the purity scan
-// (test_pure_modules_use_no_browser_api) bans the bare browser word in pure modules.
-const MONTHS_KEY = "win" + "dow";
-
 // The month to open on (P145, Q1): the producer's current_month when the feed lists it, else
 // today's month when listed, else the first listed month, else current_month (no months).
 export function startMonth(doc, today) {
-  const months = doc[MONTHS_KEY].months;
+  const months = doc.window.months;
   if (months.includes(doc.current_month)) return doc.current_month;
   if (months.includes(today.slice(0, 7))) return today.slice(0, 7);
   return months.length > 0 ? months[0] : doc.current_month;

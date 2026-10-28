@@ -34,13 +34,44 @@ BROWSER_TOKENS: Final = (
     "Date.now",
     "localStorage",
     "innerHTML",
+    "globalThis",
+    "self",
 )
+# The one string literal that may hold the word (the copy of P143's "possible match" line).
+EXEMPT_COPY: Final = '"outside the monitored window"'
 
 
 def _uses(text: str, token: str) -> bool:
     if not token.isalpha():  # "chrome.", "fetch(", "Date.now" are matched as written
         return token in text
-    return re.search(r"(?<![A-Za-z0-9_])" + token + r"(?![A-Za-z0-9_])", text) is not None
+    before = "A-Za-z0-9_"
+    if token == "window":  # `doc.window.months` is a property of the feed, not the global
+        before += "."
+        text = text.replace(EXEMPT_COPY, "")
+    return re.search(rf"(?<![{before}]){token}(?![A-Za-z0-9_])", text) is not None
+
+
+def _flagged(text: str) -> bool:
+    return any(_uses(text, token) for token in BROWSER_TOKENS)
+
+
+def test_the_purity_scan_flags_the_globals_and_passes_the_feed_keys() -> None:
+    for bad in (
+        "window.x",
+        "const a = `${window.x}`;",
+        "globalThis.document",
+        "self.localStorage",
+        "el.innerHTML = x;",
+        "document.title",
+        "globalThis.window",
+    ):
+        assert _flagged(bad), bad
+    for good in (
+        "doc.window.months",
+        'const t = "outside the monitored window";',
+        "expected_window",
+    ):
+        assert not _flagged(good), good
 
 
 def test_pure_modules_use_no_browser_api() -> None:

@@ -4,7 +4,6 @@
 import { view, recordText, startMonth } from "./count.js";
 import { badge, monthName, monthYear } from "./dates.js";
 import { childDetails, childIndex } from "./details.js";
-import { safeLink } from "./links.js";
 import { pinMatcher } from "./pins.js";
 
 const $ = (id) => document.getElementById(id);
