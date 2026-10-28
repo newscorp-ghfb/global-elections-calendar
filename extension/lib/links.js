@@ -34,6 +34,7 @@ function allowed(source, hostname) {
 export function safeLink(nameOrKey, url) {
   const source = sourceOf(nameOrKey);
   if (source === null) return null;
+  if (typeof url !== "string") return source.home;
   try {
     const parsed = new URL(url);
     if (
