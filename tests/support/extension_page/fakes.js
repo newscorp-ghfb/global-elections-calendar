@@ -44,7 +44,7 @@ function hostile(message) {
 }
 
 // spec: {feed, status, stored, now, setFails, setFailsAll, timeoutMs, schemas: bool, throw,
-// reportThrows, storedThrows}. `throw` makes the schemas an object whose reads throw that message;
+// reportThrows, storedThrows}. `throw` makes the feed schema an object whose reads throw that message;
 // `storedThrows` makes the first `get` resolve to such an object.
 // Returns {result, stored, log, sets, reported}.
 export async function runCheck(spec) {
@@ -54,7 +54,7 @@ export async function runCheck(spec) {
   let gets = 0;
   const stored = structuredClone(spec.stored);
   let schemas = spec.schemas ? await loadSchemas((p) => chrome.runtime.getURL(p)) : null;
-  if (spec.throw) schemas = hostile(spec.throw);
+  if (spec.throw) schemas = { ...schemas, feed: hostile(spec.throw) };
   // A check that never ends (a missing deadline) must fail the test, not hang it.
   const watchdog = new Promise((resolve) => {
     setTimeout(() => resolve({ ok: false, error: "watchdog: the check never finished" }), 5000);

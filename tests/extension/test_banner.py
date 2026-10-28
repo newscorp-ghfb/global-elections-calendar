@@ -572,6 +572,7 @@ def _ended_doc(feed_doc: dict[str, Any]) -> dict[str, Any]:
     broken = copy.deepcopy(_source(doc, "ipu")["reasons"][0])
     broken["level"], broken["code"], broken["text"] = "error", "unavailable", "Carter Center is down"
     carter["reasons"] = [broken]
+    carter["severity"] = "error"  # the producer writes the worst level of the reasons
     _acknowledge(carter, broken, U)
     return doc
 

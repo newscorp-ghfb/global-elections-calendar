@@ -400,7 +400,8 @@ def run_check(
     Each request takes the next response of its list and the last repeats; ``"hang"`` never
     answers, so the deadline does (and the fake logs ``<name>:aborted``). ``schemas=False`` passes
     none. ``set_fails`` rejects the sets that hold the feed, ``set_fails_all`` every set.
-    ``throw`` makes the schemas an object whose every property read throws that message,
+    ``throw`` makes the feed schema an object whose every property read throws that message
+    (so the throw comes from ``feedFormat``, in ``storedFeed`` or after the fetch),
     ``report_throws`` makes ``deps.report`` throw, and ``stored_throws`` makes the first ``get``
     resolve to an object whose every property read throws.
     """
