@@ -1,6 +1,7 @@
 // The v2 renderer: month, tab, level and search state of a v2 feed document, drawn through
 // lib/count.js. Feed text is inserted with textContent only, never as markup. A card body opens
-// no link (R47, ruling 30); only a source or umbrella Open button does, through safeLink.
+// no link (R47, ruling 30); only an Open button (a source, umbrella or attention row) does,
+// through safeLink.
 import { view, recordText, startMonth } from "./count.js";
 import { attentionView, ATTENTION_PAGE, shownLine } from "./attention.js";
 import { badge, monthName, monthYear } from "./dates.js";
@@ -44,7 +45,7 @@ let month = "";       // "YYYY-MM" shown
 let tab = "all";      // "upcoming" | "past" | "all"
 let level = "all";    // "all" | "national" | "subnational"
 let query = "";
-let index = null;     // child_id -> {card, child}, built on the first expand of a doc
+let index = null;     // child_id -> {card, child}, built on the first draw that needs it, per doc
 const open = new Set(); // group_ids of the expanded cards, for the popup's life
 let attentionOpen = false; // the attention section's open state, for the popup's life
 let attentionRows = ATTENTION_PAGE; // rows shown while open; a changed search resets it
@@ -229,6 +230,15 @@ function drawAttention() {
   const frag = document.createDocumentFragment();
   for (const row of got.rows.slice(0, shown)) frag.append(buildAttentionRow(row));
   attentionList.append(frag);
+}
+
+// For a non-v2 render: the section is v2's, so its rows go too (the open state is kept).
+export function hideAttention() {
+  hide(attention);
+  attentionList.replaceChildren();
+  attentionList.hidden = true;
+  attentionShown.hidden = true;
+  attentionMore.hidden = true;
 }
 
 function draw() {

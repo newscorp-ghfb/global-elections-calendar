@@ -66,6 +66,8 @@ def test_the_purity_scan_flags_the_globals_and_passes_the_feed_keys() -> None:
         "document.title",
         "globalThis.window",
         "const t = `the window is ${window.x}`;",
+        "const t = `${n} items across the monitored window ${window.x}`;",
+        "return `${k} across the monitored window${window.name}`;",
     ):
         assert _flagged(bad), bad
     for good in (

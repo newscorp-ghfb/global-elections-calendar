@@ -1,5 +1,6 @@
 """The renderer x feed matrix and a format change inside one popup (Plan 5b-2 Task 3; R61, S5-T17)."""
 
+import json
 from datetime import UTC, datetime
 from typing import Any, Final
 
@@ -130,6 +131,9 @@ def _shown(page: Page) -> list[str]:
 
 def test_renderer_switches_inside_one_popup(ext: Ext) -> None:
     feed, status = artifact_pair()
+    probe = json.loads(feed)  # one attention item mentions Brazil, so the "Brazil" step keeps a row
+    probe["attention_items"][0]["text"] = "Brazil: the attention row that outlives a search"
+    feed = json.dumps(probe, separators=(",", ":")).encode("utf-8")
     pair_at = datetime(2026, 10, 19, 13, 0, tzinfo=UTC)
     rollback_feed, rollback_status = republication(fresh_v1_feed(), now=pair_at)
     newer = published_at(feed, "2026-10-19T13:30:00Z")
@@ -152,6 +156,8 @@ def test_renderer_switches_inside_one_popup(ext: Ext) -> None:
     page.click("#tabPast")  # legacy's tab; v2 keeps its default (All) until it is clicked
     for index, (renderer, step_feed, step_status, term, banner, tab) in enumerate(steps):
         _search(page, term)  # typed while the previous renderer is shown
+        if index == 2:  # the open section still holds a row when the format changes
+            assert page.locator("#attentionList > li.attention-row").count() == 1
         if index > 0:
             ext.served.set("elections.json", step_feed)
             ext.served.set("status.json", step_status)
@@ -194,6 +200,8 @@ def test_renderer_switches_inside_one_popup(ext: Ext) -> None:
             assert page.locator("#electionList .card-details, .card-toggle").count() == 0
             assert page.locator("#attention").is_hidden()
             assert page.locator("#attentionToggle").is_hidden()
+            assert page.locator("#attentionList").evaluate("e => e.children.length") == 0
+            assert page.locator("#attentionShown").is_hidden() and page.locator("#attentionMore").is_hidden()
         if index == 3:  # v2 again: the card is open again (remembered by group_id)
             assert brazil.locator("button.card-toggle").get_attribute("aria-expanded") == "true"
             assert brazil.locator(".child-entry").count() == 18
