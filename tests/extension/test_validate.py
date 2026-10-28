@@ -148,7 +148,7 @@ async ([doc, schema]) => {
       report.push({
         path,
         key,
-        deleted: deleted.some((p) => p.startsWith(ptr + ": ") && p.includes(key)),
+        deleted: deleted.some((p) => p.startsWith((ptr === "" ? "/" : ptr) + ": ") && p.includes(key)),
         replaced: replaced.some((p) => p.startsWith(ptr + "/" + escape(key) + ": ")),
       });
     }

@@ -48,7 +48,7 @@ function hasType(value, type) {
 function walk(value, schema, p, root, refChecks, out) {
   if (out.problems.length >= out.limit || !isObject(schema)) return;
   const add = (what) => {
-    if (out.problems.length < out.limit) out.problems.push(`${p}: ${what}`);
+    if (out.problems.length < out.limit) out.problems.push(`${p === "" ? "/" : p}: ${what}`);
   };
 
   if (schema.$ref !== undefined) {
