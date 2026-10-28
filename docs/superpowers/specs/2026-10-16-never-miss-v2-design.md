@@ -786,8 +786,8 @@ The footer reads "Data as of `generated_at`" (plus the older `data_as_of` when t
 
 - Placed above the empty state and the card list on every month, labelled "N items across the monitored window (Sep–Jan)".
 - Lists every `attention_items[]` entry: text, source and link, and its possible matches marked as provisional.
-- Never hidden by filters; a search shows "k of N".
-- When `attention_truncated` > 0: "Showing 500 of N; the full list is in the run report".
+- Never hidden by filters; a search shows "k of N" (corrected by Plan 5b-2 P144: when items are cut, "k of the A items in this data match (N in total, Sep–Jan)").
+- When `attention_truncated` > 0: corrected by Plan 5b-2 P144 (confirmed 2026-10-28), which replaces "Showing 500 of N; the full list is in the run report". The total, included, matched and shown counts are kept apart, and a note names `attention_full.json` in the run's `generation` artifact (kept 14 days) and says searches do not cover the cut items. P144's copy is authoritative.
 
 ### 12.5 Counting, filtering, tabs
 
