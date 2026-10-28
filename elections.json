@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-27T00:02:23Z",
+  "generated_at": "2026-10-28T00:01:46Z",
   "current_month": "2026-10",
   "months": {
     "2026-09": [
@@ -151,25 +151,61 @@
     "2026-10": [
       {
         "date": "2026-10-04",
+        "country": "Bosnia and Herzegovina",
+        "type": "Bosnia and Herzegovina House of Representatives",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5096/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5096/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-04",
         "country": "Brazil",
-        "type": "Brazilian Presidency",
+        "type": "Brazilian Federal Senate",
         "status": "Held",
         "source_names": [
           "ElectionGuide",
           "Wikipedia"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5091/",
+          "https://www.electionguide.org/elections/id/5089/",
           "https://en.wikipedia.org/wiki/Elections_in_Brazil"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5091/"
+            "link": "https://www.electionguide.org/elections/id/5089/"
           },
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_Brazil"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-04",
+        "country": "Brazil",
+        "type": "Brazilian Chamber of Deputies",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5090/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5090/"
           }
         ]
       },
@@ -373,6 +409,24 @@
       },
       {
         "date": "2026-10-25",
+        "country": "Serbia",
+        "type": "Serbian National Assembly",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5252/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5252/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-25",
         "country": "Brazil",
         "type": "Brazilian Presidency",
         "status": "Held",
@@ -404,24 +458,6 @@
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_Brazil"
-          }
-        ]
-      },
-      {
-        "date": "2026-10-25",
-        "country": "Serbia",
-        "type": "Serbian National Assembly",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5252/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5252/"
           }
         ]
       },
@@ -465,7 +501,7 @@
         "date": "2026-10-28",
         "country": "Canada",
         "type": "Manitoba , municipal elections",
-        "status": "Upcoming",
+        "status": "Held",
         "source_names": [
           "Wikipedia"
         ],
@@ -538,18 +574,54 @@
       {
         "date": "2026-11-03",
         "country": "Northern Mariana Islands",
-        "type": "Northern Mariana Islands House of Representatives",
+        "type": "Northern Mariana Islands Senate",
         "status": "Upcoming",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5103/"
+          "https://www.electionguide.org/elections/id/5104/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5103/"
+            "link": "https://www.electionguide.org/elections/id/5104/"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-03",
+        "country": "Virgin Islands, U.S.",
+        "type": "U.S. Virgin Islands Governor",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5216/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5216/"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-03",
+        "country": "Guam",
+        "type": "Guamanian Governor",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5213/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5213/"
           }
         ]
       },
@@ -604,24 +676,6 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5214/"
-          }
-        ]
-      },
-      {
-        "date": "2026-11-03",
-        "country": "Guam",
-        "type": "Guamanian Legislature",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5102/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5102/"
           }
         ]
       },
@@ -694,6 +748,24 @@
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_Canada"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-14",
+        "country": "Malaysia",
+        "type": "Malacca , State Legislative Assembly",
+        "status": "Upcoming",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Malaysia"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Malaysia"
           }
         ]
       },
