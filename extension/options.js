@@ -1,183 +1,255 @@
-"use strict";
+// The options page (P141; D4, R55): the places the feed lists, plus the saved pins, each with a
+// pin button. The page never writes storage: the worker prepares the pins ({type: "PINS"}) and
+// applies every edit ({type: "PIN_EDIT"}) through its one queue.
+//
+// Pins are drawn one way only. reconcile() reads the pin keys and draws what is stored; it runs
+// after every reply, after every failed message and on every storage change, and an older read
+// never overwrites a newer one. A reply's own `pins` are never drawn.
+import { KEYS, loadPlaces, loadSchemas, storedFeed } from "./lib/load.js";
+import { PIN_KEYS, currentPins, optionPlaces, optionRows } from "./lib/pins.js";
 
-const CACHE_KEY              = "elections_cache";
-const SELECTED_COUNTRIES_KEY = "selected_countries";
-const PINNED_COUNTRIES_KEY   = "pinned_countries";
+const $ = (id) => document.getElementById(id);
+const listEl = $("country-list-container");
+const searchEl = $("country-search");
+const summaryEl = $("pinSummary");
+const statusEl = $("pinStatus");
+const failedEl = $("pinsFailed");
+const noDataEl = $("noData");
+const unresolvedSection = $("unresolvedSection");
+const unresolvedList = $("unresolvedList");
+const iconTemplate = $("pinIcon");
 
-// Module-level state so pin toggle can rebuild without re-fetching
-let allCountries    = [];
-let currentSelected = null; // null = all checked
-let currentPinned   = [];
+let table = null;       // the place table
+let feedPlaces = [];    // [{id, name}] from the stored feed, read once on load
+let generation = 0;     // the number of the latest reconcile() started
+let working = 0;        // edits, reads and the load in flight; the page is idle at 0
+const pending = new Set(); // keys of the buttons whose edit has no reply yet
 
-const PIN_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-  stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
-  <line x1="12" y1="17" x2="12" y2="22"/>
-  <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
-</svg>`;
+const message = (err) => (err instanceof Error ? err.message : String(err));
 
-// ── Data loading ──────────────────────────────────────────────
-async function loadAll() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get([CACHE_KEY, SELECTED_COUNTRIES_KEY, PINNED_COUNTRIES_KEY], (result) => {
-      const cached   = result[CACHE_KEY];
-      const selected = result[SELECTED_COUNTRIES_KEY] ?? null;
-      const pinned   = result[PINNED_COUNTRIES_KEY]   ?? [];
-
-      if (cached && cached.data) {
-        resolve({ countries: extractCountries(cached.data), selected, pinned });
-      } else {
-        chrome.runtime.sendMessage({ type: "FETCH_DATA" })
-          .then(reply => resolve({
-            countries: reply.ok ? extractCountries(reply.data) : [],
-            selected, pinned
-          }))
-          .catch(() => resolve({ countries: [], selected, pinned }));
-      }
-    });
-  });
+function syncState() {
+  document.body.dataset.pinSync = working > 0 ? "busy" : "idle";
 }
 
-function extractCountries(json) {
-  const set = new Set();
-  if (json.months) {
-    Object.values(json.months).forEach(elections =>
-      elections.forEach(e => { if (e.country) set.add(e.country); })
-    );
-  } else if (json.elections) {
-    json.elections.forEach(e => { if (e.country) set.add(e.country); });
+function begin() {
+  working += 1;
+  syncState();
+}
+
+function end() {
+  working -= 1;
+  syncState();
+}
+
+const placeKey = (id) => `place:${id}`;
+const nameKey = (name) => `name:${name}`;
+
+// Every button shows its own pending state: busy and disabled until its edit has a reply.
+function refreshPending() {
+  for (const button of document.querySelectorAll("button[data-pin-key]")) {
+    if (pending.has(button.dataset.pinKey)) {
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+    } else {
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+    }
   }
-  return Array.from(set).sort((a, b) => a.localeCompare(b));
 }
 
-// ── List builder ──────────────────────────────────────────────
-function buildCheckboxes(countries, selected, pinned) {
-  const container = document.getElementById("country-list-container");
-  container.innerHTML = "";
-
-  // Pinned countries float to the top, rest stay alphabetical
-  const sorted = [
-    ...countries.filter(c =>  pinned.includes(c)),
-    ...countries.filter(c => !pinned.includes(c)),
-  ];
-
-  sorted.forEach(country => {
-    const isChecked = selected === null || selected.includes(country);
-    const isPinned  = pinned.includes(country);
-
-    const wrapper     = document.createElement("div");
-    wrapper.className = "country-item" + (isPinned ? " pinned" : "");
-
-    const id          = "cb-" + country.replace(/\s+/g, "-").replace(/[^a-zA-Z0-9-]/g, "").toLowerCase();
-
-    const checkbox    = document.createElement("input");
-    checkbox.type     = "checkbox";
-    checkbox.id       = id;
-    checkbox.value    = country;
-    checkbox.checked  = isChecked;
-
-    const label       = document.createElement("label");
-    label.htmlFor     = id;
-    label.textContent = country;
-
-    const pinBtn          = document.createElement("button");
-    pinBtn.className      = "pin-btn" + (isPinned ? " active" : "");
-    pinBtn.title          = isPinned
-      ? "Unpin — removes from popup-only view"
-      : "Pin — popup will show only pinned countries";
-    pinBtn.dataset.country = country;
-    pinBtn.innerHTML      = PIN_SVG;
-
-    pinBtn.addEventListener("click", () => {
-      const c   = pinBtn.dataset.country;
-      const idx = currentPinned.indexOf(c);
-      if (idx === -1) currentPinned.push(c);
-      else            currentPinned.splice(idx, 1);
-
-      chrome.storage.local.set({ [PINNED_COUNTRIES_KEY]: currentPinned }, () => {
-        buildCheckboxes(allCountries, currentSelected, currentPinned);
-        // Re-apply any active search term after rebuild
-        const term = document.getElementById("country-search").value;
-        if (term) document.getElementById("country-search").dispatchEvent(new Event("input"));
-      });
-    });
-
-    wrapper.appendChild(checkbox);
-    wrapper.appendChild(label);
-    wrapper.appendChild(pinBtn);
-    container.appendChild(wrapper);
-  });
-
-  updatePinSummary(pinned.length);
+function icon() {
+  return iconTemplate.content.firstElementChild.cloneNode(true);
 }
 
-// ── Pin summary banner ────────────────────────────────────────
-function updatePinSummary(count) {
-  let banner = document.getElementById("pin-summary");
-  if (!banner) {
-    banner = document.createElement("p");
-    banner.id = "pin-summary";
-    banner.className = "pin-summary";
-    document.querySelector(".options-header").after(banner);
+function pinButton(row) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "pin-btn" + (row.pinned ? " active" : "");
+  button.dataset.pinKey = placeKey(row.id);
+  button.title = row.pinned
+    ? "Unpin — removes from popup-only view"
+    : "Pin — popup will show only pinned countries";
+  button.setAttribute("aria-label", `${row.pinned ? "Unpin" : "Pin"} ${row.name}`);
+  button.setAttribute("aria-pressed", String(row.pinned));
+  button.append(icon());
+  button.addEventListener("click", () => edit(row.pinned ? "unpin" : "pin", row.id, button));
+  return button;
+}
+
+function buildRow(row) {
+  const item = document.createElement("div");
+  item.className = "country-item" + (row.pinned ? " pinned" : "");
+  item.dataset.placeId = row.id;
+  const text = document.createElement("div");
+  text.className = "country-text";
+  const name = document.createElement("span");
+  name.className = "country-name";
+  name.textContent = row.name;
+  text.append(name);
+  if (row.includes.length > 0) {
+    const also = document.createElement("span");
+    also.className = "also-shows";
+    also.textContent = `Also shows: ${row.includes.join(", ")}`;
+    text.append(also);
   }
+  item.append(text, pinButton(row));
+  return item;
+}
+
+function buildUnresolved(name) {
+  const item = document.createElement("li");
+  item.className = "unresolved-item";
+  const label = document.createElement("span");
+  label.className = "unresolved-name";
+  label.textContent = name;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "remove-btn";
+  button.dataset.pinKey = nameKey(name);
+  button.textContent = "Remove";
+  button.setAttribute("aria-label", `Remove ${name}`);
+  button.addEventListener("click", () => edit("forget", name, button));
+  item.append(label, button);
+  return item;
+}
+
+function applySearch() {
+  const term = searchEl.value.toLowerCase();
+  for (const item of listEl.children) {
+    const name = item.querySelector(".country-name").textContent.toLowerCase();
+    item.style.display = name.includes(term) ? "" : "none";
+  }
+}
+
+function drawSummary(count) {
   if (count === 0) {
-    banner.textContent = "No countries pinned — popup shows all results.";
-    banner.classList.remove("active");
+    summaryEl.textContent = "No countries pinned — popup shows all results.";
+    summaryEl.classList.remove("active");
   } else {
-    banner.textContent = `${count} ${count === 1 ? "country" : "countries"} pinned — popup shows only these.`;
-    banner.classList.add("active");
+    summaryEl.textContent = `${count} ${count === 1 ? "country" : "countries"} pinned — popup shows only these.`;
+    summaryEl.classList.add("active");
   }
 }
 
-// ── Real-time search filter ───────────────────────────────────
-document.getElementById("country-search").addEventListener("input", function (e) {
-  const searchTerm = e.target.value.toLowerCase();
-  document.querySelectorAll("#country-list-container .country-item").forEach(wrapper => {
-    const label = wrapper.querySelector("label");
-    wrapper.style.display = label.textContent.toLowerCase().includes(searchTerm) ? "" : "none";
-  });
-});
-
-// ── Select All / Clear All (respects current search filter) ──
-document.getElementById("select-all-btn").addEventListener("click", () => {
-  document.querySelectorAll("#country-list-container .country-item").forEach(wrapper => {
-    if (wrapper.style.display !== "none")
-      wrapper.querySelector("input[type='checkbox']").checked = true;
-  });
-});
-
-document.getElementById("clear-all-btn").addEventListener("click", () => {
-  document.querySelectorAll("#country-list-container .country-item").forEach(wrapper => {
-    if (wrapper.style.display !== "none")
-      wrapper.querySelector("input[type='checkbox']").checked = false;
-  });
-});
-
-// ── Save (checkbox selections only — pins auto-save on toggle) ─
-document.getElementById("save-btn").addEventListener("click", () => {
-  const checked = Array.from(
-    document.querySelectorAll("#country-list-container input[type='checkbox']:checked")
-  ).map(cb => cb.value);
-
-  chrome.storage.local.set({ [SELECTED_COUNTRIES_KEY]: checked }, () => {
-    const btn = document.getElementById("save-btn");
-    btn.textContent = "Saved!";
-    btn.classList.add("btn-saved");
-    setTimeout(() => {
-      btn.textContent = "Save";
-      btn.classList.remove("btn-saved");
-    }, 1500);
-  });
-});
-
-// ── Init ──────────────────────────────────────────────────────
-loadAll().then(({ countries, selected, pinned }) => {
-  if (countries.length === 0) {
-    document.getElementById("country-list-container").innerHTML =
-      '<p class="no-data">No election data cached yet. Open the extension popup first to load data, then return here.</p>';
-    return;
+// Draws the lists for `pins`, keeping the focused button focused.
+function draw(pins) {
+  const focused = document.activeElement;
+  const focusKey = focused && focused.dataset ? focused.dataset.pinKey : undefined;
+  const { rows, unresolved } = optionRows(feedPlaces, pins, table);
+  listEl.replaceChildren(...rows.map(buildRow));
+  unresolvedList.replaceChildren(...unresolved.map(buildUnresolved));
+  unresolvedSection.hidden = unresolved.length === 0;
+  drawSummary(pins.places.length);
+  applySearch();
+  refreshPending();
+  if (focusKey !== undefined) {
+    const again = [...document.querySelectorAll("button[data-pin-key]")].find((b) => b.dataset.pinKey === focusKey);
+    if (again && !again.disabled) again.focus();
   }
-  allCountries    = countries;
-  currentSelected = selected;
-  currentPinned   = pinned;
-  buildCheckboxes(allCountries, currentSelected, currentPinned);
-});
+}
+
+// Reads the pin keys and draws them, unless a later reconcile() has started since.
+async function reconcile() {
+  generation += 1;
+  const mine = generation;
+  begin();
+  try {
+    const stored = await chrome.storage.local.get(Object.values(PIN_KEYS));
+    if (mine === generation) draw(currentPins(stored, table));
+  } catch (err) {
+    if (mine === generation) {
+      statusEl.textContent = `Your saved pins could not be read: ${message(err)}. Reload this page to try again.`;
+    }
+  } finally {
+    end();
+  }
+}
+
+// One edit: the button waits for the reply, then the page shows what is stored.
+async function edit(op, value, button) {
+  const key = button.dataset.pinKey;
+  pending.add(key);
+  begin();
+  refreshPending();
+  let reply = null;
+  try {
+    let lost = "no usable reply";
+    try {
+      reply = await chrome.runtime.sendMessage({ type: "PIN_EDIT", op, value });
+    } catch (err) {
+      lost = message(err).replace(/[.]$/, ""); // the sentence supplies its own full stop
+    }
+    if (reply && reply.ok === true) {
+      statusEl.textContent = "";
+    } else if (reply && reply.ok === false) {
+      statusEl.textContent = `Your change could not be saved: ${reply.error}. Try again.`;
+    } else {
+      statusEl.textContent = `Your change could not be confirmed: ${lost}. The list shows your saved pins.`;
+    }
+  } finally {
+    pending.delete(key);
+    refreshPending();
+    const shown = reconcile(); // starts before end(), so the page is never idle in between
+    end();
+    await shown;
+  }
+}
+
+function pinsFailed(error) {
+  failedEl.textContent = `Your pins could not be prepared: ${error}. Reload this page to try again.`;
+  failedEl.hidden = false;
+}
+
+async function start() {
+  begin();
+  try {
+    const getURL = (path) => chrome.runtime.getURL(path);
+    let schemas;
+    try {
+      [schemas, table] = await Promise.all([loadSchemas(getURL), loadPlaces(getURL)]);
+    } catch (err) {
+      pinsFailed(message(err));
+      return;
+    }
+    // The worker migrates the pins first; they are shown and edited only once it has.
+    let reply = null;
+    let lost = "no usable reply";
+    try {
+      reply = await chrome.runtime.sendMessage({ type: "PINS" });
+    } catch (err) {
+      lost = message(err);
+    }
+    if (!reply || reply.ok !== true) {
+      pinsFailed(reply && typeof reply.error === "string" ? reply.error : lost);
+      return;
+    }
+    const flag = await chrome.storage.local.get(Object.values(PIN_KEYS));
+    if (flag[PIN_KEYS.migrated] !== true) {
+      pinsFailed("the pins were not migrated");
+      return;
+    }
+    const read = async () => storedFeed((await chrome.storage.local.get([KEYS.feed]))[KEYS.feed], schemas);
+    let record = await read();
+    if (record === null) {
+      try {
+        await chrome.runtime.sendMessage({ type: "CHECK", force: true });
+      } catch {
+        // no data stays no data; the pins are still listed
+      }
+      record = await read();
+    }
+    noDataEl.hidden = record !== null;
+    feedPlaces = optionPlaces(record, table);
+    searchEl.addEventListener("input", applySearch);
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === "local" && Object.values(PIN_KEYS).some((key) => key in changes)) reconcile();
+    });
+    await reconcile();
+  } catch (err) {
+    pinsFailed(message(err));
+  } finally {
+    end();
+  }
+}
+
+start();

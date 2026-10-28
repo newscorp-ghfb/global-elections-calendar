@@ -3,17 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Elections Calendar — Settings</title>
+  <title>Elections Calendar — Pinned countries</title>
   <link rel="stylesheet" href="options.css" />
 </head>
-<body>
+<body data-pin-sync="busy">
 
   <div class="options-container">
 
     <header class="options-header">
-      <h1 class="options-title">Country Filter</h1>
-      <p class="options-subtitle">Select which countries to include in your elections feed.</p>
+      <h1 class="options-title">Pinned countries</h1>
+      <p class="options-subtitle">Pin countries to show only their elections in the popup. A pinned country also shows the places that belong to it.</p>
     </header>
+
+    <p id="pinSummary" class="pin-summary"></p>
+    <p id="pinsFailed" class="pin-problem" role="alert" hidden></p>
+    <p id="pinStatus" class="pin-problem" role="status"></p>
+    <p id="noData" class="no-data" hidden>No election data is available yet. Open the popup to load it, then come back here.</p>
 
     <input
       type="text"
@@ -24,19 +29,25 @@
     />
 
     <div id="country-list-container">
-      <!-- Dynamically populated by options.js -->
+      <!-- Populated by options.js -->
     </div>
 
-    <div class="options-footer">
-      <div class="footer-actions-left">
-        <button id="select-all-btn" class="btn-secondary">Select All</button>
-        <button id="clear-all-btn" class="btn-secondary">Clear All</button>
-      </div>
-      <button id="save-btn" class="btn-primary">Save</button>
-    </div>
+    <section id="unresolvedSection" class="unresolved" hidden>
+      <h2 class="unresolved-title">Pins from version 1 that match no known country</h2>
+      <p class="unresolved-note">These do not filter the popup. Remove them, then pin the country again from the list.</p>
+      <ul id="unresolvedList" class="unresolved-list"></ul>
+    </section>
 
   </div>
 
-  <script src="options.js"></script>
+  <template id="pinIcon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true">
+      <line x1="12" y1="17" x2="12" y2="22"/>
+      <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
+    </svg>
+  </template>
+
+  <script type="module" src="options.js"></script>
 </body>
 </html>

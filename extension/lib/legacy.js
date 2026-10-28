@@ -5,6 +5,8 @@
 // clear it in fetchData). It keeps v1.0.2's innerHTML cards until later tasks
 // replace them.
 
+import { pinMatcher, placeOf } from "./pins.js";
+
 const $ = (id) => document.getElementById(id);
 const stateLoading   = $("stateLoading");
 const stateError     = $("stateError");
@@ -35,7 +37,8 @@ let serverCurrentMonth = ""; // what the scraper considers "now"
 let availableMonths = []; // sorted list of month keys in the data
 let activeTab        = "all"; // "upcoming" | "past" | "all"
 let filterQuery      = "";
-let pinnedCountries  = [];  // countries to show exclusively (empty = show all)
+let pinnedPlaces     = [];  // place ids to show exclusively (empty = show all)
+let placeTable       = null; // extension/places.json: maps v1's country strings to place ids
 
 function show(el) { el.classList.remove("hidden"); }
 function hide(el) { el.classList.add("hidden"); }
@@ -164,10 +167,11 @@ function renderCurrentMonth() {
   }
 
   // Apply pin filter — if any countries are pinned, show only those
-  if (pinnedCountries.length > 0) {
-    filtered = filtered.filter(e => pinnedCountries.includes(e.country));
+  if (pinnedPlaces.length > 0) {
+    const shows = pinMatcher(pinnedPlaces, placeTable);
+    filtered = filtered.filter(e => shows(placeOf(e.country, placeTable)));
     show(pinBar);
-    const n = pinnedCountries.length;
+    const n = pinnedPlaces.length;
     pinBarText.textContent = `Pinned view · ${n} ${n === 1 ? "country" : "countries"}`;
   } else {
     hide(pinBar);
@@ -239,8 +243,9 @@ function renderCurrentMonth() {
   electionList.appendChild(frag);
 }
 
-export function renderLegacy(json, { pinned }) {
-  pinnedCountries = pinned;
+export function renderLegacy(json, { pinned, table }) {
+  pinnedPlaces = pinned;
+  placeTable = table;
   // The controls are shared with lib/render.js: take over what a v2 render left on them.
   filterQuery = searchInput.value;
   hide(levelFilter);

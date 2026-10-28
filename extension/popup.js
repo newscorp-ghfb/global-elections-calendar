@@ -1,12 +1,11 @@
-import { KEYS, loadSchemas, storedFeed, storedStatus } from "./lib/load.js";
+import { KEYS, loadPlaces, loadSchemas, storedFeed, storedStatus } from "./lib/load.js";
 import { bannerState, footerState, NO_HEALTH, panelRows } from "./lib/health.js";
 import { isLinked } from "./lib/order.js";
+import { PIN_KEYS, currentPins } from "./lib/pins.js";
 // render.js loads before legacy.js, so on a click its listener runs first and legacy's second.
 import { renderV2 } from "./lib/render.js";
 import { renderLegacy } from "./lib/legacy.js";
 import { localToday } from "./lib/dates.js";
-
-const PINNED_COUNTRIES_KEY = "pinned_countries";
 
 const $ = (id) => document.getElementById(id);
 const stateLoading = $("stateLoading");
@@ -22,6 +21,7 @@ const banner       = $("banner");
 const healthPanel  = $("healthPanel");
 
 let schemas = null;
+let table = null; // the place table (extension/places.json)
 let inFlight = 0; // checks started and not finished; the page is settled at 0
 
 function showError(message) {
@@ -76,18 +76,19 @@ function drawHealth(record, statusRecord, check, now) {
 // Render the cached feed, if the stored record is valid. True when something was drawn.
 async function render() {
   const stored = await chrome.storage.local.get([
-    KEYS.feed, KEYS.status, KEYS.check, PINNED_COUNTRIES_KEY,
+    KEYS.feed, KEYS.status, KEYS.check, ...Object.values(PIN_KEYS),
   ]);
   const record = storedFeed(stored[KEYS.feed], schemas);
   if (record === null) return false;
-  const pinned = Array.isArray(stored[PINNED_COUNTRIES_KEY]) ? stored[PINNED_COUNTRIES_KEY] : [];
+  // The popup never writes pins: until the worker has migrated them, it derives them here.
+  const pinned = currentPins(stored, table).places;
   const now = Date.now(); // read once: the cards, the banner and the panel agree (P139)
   if (record.format === "v2") {
     document.body.dataset.renderer = "v2";
-    renderV2(record.data, { pinned, today: localToday(now), now });
+    renderV2(record.data, { pinned, table, today: localToday(now), now });
   } else {
     document.body.dataset.renderer = "legacy";
-    renderLegacy(record.data, { pinned });
+    renderLegacy(record.data, { pinned, table });
   }
   drawHealth(record, storedStatus(stored[KEYS.status], schemas), stored[KEYS.check], now);
   document.body.dataset.state = "ready";
@@ -146,7 +147,8 @@ filterToggle.addEventListener("click", () => {
 
 async function start() {
   try {
-    schemas = await loadSchemas((path) => chrome.runtime.getURL(path));
+    const getURL = (path) => chrome.runtime.getURL(path);
+    [schemas, table] = await Promise.all([loadSchemas(getURL), loadPlaces(getURL)]);
     await render();
   } catch (err) {
     console.error("popup", err);

@@ -445,9 +445,15 @@ def test_the_alarm_survives_restart_and_worker_termination(
 CHECK_RESULT: Final = {"ok": True, "changed": True, "marker": 1}
 SKIPPED: Final = {"ok": True, "changed": False, "skipped": True}
 HANDLER_ROWS: Final = [
-    ("installed", {"reason": "install"}, True, ["openHelp", "ensureAlarm", "runCheck"], None),
-    ("installed", {"reason": "update"}, True, ["ensureAlarm", "runCheck"], None),
-    ("startup", None, True, ["ensureAlarm", "runCheck"], None),
+    (
+        "installed",
+        {"reason": "install"},
+        True,
+        ["openHelp", "migratePins", "ensureAlarm", "runCheck"],
+        None,
+    ),
+    ("installed", {"reason": "update"}, True, ["migratePins", "ensureAlarm", "runCheck"], None),
+    ("startup", None, True, ["migratePins", "ensureAlarm", "runCheck"], None),
     ("alarm", {"name": "elections-refresh"}, True, ["runCheck", "ensureAlarm"], None),
     ("alarm", {"name": "other"}, True, [], None),
     ("message", {"type": "CHECK", "force": False}, False, ["ensureAlarm", "isDue"], SKIPPED),
@@ -481,8 +487,76 @@ def test_a_failing_help_tab_does_not_stop_the_install_check(lab: Page) -> None:
         "async s => (await import('/test/fakes.js')).runHandlers(s)",
         {"call": "installed", "arg": {"reason": "install"}, "due": True, "helpRejects": True},
     )
-    calls = ["openHelp", "ensureAlarm", "runCheck"]
+    calls = ["openHelp", "migratePins", "ensureAlarm", "runCheck"]
     assert ran["log"] == [f"{name}:{edge}" for name in calls for edge in ("start", "end")]
+
+
+MIGRATED: Final = {"ok": True, "migrated": True, "marker": 2}
+
+
+def _handlers(lab: Page, **spec: Any) -> dict[str, Any]:
+    ran: dict[str, Any] = lab.evaluate(
+        "async s => (await import('/test/fakes.js')).runHandlers(s)", spec
+    )
+    return ran
+
+
+def _calls(*names: str) -> list[str]:
+    return [f"{name}:{edge}" for name in names for edge in ("start", "end")]
+
+
+def test_the_worker_migrates_pins_on_install_update_and_startup(lab: Page) -> None:
+    ran = _handlers(lab, call="installed", arg={"reason": "install"}, due=True)
+    assert ran["log"] == _calls("openHelp", "migratePins", "ensureAlarm", "runCheck")
+    ran = _handlers(lab, call="installed", arg={"reason": "update"}, due=True)
+    assert ran["log"] == _calls("migratePins", "ensureAlarm", "runCheck")
+    ran = _handlers(lab, call="startup", due=True)
+    assert ran["log"] == _calls("migratePins", "ensureAlarm", "runCheck")
+    # the alarm path does not migrate
+    ran = _handlers(lab, call="alarm", arg={"name": "elections-refresh"})
+    assert ran["log"] == _calls("runCheck", "ensureAlarm")
+
+    # a migration that rejects still runs the alarm and the check
+    ran = _handlers(lab, call="startup", due=True, migrateRejects=True)
+    assert ran["log"] == _calls("migratePins", "ensureAlarm", "runCheck")
+    assert ran["rejected"] is None
+
+    # PINS waits for the migration and returns its reply; the listener must hold the channel
+    ran = _handlers(lab, call="message", arg={"type": "PINS"})
+    assert ran["log"] == _calls("migratePins")
+    assert ran["result"] == MIGRATED and ran["undefinedResult"] is False
+    edit = {"type": "PIN_EDIT", "op": "pin", "value": "iso:LS"}
+    ran = _handlers(lab, call="message", arg=edit)
+    assert ran["log"] == _calls("editPin")
+    assert ran["result"] == {"ok": True, "edited": {"op": "pin", "value": "iso:LS"}}
+
+
+def test_the_place_table_loads(lab: Page) -> None:
+    got = lab.evaluate(
+        """async () => {
+          const { loadPlaces } = await import('/lib/load.js');
+          const table = await loadPlaces((p) => chrome.runtime.getURL(p));
+          const real = window.fetch;
+          const failure = async (response) => {
+            window.fetch = async () => response;
+            try {
+              await loadPlaces((p) => p);
+              return null;
+            } catch (e) {
+              return e.message;
+            } finally {
+              window.fetch = real;
+            }
+          };
+          return [
+            Object.keys(table.names).length,
+            Object.keys(table.places).length,
+            await failure(new Response('', { status: 404 })),
+            await failure(new Response('{"names": {}}')),
+          ];
+        }"""
+    )
+    assert got == [487, 264, "HTTP 404 for places.json", "places.json is not a place table"]
 
 
 def test_a_failed_write_in_the_worker_keeps_the_cache(
@@ -586,6 +660,12 @@ def test_the_v1_cache_and_pins_are_left_alone(ext: Ext, pair: tuple[bytes, bytes
     stored = ext.storage()
     assert FEED in stored
     assert {k: stored[k] for k in seeded} == seeded
+    # a migration (the options page asks the worker for one) leaves the v1 keys alone too
+    ext.open("options.html").wait_for_function("() => document.body.dataset.pinSync === 'idle'")
+    after = ext.storage()
+    assert after["pins_migrated_v2"] is True and after["unresolved_pins_v2"] == []
+    assert after["pinned_places_v2"] == ["iso:BR"]
+    assert {k: after[k] for k in seeded} == seeded
 
 
 def test_a_corrupt_cache_is_ignored(ext: Ext, pair: tuple[bytes, bytes]) -> None:

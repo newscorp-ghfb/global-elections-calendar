@@ -46,14 +46,15 @@ function searchText(card, child, label) {
   ].join(" ").toLowerCase();
 }
 
-export function view(doc, { month, tab, level, query, pinned, today, now }) {
+// `pins` is a (placeId) => boolean (lib/pins.js `pinMatcher`).
+export function view(doc, { month, tab, level, query, pins, today, now }) {
   const needle = query.trim().toLowerCase();
   const cards = [];
   const kept = new Map(); // child_id -> {aggregate, held}, so a child is counted once
   for (const bucket of Object.keys(doc.months).sort()) {
     for (const card of doc.months[bucket]) {
       if (!overlaps(card, month)) continue;
-      if (pinned.length > 0 && !pinned.includes(card.country)) continue;
+      if (!pins(card.place_id)) continue;
       if (!LEVELS[level](card.level)) continue;
       const children = [];
       for (const child of card.children) {
