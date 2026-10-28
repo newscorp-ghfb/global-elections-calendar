@@ -23,6 +23,9 @@ TODAY: Final = "2026-10-19"
 FETCHED: Final = "2026-10-16T14:39:00Z"
 FETCHED_MS: Final = _ms(FETCHED)
 WEEK_MS: Final = 7 * 86400 * 1000
+TENTATIVE: Final = {"kind": "tentative", "text": "Tentative"}
+SUBNATIONAL: Final = {"kind": "subnational", "text": "Subnational"}
+UNKNOWN_DATE: Final = "Unverified: the source data's date is unknown"
 
 
 def _template() -> dict[str, Any]:
@@ -91,7 +94,7 @@ def check(
     child: dict[str, Any] | None,
     kind: str,
     text: str,
-    chips: list[str] | None = None,
+    chips: list[dict[str, str]] | None = None,
     notes: list[str] | None = None,
 ) -> None:
     got = label(page, c, child)
@@ -114,11 +117,11 @@ def check(
                 date_status="tentative",
                 level="subnational",
             ),
-            ["Tentative", "Subnational"],
+            [TENTATIVE, SUBNATIONAL],
         ),
     ],
 )
-def test_exact_dates(lab: Page, fields: dict[str, Any], chips: list[str]) -> None:
+def test_exact_dates(lab: Page, fields: dict[str, Any], chips: list[dict[str, str]]) -> None:
     check(lab, fields, None, "scheduled", "Scheduled", chips, [])
 
 
@@ -153,7 +156,7 @@ def test_exact_dates(lab: Page, fields: dict[str, Any], chips: list[str]) -> Non
             dated("2026-11-02", "2027-01-31", "day", "expected_window", date_status="tentative"),
             "expected",
             "Expected between 2 Nov and 31 Jan",
-            ["Tentative"],
+            [TENTATIVE],
         ),
         (
             dated("2026-12-01", "2026-12-31", "month", "expected_window"),
@@ -200,7 +203,7 @@ def test_exact_dates(lab: Page, fields: dict[str, Any], chips: list[str]) -> Non
     ],
 )
 def test_month_year_and_expected_windows(
-    lab: Page, c: dict[str, Any], kind: str, text: str, chips: list[str] | None
+    lab: Page, c: dict[str, Any], kind: str, text: str, chips: list[dict[str, str]] | None
 ) -> None:
     check(lab, c, None, kind, text, chips)
 
@@ -268,7 +271,7 @@ def test_cancellation_conflict_label(lab: Page) -> None:
 def test_renewal_only_child_is_labelled_expected(lab: Page) -> None:
     c = dated("2026-12-01", "2026-12-31", "month", "expected_window", date_status="tentative")
     child = kid(sources=[source(name="IPU", evidence_kind="expected_renewal")])
-    check(lab, c, child, "expected", "Expected in December", ["Tentative"])
+    check(lab, c, child, "expected", "Expected in December", [TENTATIVE])
 
 
 def test_less_precise_note(lab: Page) -> None:
@@ -313,6 +316,32 @@ def test_cached_confirmation_shows_its_date(lab: Page) -> None:
     live = source(selected=False, status_claim="held", fallback=False)
     mixed = kid(occurrence_confirmed=True, sources=[source(), held, live])
     check(lab, HELD_DAY, mixed, "held", "Held", notes=[])
+
+
+def test_rescheduled_chip(lab: Page) -> None:
+    c = dated("2026-10-26", "2026-10-26", status="Upcoming")
+    child = kid(rescheduled_from=["15 November", "22 November"])
+    rescheduled = {"kind": "rescheduled", "text": "Rescheduled from 15 November, 22 November"}
+    check(lab, c, child, "scheduled", "Scheduled", [rescheduled])
+    check(lab, c, kid(rescheduled_from=[]), "scheduled", "Scheduled", [])
+    both = dated("2026-10-26", "2026-10-26", status="Upcoming", date_status="tentative")
+    check(lab, both, child, "scheduled", "Scheduled", [TENTATIVE, rescheduled])
+
+
+def test_an_undated_fallback_confirmation_is_flagged(lab: Page) -> None:
+    undated = source(selected=False, status_claim="held", fallback=True, fetched_at=None)
+    only_beside_live = kid(occurrence_confirmed=True, sources=[source(), undated])
+    check(lab, HELD_DAY, only_beside_live, "held", "Held", notes=[UNKNOWN_DATE])
+    # the selected source is also an undated fallback: note 3 gave it already, so once
+    both = kid(
+        occurrence_confirmed=True,
+        sources=[source(fallback=True, fetched_at=None), undated],
+    )
+    check(lab, HELD_DAY, both, "held", "Held", notes=[UNKNOWN_DATE])
+    # a dated held fallback keeps the confirmation note
+    dated_held = source(selected=False, status_claim="held", fallback=True, fetched_at=FETCHED)
+    child = kid(occurrence_confirmed=True, sources=[source(), dated_held])
+    check(lab, HELD_DAY, child, "held", "Held", notes=["Confirmed by source data from 16 Oct 2026"])
 
 
 def test_stale_fetch_date_is_shown(lab: Page) -> None:

@@ -17,6 +17,7 @@ from tests.support.extension import (
 
 FEED: Final = "elections_cache_v2"
 STATUS: Final = "status_cache"
+BRAZIL_CARD: Final = "c8c9844ab7a8"
 UNCONFIRMED: Final = "Current health can't be confirmed for this data"
 NO_HEALTH: Final = "Source health isn't available for this data"
 NO_CONTENT_ID: Final = b'{"schema_version": 2, "months": {}}'
@@ -182,6 +183,15 @@ def test_renderer_switches_inside_one_popup(ext: Ext) -> None:
         # one renderer answers the box
         _search(page, "")
         assert len(_shown(page)) > len(filtered), index
+        brazil = page.locator(f'.election-item[data-group-id="{BRAZIL_CARD}"]')
+        if index == 1:  # expand a card while v2 is shown; the open set outlives the renderer
+            brazil.locator("button.card-toggle").click()
+            assert brazil.locator(".child-entry").count() == 18
+        if index == 2:  # legacy: nothing of the v2 disclosure remains
+            assert page.locator("#electionList .card-details, .card-toggle").count() == 0
+        if index == 3:  # v2 again: the card is open again (remembered by group_id)
+            assert brazil.locator("button.card-toggle").get_attribute("aria-expanded") == "true"
+            assert brazil.locator(".child-entry").count() == 18
         after = _state(page)
         assert after["renderer"] == renderer and after[other] == 0, index
         assert after["active_tabs"] == [tab], index

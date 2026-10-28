@@ -470,3 +470,31 @@ def test_v2_shares_the_legacy_states(ext: Ext, pair: tuple[bytes, bytes]) -> Non
     _settled(page)
     assert page.locator("#pinBar").is_hidden()
     assert ext.page_errors == []
+
+
+def test_a_month_outside_the_window_falls_back(ext: Ext, feed_doc: dict[str, Any]) -> None:
+    lab = ext.lab()
+
+    def start(current: str, today: str, months: list[str] | None = None) -> str:
+        doc = {
+            "current_month": current,
+            "window": {"months": feed_doc["window"]["months"] if months is None else months},
+        }
+        got: str = js(lab, "lib/count.js", "startMonth", doc, today)
+        return got
+
+    assert start(OCT, TODAY) == OCT
+    assert start("2027-01", TODAY) == "2027-01"  # in the window: the producer's month wins
+    assert start("2027-05", TODAY) == OCT  # today's month, when it is in the window
+    assert start("2027-05", "2027-06-01") == "2026-09"  # else the window's first month
+    assert start("2027-05", TODAY, []) == "2027-05"  # an empty window: current_month
+
+    # in the popup: current_month outside the window opens on today's month
+    doc = copy.deepcopy(feed_doc)
+    doc["current_month"] = "2027-05"
+    raw = json.dumps(doc, separators=(",", ":")).encode()
+    ext.seed({FEED: feed_record(raw), CHECK: _fresh_check()})
+    page = ext.popup()
+    assert _text(page, "#currentMonthLabel") == "OCTOBER 2026"
+    assert _cards(page) == 30
+    assert ext.page_errors == []

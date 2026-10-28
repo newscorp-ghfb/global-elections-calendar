@@ -1,8 +1,10 @@
 // The v2 renderer: month, tab, level and search state of a v2 feed document, drawn through
-// lib/count.js. Feed text is inserted with textContent only, never as markup. Cards open no
-// link (R47; 5b-2 adds the source entries).
-import { view, recordText } from "./count.js";
+// lib/count.js. Feed text is inserted with textContent only, never as markup. A card body opens
+// no link (R47, ruling 30); only a source or umbrella Open button does, through safeLink.
+import { view, recordText, startMonth } from "./count.js";
 import { badge, monthName, monthYear } from "./dates.js";
+import { childDetails, childIndex } from "./details.js";
+import { safeLink } from "./links.js";
 import { pinMatcher } from "./pins.js";
 
 const $ = (id) => document.getElementById(id);
@@ -36,6 +38,8 @@ let month = "";       // "YYYY-MM" shown
 let tab = "all";      // "upcoming" | "past" | "all"
 let level = "all";    // "all" | "national" | "subnational"
 let query = "";
+let index = null;     // child_id -> {card, child}, built on the first expand of a doc
+const open = new Set(); // group_ids of the expanded cards, for the popup's life
 
 function show(el) { el.classList.remove("hidden"); }
 function hide(el) { el.classList.add("hidden"); }
@@ -45,6 +49,69 @@ function text(tag, className, value) {
   el.className = className;
   el.textContent = value;
   return el;
+}
+
+function openButton(link, label, onOpen) {
+  const button = text("button", "open-button " + onOpen, "Open");
+  button.type = "button";
+  button.setAttribute("aria-label", label);
+  button.addEventListener("click", () => {
+    if (document.body.dataset.renderer !== "v2") return;
+    chrome.tabs.create({ url: link });
+  });
+  return button;
+}
+
+function line(className, value, button) {
+  const el = text("div", className, "");
+  el.append(text("span", "line-text", value));
+  if (button !== null) el.append(button);
+  return el;
+}
+
+// One kept child: heading, its label from the view, a line per source and umbrella, and its
+// possible matches. The label is the view's, so the face and the entry share one clock (C03).
+function buildChild(card, { child, label }) {
+  if (index === null) index = childIndex(doc);
+  const d = childDetails(card, child, { index });
+  const el = document.createElement("div");
+  el.className = "child-entry";
+  el.dataset.childId = child.child_id;
+  el.append(text("div", "child-heading", d.heading));
+
+  const labelEl = document.createElement("div");
+  labelEl.className = "child-label";
+  labelEl.dataset.kind = label.kind;
+  labelEl.append(text("span", "child-label-text", label.text));
+  const chips = document.createElement("div");
+  chips.className = "child-chips";
+  for (const chip of label.chips) chips.append(text("span", `chip chip-${chip.kind}`, chip.text));
+  const notes = document.createElement("ul");
+  notes.className = "child-notes";
+  for (const note of label.notes) notes.append(text("li", "", note));
+  labelEl.append(chips, notes);
+  el.append(labelEl);
+
+  for (const s of d.sources) {
+    const button = s.link === null ? null : openButton(
+      s.link, `Open ${s.name} for ${d.heading} (new tab)`, "source-open");
+    el.append(line("source-line", s.text, button));
+  }
+  for (const u of d.umbrellas) {
+    const button = u.link === null ? null : openButton(
+      u.link, `Open ${u.name} (${u.officeLabel}) for ${d.heading} (new tab)`, "umbrella-open");
+    el.append(line("umbrella-line", u.text, button));
+  }
+  for (const p of d.possible) el.append(text("div", "possible-line", p));
+  return el;
+}
+
+// The details of an open card: built when it is opened or redrawn, never before.
+function fillDetails(box, entry, isOpen) {
+  box.replaceChildren();
+  box.hidden = !isOpen;
+  if (!isOpen) return;
+  for (const kept of entry.children) box.append(buildChild(entry.card, kept));
 }
 
 function buildCard(entry) {
@@ -67,8 +134,13 @@ function buildCard(entry) {
 
   const chips = document.createElement("div");
   chips.className = "election-chips";
-  for (const chip of children[0].label.chips) {
-    chips.append(text("span", `chip chip-${chip.toLowerCase()}`, chip));
+  const seenChips = new Set();
+  for (const { label: childLabel } of children) {
+    for (const chip of childLabel.chips) {
+      if (seenChips.has(chip.text)) continue;
+      seenChips.add(chip.text);
+      chips.append(text("span", `chip chip-${chip.kind}`, chip.text));
+    }
   }
 
   const notes = document.createElement("ul");
@@ -86,8 +158,28 @@ function buildCard(entry) {
 
   const info = document.createElement("div");
   info.className = "election-info";
-  info.append(top, text("div", "election-type", card.type), labelEl, text("div", "card-match", match), chips, notes);
-  li.append(date, info);
+  const box = document.createElement("div");
+  box.className = "card-details";
+  box.id = `details-${card.group_id}`;
+  const toggle = text("button", "card-toggle", "");
+  toggle.type = "button";
+  toggle.setAttribute("aria-controls", box.id);
+  const sync = () => {
+    const isOpen = open.has(card.group_id);
+    toggle.textContent = isOpen ? "Hide details" : "Show details";
+    toggle.setAttribute("aria-expanded", String(isOpen));
+    fillDetails(box, entry, isOpen);
+  };
+  toggle.addEventListener("click", () => {
+    if (!active()) return;
+    if (open.has(card.group_id)) open.delete(card.group_id);
+    else open.add(card.group_id);
+    sync();
+  });
+  sync();
+
+  info.append(top, text("div", "election-type", card.type), labelEl, text("div", "card-match", match), chips, notes, toggle);
+  li.append(date, info, box);
   return li;
 }
 
@@ -147,12 +239,13 @@ function draw() {
 }
 
 export function renderV2(feed, opts) {
+  if (doc !== feed) index = null;
   doc = feed;
   pinned = opts.pinned;
   matches = pinMatcher(pinned, opts.table);
   today = opts.today;
   now = opts.now;
-  if (!doc.window.months.includes(month)) month = doc.current_month;
+  if (!doc.window.months.includes(month)) month = startMonth(doc, today);
   query = searchInput.value;
   level = levelFilter.value;
   draw();
