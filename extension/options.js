@@ -26,6 +26,9 @@ let working = 0;        // edits, reads and the load in flight; the page is idle
 const pending = new Set(); // keys of the buttons whose edit has no reply yet
 
 const message = (err) => (err instanceof Error ? err.message : String(err));
+// Text inserted into a sentence: one trailing full stop is dropped, because Chrome's own messages
+// end in one and the sentence supplies its own.
+const clause = (text) => String(text).replace(/[.]$/, "");
 
 function syncState() {
   document.body.dataset.pinSync = working > 0 ? "busy" : "idle";
@@ -158,7 +161,7 @@ async function reconcile() {
     if (mine === generation) draw(currentPins(stored, table));
   } catch (err) {
     if (mine === generation) {
-      statusEl.textContent = `Your saved pins could not be read: ${message(err)}. Reload this page to try again.`;
+      statusEl.textContent = `Your saved pins could not be read: ${clause(message(err))}. Reload this page to try again.`;
     }
   } finally {
     end();
@@ -177,12 +180,12 @@ async function edit(op, value, button) {
     try {
       reply = await chrome.runtime.sendMessage({ type: "PIN_EDIT", op, value });
     } catch (err) {
-      lost = message(err).replace(/[.]$/, ""); // the sentence supplies its own full stop
+      lost = clause(message(err));
     }
     if (reply && reply.ok === true) {
       statusEl.textContent = "";
     } else if (reply && reply.ok === false) {
-      statusEl.textContent = `Your change could not be saved: ${reply.error}. Try again.`;
+      statusEl.textContent = `Your change could not be saved: ${clause(reply.error)}. Try again.`;
     } else {
       statusEl.textContent = `Your change could not be confirmed: ${lost}. The list shows your saved pins.`;
     }
@@ -196,7 +199,7 @@ async function edit(op, value, button) {
 }
 
 function pinsFailed(error) {
-  failedEl.textContent = `Your pins could not be prepared: ${error}. Reload this page to try again.`;
+  failedEl.textContent = `Your pins could not be prepared: ${clause(error)}. Reload this page to try again.`;
   failedEl.hidden = false;
 }
 
@@ -232,7 +235,7 @@ async function start() {
     let record = await read();
     if (record === null) {
       try {
-        await chrome.runtime.sendMessage({ type: "CHECK", force: true });
+        await chrome.runtime.sendMessage({ type: "CHECK" });
       } catch {
         // no data stays no data; the pins are still listed
       }

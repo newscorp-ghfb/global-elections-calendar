@@ -1,5 +1,5 @@
 // v1.0.2's renderer (applyDataToUI, renderCurrentMonth, buildCard), moved here from popup.js.
-// What changed: it takes the feed document and the pinned countries as arguments; its tabs filter
+// What changed: it takes the feed document, the pinned place ids and the place table as arguments; its tabs filter
 // on upcoming / past (status Held) / all; it no longer writes the footer (the popup does, from
 // lib/health.js); and the search box is no longer reset on each load (popup.js used to
 // clear it in fetchData). It keeps v1.0.2's innerHTML cards until later tasks

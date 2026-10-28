@@ -5,8 +5,10 @@ export const ALARM_NAME = "elections-refresh";
 
 // Each handler returns a promise, except `message`, which returns undefined at once for a
 // message that is not one of ours (so the caller knows not to hold the reply channel open).
-// `migratePins` and `editPin` never reject in production; a rejection is logged all the same,
-// because a pin migration that fails must not stop the alarm or the check (P140).
+// `migratePins` and `editPin` never reject in production. On install, update and startup a failed
+// or rejected migration is logged and never stops the alarm or the check (P140); a rejection on
+// a `PINS` or `PIN_EDIT` message reaches the caller, and the listener in background.js turns it
+// into an {ok: false} reply.
 export function handlers({ runCheck, ensureAlarm, isDue, openHelp, migratePins, editPin }) {
   async function migrate() {
     try {

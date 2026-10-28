@@ -131,7 +131,7 @@ export async function runHandlers(spec) {
 }
 
 // A fake chrome.storage.local over `stored` (cloned): `get(keys)` and `set(items)`. `sets` logs the
-// keys of every `set`; `setDelayMs` makes a `set` take that long; `failSets` holds the indexes
+// keys of every `set`; `setDelayMs` makes a `set` take that long; `setFails` holds the indexes
 // (in call order, from 0) of the `set`s that reject, `setFailsAll` makes every `set` reject, with
 // the message `setFailsWith`; `getFails` is a message that rejects every `get`.
 function pinStorage(spec, stored, sets) {

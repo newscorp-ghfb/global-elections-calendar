@@ -2,8 +2,8 @@
 // place table (`{names, places}`, extension/places.json) as an argument.
 //
 // Only the worker writes the pin keys: the one-time migration of v1.0.2's `pinned_countries`, and
-// every later edit through one queue. `pinned_countries` is read once, by the migration, and
-// never written.
+// every later edit through one queue. `pinned_countries` is never written, and its value is used only
+// before the migration flag is set (every read fetches it with the other pin keys).
 
 export const PIN_KEYS = {
   legacy: "pinned_countries",
