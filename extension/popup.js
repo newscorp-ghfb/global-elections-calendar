@@ -88,6 +88,7 @@ async function render() {
     renderV2(record.data, { pinned, table, today: localToday(now), now });
   } else {
     document.body.dataset.renderer = "legacy";
+    $("attention").classList.add("hidden"); // the section is v2's only
     renderLegacy(record.data, { pinned, table });
   }
   drawHealth(record, storedStatus(stored[KEYS.status], schemas), stored[KEYS.check], now);

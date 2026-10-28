@@ -2,6 +2,7 @@
 // lib/count.js. Feed text is inserted with textContent only, never as markup. A card body opens
 // no link (R47, ruling 30); only a source or umbrella Open button does, through safeLink.
 import { view, recordText, startMonth } from "./count.js";
+import { attentionView, ATTENTION_PAGE, shownLine } from "./attention.js";
 import { badge, monthName, monthYear } from "./dates.js";
 import { childDetails, childIndex } from "./details.js";
 import { pinMatcher } from "./pins.js";
@@ -26,6 +27,12 @@ const statHeldLabel     = $("statHeldLabel");
 const listTitle         = $("listTitle");
 const pinBar            = $("pinBar");
 const pinBarText        = $("pinBarText");
+const attention         = $("attention");
+const attentionToggle   = $("attentionToggle");
+const attentionNote     = $("attentionNote");
+const attentionList     = $("attentionList");
+const attentionShown    = $("attentionShown");
+const attentionMore     = $("attentionMore");
 const tabs = [$("tabUpcoming"), $("tabPast"), $("tabAll")];
 
 let doc = null;       // the v2 feed document drawn last
@@ -39,6 +46,9 @@ let level = "all";    // "all" | "national" | "subnational"
 let query = "";
 let index = null;     // child_id -> {card, child}, built on the first expand of a doc
 const open = new Set(); // group_ids of the expanded cards, for the popup's life
+let attentionOpen = false; // the attention section's open state, for the popup's life
+let attentionRows = ATTENTION_PAGE; // rows shown while open; a changed search resets it
+let attentionQuery = "";
 
 function show(el) { el.classList.remove("hidden"); }
 function hide(el) { el.classList.add("hidden"); }
@@ -182,6 +192,45 @@ function buildCard(entry) {
   return li;
 }
 
+function buildAttentionRow(row) {
+  const li = document.createElement("li");
+  li.className = "attention-row";
+  li.dataset.itemId = row.id;
+  li.append(text("div", "attention-text", row.text), text("div", "attention-source", row.source));
+  if (row.undated !== null) li.append(text("div", "attention-undated", row.undated));
+  for (const p of row.possible) li.append(text("div", "possible-line", p));
+  if (row.link !== null) li.append(openButton(row.link, row.label, "attention-open"));
+  return li;
+}
+
+// The section: its count and note always, its rows only while open (never built before).
+function drawAttention() {
+  if (attentionQuery !== query) {
+    attentionQuery = query;
+    attentionRows = ATTENTION_PAGE;
+  }
+  if (index === null) index = childIndex(doc);
+  const got = attentionView(doc, { query, index });
+  show(attention);
+  attentionToggle.textContent = got.title;
+  attentionToggle.setAttribute("aria-expanded", String(attentionOpen));
+  attentionNote.textContent = got.note;
+  attentionNote.hidden = got.note === "";
+  attentionList.replaceChildren();
+  attentionList.hidden = !attentionOpen;
+  const shown = Math.min(attentionRows, got.rows.length);
+  const left = got.rows.length - shown;
+  const line = attentionOpen ? shownLine(shown, got.rows.length) : "";
+  attentionShown.textContent = line;
+  attentionShown.hidden = line === "";
+  attentionMore.hidden = !attentionOpen || left === 0;
+  attentionMore.textContent = `Show ${Math.min(left, ATTENTION_PAGE)} more`;
+  if (!attentionOpen) return;
+  const frag = document.createDocumentFragment();
+  for (const row of got.rows.slice(0, shown)) frag.append(buildAttentionRow(row));
+  attentionList.append(frag);
+}
+
 function draw() {
   const months = doc.window.months;
   const idx = months.indexOf(month);
@@ -217,6 +266,8 @@ function draw() {
   } else {
     hide(pinBar);
   }
+
+  drawAttention(); // before the empty-state return: the section stays on every month
 
   hide(stateLoading);
   hide(stateError);
@@ -255,6 +306,18 @@ export function renderV2(feed, opts) {
 function active() {
   return document.body.dataset.renderer === "v2";
 }
+
+attentionToggle.addEventListener("click", () => {
+  if (!active()) return;
+  attentionOpen = !attentionOpen;
+  drawAttention();
+});
+
+attentionMore.addEventListener("click", () => {
+  if (!active()) return;
+  attentionRows += ATTENTION_PAGE;
+  drawAttention();
+});
 
 searchInput.addEventListener("input", () => {
   if (!active()) return;

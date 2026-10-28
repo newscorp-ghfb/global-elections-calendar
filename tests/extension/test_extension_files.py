@@ -24,7 +24,7 @@ V1_SHA256: Final[dict[str, str]] = {
 }
 
 
-PURE_MODULES: Final = ("dates.js", "labels.js", "schema.js", "validate.js", "order.js", "worker.js", "health.js", "count.js", "pins.js", "links.js", "details.js")
+PURE_MODULES: Final = ("dates.js", "labels.js", "schema.js", "validate.js", "order.js", "worker.js", "health.js", "count.js", "pins.js", "links.js", "details.js", "attention.js")
 # A bare word must not touch an identifier character, so `expected_window` is not `window`.
 BROWSER_TOKENS: Final = (
     "chrome.",
@@ -37,8 +37,8 @@ BROWSER_TOKENS: Final = (
     "globalThis",
     "self",
 )
-# The one string literal that may hold the word (the copy of P143's "possible match" line).
-EXEMPT_COPY: Final = '"outside the monitored window"'
+# The copy that may hold the word: P143's "possible match" line and P144's section title.
+EXEMPT_COPY: Final = ('"outside the monitored window"', "across the monitored window")
 
 
 def _uses(text: str, token: str) -> bool:
@@ -47,7 +47,8 @@ def _uses(text: str, token: str) -> bool:
     before = "A-Za-z0-9_"
     if token == "window":  # `doc.window.months` is a property of the feed, not the global
         before += "."
-        text = text.replace(EXEMPT_COPY, "")
+        for copy in EXEMPT_COPY:
+            text = text.replace(copy, "")
     return re.search(rf"(?<![{before}]){token}(?![A-Za-z0-9_])", text) is not None
 
 
@@ -64,11 +65,13 @@ def test_the_purity_scan_flags_the_globals_and_passes_the_feed_keys() -> None:
         "el.innerHTML = x;",
         "document.title",
         "globalThis.window",
+        "const t = `the window is ${window.x}`;",
     ):
         assert _flagged(bad), bad
     for good in (
         "doc.window.months",
         'const t = "outside the monitored window";',
+        "`${n} items across the monitored window`",
         "expected_window",
     ):
         assert not _flagged(good), good
