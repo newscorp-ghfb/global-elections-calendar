@@ -17,6 +17,8 @@ from tests.support.extension import (
     artifact_pair,
     feed_record,
     js,
+    linking,
+    published_at,
     republication,
     run_check,
     status_record,
@@ -42,26 +44,6 @@ def _sha(data: bytes) -> str:
 
 def _dump(doc: Any) -> bytes:
     return json.dumps(doc, separators=(",", ":")).encode("utf-8")
-
-
-def _at(feed: bytes, key: str) -> bytes:
-    """``feed`` published (and generated) at ``key``."""
-    doc = json.loads(feed)
-    doc["published_at"] = key
-    doc["generated_at"] = key
-    return _dump(doc)
-
-
-def _links(feed: bytes, status: bytes, attempt_at: str | None = None) -> bytes:
-    """``status`` made to describe ``feed``."""
-    doc = json.loads(status)
-    fdoc = json.loads(feed)
-    doc["serving_feed_sha256"] = _sha(feed)
-    doc["serving_published_at"] = fdoc["published_at"]
-    doc["serving_generated_at"] = fdoc["generated_at"]
-    if attempt_at is not None:
-        doc["attempt_at"] = attempt_at
-    return _dump(doc)
 
 
 def _elsewhere(status: bytes, attempt_at: str | None = None) -> bytes:
@@ -135,8 +117,8 @@ def test_check_orders_responses(lab: Page, pair: tuple[bytes, bytes]) -> None:
     feed, status = pair
     docs = {}
     for name, key in (("t2", T2), ("t1", T1), ("t3", T3)):
-        f = _at(feed, key)
-        docs[name] = (f, _links(f, status))
+        f = published_at(feed, key)
+        docs[name] = (f, linking(f, status))
     stored: dict[str, Any] = {}
     seen = []
     for name, changed in (("t2", True), ("t1", False), ("t3", True)):
@@ -156,11 +138,11 @@ def test_check_orders_responses(lab: Page, pair: tuple[bytes, bytes]) -> None:
 
 def test_a_retry_keeps_the_best_feed(lab: Page, pair: tuple[bytes, bytes]) -> None:
     feed, status = pair
-    f0, f1, f2 = (_at(feed, k) for k in (T0, T1, T2))
+    f0, f1, f2 = (published_at(feed, k) for k in (T0, T1, T2))
     stale = _elsewhere(status, "2026-10-19T06:00:00Z")
-    s1 = _links(f1, status, "2026-10-19T07:00:00Z")
-    s2 = _links(f2, status, "2026-10-19T08:00:00Z")
-    s0 = _links(f0, status, "2026-10-19T05:00:00Z")
+    s1 = linking(f1, status, "2026-10-19T07:00:00Z")
+    s2 = linking(f2, status, "2026-10-19T08:00:00Z")
+    s0 = linking(f0, status, "2026-10-19T05:00:00Z")
     rows: list[tuple[dict[str, Any], list[Any], list[Any], bytes, bytes, bool]] = [
         ({}, [f2, f1], [stale, s1], f2, s1, False),
         ({FEED: feed_record(f0)}, [f2, 503], [stale, stale], f2, stale, False),
@@ -214,7 +196,7 @@ def test_cached_records_are_validated(lab: Page, pair: tuple[bytes, bytes]) -> N
         ran = _check(lab, feed=[feed], status=[status], stored={FEED: record})
         assert _feed_sha(ran) == _sha(feed), name
         assert ran["stored"][FEED] == good | {"received_at": PAGE_NOW_MS}, name
-    later = _at(feed, ahead)
+    later = published_at(feed, ahead)
     control = _check(lab, feed=[feed], status=[status], stored={FEED: feed_record(later)})
     assert _feed_sha(control) == _sha(later)
     assert control["stored"][FEED] == feed_record(later)
@@ -299,8 +281,8 @@ def test_a_digest_failure_is_a_failed_check(lab: Page, pair: tuple[bytes, bytes]
 
 def test_a_failed_write_keeps_the_previous_pair(lab: Page, pair: tuple[bytes, bytes]) -> None:
     feed, status = pair
-    f2, f3 = _at(feed, T2), _at(feed, T3)
-    s2, s3 = _links(f2, status), _links(f3, status)
+    f2, f3 = published_at(feed, T2), published_at(feed, T3)
+    s2, s3 = linking(f2, status), linking(f3, status)
     cached = {FEED: feed_record(f2), STATUS: status_record(s2)}
     ran = _check(lab, feed=[f3], status=[s3], stored=cached, set_fails="QUOTA_BYTES quota exceeded")
     assert ran["result"] == {
@@ -320,7 +302,7 @@ def test_recovery_reaches_the_client(lab: Page, pair: tuple[bytes, bytes]) -> No
         return moment.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def at(moment: datetime) -> bytes:
-        return _at(feed, stamp(moment))
+        return published_at(feed, stamp(moment))
 
     d = at(n - timedelta(days=2))
     original = at(n - timedelta(days=5))
@@ -563,7 +545,7 @@ def test_a_failed_write_in_the_worker_keeps_the_cache(
     fresh_ext: Ext, pair: tuple[bytes, bytes]
 ) -> None:
     feed, _ = pair
-    f2, f3 = _at(feed, T2), _at(feed, T3)
+    f2, f3 = published_at(feed, T2), published_at(feed, T3)
     fresh_ext.seed({FEED: feed_record(f2)})
     _wake(fresh_ext)
     fresh_ext.worker().evaluate(
@@ -597,8 +579,8 @@ async () => {
 
 def test_a_real_quota_failure_keeps_the_previous_pair(fresh_ext: Ext, pair: tuple[bytes, bytes]) -> None:
     feed, status = pair
-    f2, f3 = _at(feed, T2), _at(feed, T3)
-    s2 = _links(f2, status)
+    f2, f3 = published_at(feed, T2), published_at(feed, T3)
+    s2 = linking(f2, status)
     seeded = {FEED: feed_record(f2), STATUS: status_record(s2)}
     fresh_ext.seed(seeded)
     lab = fresh_ext.lab()
@@ -606,7 +588,7 @@ def test_a_real_quota_failure_keeps_the_previous_pair(fresh_ext: Ext, pair: tupl
     big = json.loads(f3)
     big["padding"] = "x" * 400_000  # an unknown top-level key: ignored by validation
     served = _dump(big)
-    s3 = _links(served, status)  # describes the feed that is served, so it is in the write set
+    s3 = linking(served, status)  # describes the feed that is served, so it is in the write set
     fresh_ext.served.set("elections.json", served)
     fresh_ext.served.set("status.json", s3)
     reply = _send_check(lab)
@@ -699,8 +681,8 @@ def _stamp_in(delta: timedelta) -> str:
 
 def test_a_check_cut_short_leaves_the_previous_pair(ext: Ext, pair: tuple[bytes, bytes]) -> None:
     feed, status = pair
-    f2, f3 = _at(feed, T2), _at(feed, T3)
-    s2, s3 = _links(f2, status), _links(f3, status)
+    f2, f3 = published_at(feed, T2), published_at(feed, T3)
+    s2, s3 = linking(f2, status), linking(f3, status)
     seeded = {FEED: feed_record(f2), STATUS: status_record(s2)}
     ext.seed(seeded)
     ext.served.set("elections.json", "hang")
@@ -725,8 +707,8 @@ def test_a_check_cut_short_after_the_feed_arrived_writes_nothing(
     ext: Ext, pair: tuple[bytes, bytes]
 ) -> None:
     feed, status = pair
-    f2, f3 = _at(feed, T2), _at(feed, T3)
-    s2 = _links(f2, status)
+    f2, f3 = published_at(feed, T2), published_at(feed, T3)
+    s2 = linking(f2, status)
     state = {"ok_at": 1, "failed_at": None, "error": None}
     seeded = {FEED: feed_record(f2), STATUS: status_record(s2), CHECK: state}
     ext.seed(seeded)
@@ -831,8 +813,8 @@ def test_an_unexpected_error_fails_the_check(lab: Page, pair: tuple[bytes, bytes
     assert ran["result"]["error"] == "the check failed unexpectedly: " + "x" * 200 + "…"
     # recovery: real schemas on the resulting storage, with the pair served
     stored = _check(lab, feed=[feed], status=[status], stored=cached, throw="boom")["stored"]
-    later = _at(feed, T3)
-    served = _links(later, status)
+    later = published_at(feed, T3)
+    served = linking(later, status)
     ran = _check(lab, feed=[later], status=[served], stored=stored)
     assert ran["result"] == {"ok": True, "changed": True}
     assert _feed_sha(ran) == _sha(later) and _status_sha(ran) == _sha(served)

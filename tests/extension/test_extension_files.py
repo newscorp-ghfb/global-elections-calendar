@@ -24,7 +24,7 @@ V1_SHA256: Final[dict[str, str]] = {
 }
 
 
-PURE_MODULES: Final = ("dates.js", "labels.js", "schema.js", "validate.js", "order.js", "worker.js", "health.js", "count.js", "pins.js")
+PURE_MODULES: Final = ("dates.js", "labels.js", "schema.js", "validate.js", "order.js", "worker.js", "health.js", "count.js", "pins.js", "links.js")
 # A bare word must not touch an identifier character, so `expected_window` is not `window`.
 BROWSER_TOKENS: Final = (
     "chrome.",
@@ -90,11 +90,20 @@ def test_the_worker_wires_its_handlers() -> None:
 
 
 def test_no_feed_text_through_inner_html_in_v2_code() -> None:
-    # lib/legacy.js is exempt until R52
-    for name in ("lib/health.js", "lib/render.js", "lib/pins.js", "popup.js", "options.js"):
-        text = (ROOT / "extension" / name).read_text(encoding="utf-8")
-        for token in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write"):
-            assert token not in text, f"{name} contains {token!r}"
+    # R60: no markup from strings anywhere in the extension, comments included
+    files = sorted((ROOT / "extension").rglob("*.js"))
+    assert len(files) > 10
+    for path in files:
+        text = path.read_text(encoding="utf-8")
+        for token in (
+            "innerHTML",
+            "outerHTML",
+            "insertAdjacentHTML",
+            "document.write",
+            "DOMParser",
+            "createContextualFragment",
+        ):
+            assert token not in text, f"{path.relative_to(ROOT)} contains {token!r}"
 
 
 def test_only_the_worker_writes_pins() -> None:

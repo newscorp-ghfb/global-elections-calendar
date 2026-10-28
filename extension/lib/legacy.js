@@ -2,9 +2,10 @@
 // What changed: it takes the feed document, the pinned place ids and the place table as arguments; its tabs filter
 // on upcoming / past (status Held) / all; it no longer writes the footer (the popup does, from
 // lib/health.js); and the search box is no longer reset on each load (popup.js used to
-// clear it in fetchData). It keeps v1.0.2's innerHTML cards until later tasks
-// replace them.
+// clear it in fetchData). Its cards are built with DOM calls and textContent, and every link opens
+// through safeLink (R52).
 
+import { safeLink } from "./links.js";
 import { pinMatcher, placeOf } from "./pins.js";
 
 const $ = (id) => document.getElementById(id);
@@ -62,14 +63,6 @@ function formatDate(isoStr) {
   return { day, mon };
 }
 
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 function statusChipClass(status) {
   switch ((status || "").toLowerCase()) {
     case "upcoming":  return "chip-upcoming";
@@ -90,61 +83,86 @@ function getSources(election) {
   return [{ name: election.source_name || "?", link: election.link || "#" }];
 }
 
-function buildSourceChips(sources) {
-  return sources.map(s =>
-    `<span class="chip chip-source source-chip-link" data-link="${escHtml(s.link)}"
-           title="Open ${escHtml(s.name)}">${escHtml(s.name)}</span>`
-  ).join("");
+function el(tag, className, value) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (value !== undefined) node.textContent = value;
+  return node;
+}
+
+function openLink(href) {
+  chrome.tabs.create({ url: href });
+}
+
+// A known source's chip opens its safe link; an unknown source's is plain text.
+function buildSourceChip(source) {
+  const name = String(source.name);
+  const href = safeLink(source.name, source.link);
+  if (href === null) return el("span", "chip chip-source", name);
+  const chip = el("span", "chip chip-source source-chip-link", name);
+  chip.title = `Open ${name}`;
+  chip.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openLink(href);
+  });
+  return chip;
+}
+
+function buildOpenIcon(country) {
+  const svgNs = "http://www.w3.org/2000/svg";
+  const button = el("button", "election-link-icon");
+  button.setAttribute("aria-label", `Open source for ${country}`);
+  const svg = document.createElementNS(svgNs, "svg");
+  const attrs = {
+    viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2",
+    "stroke-linecap": "round", "stroke-linejoin": "round", width: "12", height: "12",
+  };
+  for (const [k, v] of Object.entries(attrs)) svg.setAttribute(k, v);
+  const shapes = [
+    ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" }],
+    ["polyline", { points: "15 3 21 3 21 9" }],
+    ["line", { x1: "10", y1: "14", x2: "21", y2: "3" }],
+  ];
+  for (const [tag, shape] of shapes) {
+    const node = document.createElementNS(svgNs, tag);
+    for (const [k, v] of Object.entries(shape)) node.setAttribute(k, v);
+    svg.append(node);
+  }
+  button.append(svg);
+  return button;
 }
 
 function buildCard(election) {
   const { day, mon } = formatDate(election.date);
   const status  = election.status || "Unknown";
   const sources = getSources(election);
-  const primaryLink = sources[0].link;
+  const primary = safeLink(sources[0].name, sources[0].link);
+  const country = String(election.country);
 
-  const li = document.createElement("li");
-  li.className = "election-item";
-  li.innerHTML = `
-    <div class="date-badge">
-      <span class="day">${escHtml(day)}</span>
-      <span class="mon">${escHtml(mon)}</span>
-    </div>
-    <div class="election-info">
-      <div class="election-top">
-        <span class="election-country">${escHtml(election.country)}</span>
-        <button class="election-link-icon" aria-label="Open source for ${escHtml(election.country)}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-               width="12" height="12">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-            <polyline points="15 3 21 3 21 9"/>
-            <line x1="10" y1="14" x2="21" y2="3"/>
-          </svg>
-        </button>
-      </div>
-      <div class="election-type">${escHtml(election.type)}</div>
-      <div class="election-chips">
-        ${buildSourceChips(sources)}
-        <span class="chip ${statusChipClass(status)}">${escHtml(status)}</span>
-      </div>
-    </div>`;
+  const li = el("li", "election-item");
+  const badge = el("div", "date-badge");
+  badge.append(el("span", "day", day), el("span", "mon", mon));
 
-  // Source chips: each opens its own link
-  li.querySelectorAll(".source-chip-link").forEach(chip => {
-    chip.addEventListener("click", (e) => {
+  const top = el("div", "election-top");
+  top.append(el("span", "election-country", country));
+  const icon = primary === null ? null : buildOpenIcon(country);
+  if (icon !== null) top.append(icon);
+
+  const chips = el("div", "election-chips");
+  chips.append(...sources.map(buildSourceChip), el("span", `chip ${statusChipClass(status)}`, status));
+
+  const info = el("div", "election-info");
+  info.append(top, el("div", "election-type", String(election.type)), chips);
+  li.append(badge, info);
+
+  // External link icon and card body → primary source, when it has a safe link
+  if (primary !== null) {
+    icon.addEventListener("click", (e) => {
       e.stopPropagation();
-      chrome.tabs.create({ url: chip.dataset.link });
+      openLink(primary);
     });
-  });
-
-  // External link icon and card body → primary source
-  li.querySelector(".election-link-icon").addEventListener("click", (e) => {
-    e.stopPropagation();
-    chrome.tabs.create({ url: primaryLink });
-  });
-  li.addEventListener("click", () => chrome.tabs.create({ url: primaryLink }));
-
+    li.addEventListener("click", () => openLink(primary));
+  }
   return li;
 }
 
@@ -221,7 +239,7 @@ function renderCurrentMonth() {
   nextMonthBtn.style.visibility = idx < availableMonths.length - 1 ? "visible" : "hidden";
 
   // Render list
-  electionList.innerHTML = "";
+  electionList.replaceChildren();
   if (filtered.length === 0) {
     hide(electionList);
     show(stateEmpty);

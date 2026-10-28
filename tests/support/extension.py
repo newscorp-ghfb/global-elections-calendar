@@ -13,7 +13,7 @@ import json
 import re
 import shutil
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Final, Literal
@@ -189,6 +189,38 @@ class Ext:
                     f"the install check stored no result within {_INSTALL_CHECK_WAIT_S} s"
                 )
             self._anchor.wait_for_timeout(int(_STEP_S * 1000))
+
+    def opened(self, action: Callable[[], None]) -> list[str]:
+        """The URLs of the tabs ``action`` opens within 5 s; the opened tabs are closed after.
+
+        While it runs, every ``https`` request outside the raw host is answered by a stub page,
+        and the URLs are those requests'. The wait ends 0.3 s after the first tab, or at 5 s.
+        """
+        urls: list[str] = []
+
+        def stub(route: Route) -> None:
+            if route.request.is_navigation_request():
+                urls.append(route.request.url)
+            route.fulfill(status=200, content_type="text/html", body="<title>stub</title>")
+
+        def outside(url: str) -> bool:
+            return url.startswith("https://") and not url.startswith(RAW_BASE)
+
+        before = set(self.context.pages)
+        self.context.route(outside, stub)
+        try:
+            action()
+            deadline = time.monotonic() + 5
+            while not urls and time.monotonic() < deadline:
+                self._anchor.wait_for_timeout(int(_STEP_S * 1000))
+            if urls:
+                self._anchor.wait_for_timeout(300)
+        finally:
+            self.context.unroute(outside, stub)
+            for page in list(self.context.pages):
+                if page not in before:
+                    page.close()
+        return list(urls)
 
     def lab(self) -> Page:
         if self._lab is None or self._lab.is_closed():
@@ -368,6 +400,30 @@ def republication(original: bytes, *, now: datetime) -> tuple[bytes, bytes]:
         )
     )
     return feed, status
+
+
+def _dump(doc: Any) -> bytes:
+    return json.dumps(doc, separators=(",", ":")).encode("utf-8")
+
+
+def published_at(feed: bytes, key: str) -> bytes:
+    """``feed`` published (and generated) at ``key``."""
+    doc = json.loads(feed)
+    doc["published_at"] = key
+    doc["generated_at"] = key
+    return _dump(doc)
+
+
+def linking(feed: bytes, status: bytes, attempt_at: str | None = None) -> bytes:
+    """``status`` made to describe ``feed``."""
+    doc = json.loads(status)
+    fdoc = json.loads(feed)
+    doc["serving_feed_sha256"] = hashlib.sha256(feed).hexdigest()
+    doc["serving_published_at"] = fdoc["published_at"]
+    doc["serving_generated_at"] = fdoc["generated_at"]
+    if attempt_at is not None:
+        doc["attempt_at"] = attempt_at
+    return _dump(doc)
 
 
 def _wire(response: Response) -> dict[str, Any]:
