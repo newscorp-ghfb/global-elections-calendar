@@ -45,6 +45,18 @@ def artifact_pair() -> tuple[bytes, bytes]:
     return (out / "elections.json").read_bytes(), (out / "status.json").read_bytes()
 
 
+def fresh_v1_doc() -> dict[str, Any]:
+    """The v1 feed as a document, generated 12 h before PAGE_NOW so it is not stale."""
+    doc: dict[str, Any] = json.loads(v1_feed())
+    doc["generated_at"] = "2026-10-19T02:00:00Z"
+    return doc
+
+
+def fresh_v1_feed() -> bytes:
+    """The v1 feed generated 12 h before PAGE_NOW, as bytes."""
+    return _dump(fresh_v1_doc())
+
+
 def v1_feed() -> bytes:
     """The 2026-10-16 v1 feed, as committed."""
     return V1_FEED.read_bytes()
@@ -193,34 +205,60 @@ class Ext:
     def opened(self, action: Callable[[], None]) -> list[str]:
         """The URLs of the tabs ``action`` opens within 5 s; the opened tabs are closed after.
 
-        While it runs, every ``https`` request outside the raw host is answered by a stub page,
-        and the URLs are those requests'. The wait ends 0.3 s after the first tab, or at 5 s.
+        Every new page of the context counts, whatever its URL (``about:blank`` and the new-tab
+        page included), so ``[]`` means no tab opened. While the action runs, every ``https``
+        request outside the raw host is answered by a stub page, so an https tab keeps its URL.
+        The wait ends 0.3 s after the first https request (1.5 s after a tab that makes none), or at 5 s.
         """
-        urls: list[str] = []
+        requested: list[str] = []
+        opened: list[Page] = []
 
         def stub(route: Route) -> None:
             if route.request.is_navigation_request():
-                urls.append(route.request.url)
+                requested.append(route.request.url)
             route.fulfill(status=200, content_type="text/html", body="<title>stub</title>")
 
         def outside(url: str) -> bool:
             return url.startswith("https://") and not url.startswith(RAW_BASE)
 
+        def track(page: Page) -> None:
+            opened.append(page)
+
         before = set(self.context.pages)
+        self.context.on("page", track)
         self.context.route(outside, stub)
         try:
             action()
             deadline = time.monotonic() + 5
-            while not urls and time.monotonic() < deadline:
+            # an https tab is seen by the stub; a tab that never requests one gets 1.5 s to do so
+            first_tab: float | None = None
+            while not requested and time.monotonic() < deadline:
+                if opened and first_tab is None:
+                    first_tab = time.monotonic()
+                if first_tab is not None and time.monotonic() - first_tab > 1.5:
+                    break
                 self._anchor.wait_for_timeout(int(_STEP_S * 1000))
-            if urls:
+            if opened or requested:
                 self._anchor.wait_for_timeout(300)
+            urls: list[str] = []
+            pending = list(requested)
+            for page in opened:
+                with contextlib.suppress(Exception):  # a tab that closes itself has no URL to read
+                    page.wait_for_load_state("load", timeout=2000)
+                    url = page.url
+                    # a tab on a stubbed https URL can still end on Chrome's error page
+                    if url.startswith("chrome-error://") and pending:
+                        url = pending.pop(0)
+                    elif url in pending:
+                        pending.remove(url)
+                    urls.append(url)
+            return urls + pending
         finally:
+            self.context.remove_listener("page", track)
             self.context.unroute(outside, stub)
             for page in list(self.context.pages):
                 if page not in before:
                     page.close()
-        return list(urls)
 
     def lab(self) -> Page:
         if self._lab is None or self._lab.is_closed():

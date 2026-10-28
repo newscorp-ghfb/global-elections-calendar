@@ -3,11 +3,12 @@
 import json
 import time
 from typing import Any, Final
+from urllib.parse import urlsplit
 
 from playwright.sync_api import Page
 
 from elections_calendar.model import SOURCE_NAMES
-from tests.support.extension import Ext, feed_record, js, v1_feed
+from tests.support.extension import Ext, feed_record, fresh_v1_doc, js
 
 LINKS: Final = "lib/links.js"
 FEED: Final = "elections_cache_v2"
@@ -75,6 +76,7 @@ def test_safe_links(lab: Page) -> None:
     ]
     for url in hostile:
         assert _safe(lab, "Wikipedia", url) == WIKI, url
+    assert _safe(lab, "Wikipedia", ["https://en.wikipedia.org/x"]) == WIKI
     assert _safe(lab, "NDI", "https://evilndi.org/a") == "https://www.ndi.org/"
     assert _safe(lab, "Unknown", "https://example.org/") is None
     assert _safe(lab, "constructor", "https://example.org/") is None
@@ -99,8 +101,7 @@ def test_links_match_the_producers_sources(lab: Page) -> None:
 
 
 def _seed_v1(ext: Ext, edit: Any = None) -> Page:
-    doc = json.loads(v1_feed())
-    doc["generated_at"] = "2026-10-19T02:00:00Z"
+    doc = fresh_v1_doc()
     if edit is not None:
         edit(doc)
     feed = json.dumps(doc, separators=(",", ":")).encode("utf-8")
@@ -135,6 +136,13 @@ def test_legacy_opens_only_safe_links(ext: Ext) -> None:
     page = _seed_v1(ext, edit)
     # an off-allowlist A-WEB link (Taiwan, November) opens the A-WEB home page
     page.click("#nextMonthBtn")
+    premise = [
+        s["link"]
+        for c in fresh_v1_doc()["months"]["2026-11"]
+        if c["country"] == "Taiwan"
+        for s in c["sources"]
+    ]
+    assert [urlsplit(u).hostname for u in premise] == ["focustaiwan.tw"]
     taiwan = page.locator(".election-item").filter(has=page.get_by_text("Taiwan", exact=True))
     assert taiwan.count() == 1
     assert ext.opened(lambda: taiwan.locator(".source-chip-link").click()) == ["https://www.aweb.org/"]

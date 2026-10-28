@@ -1,6 +1,5 @@
 """The renderer x feed matrix and a format change inside one popup (Plan 5b-2 Task 3; R61, S5-T17)."""
 
-import json
 from datetime import UTC, datetime
 from typing import Any, Final
 
@@ -10,10 +9,10 @@ from playwright.sync_api import Page
 from tests.support.extension import (
     Ext,
     artifact_pair,
+    fresh_v1_feed,
     linking,
     published_at,
     republication,
-    v1_feed,
 )
 
 FEED: Final = "elections_cache_v2"
@@ -28,16 +27,9 @@ V102_PARSE: Final = (
 )
 
 
-def _v1_fresh() -> bytes:
-    """The v1 feed, generated 12 h before PAGE_NOW so it is not stale."""
-    doc = json.loads(v1_feed())
-    doc["generated_at"] = "2026-10-19T02:00:00Z"
-    return json.dumps(doc, separators=(",", ":")).encode("utf-8")
-
-
 def _feeds() -> dict[str, bytes]:
     return {
-        "v1": _v1_fresh(),
+        "v1": fresh_v1_feed(),
         "v2": artifact_pair()[0],
         "no_content_id": NO_CONTENT_ID,
         "not_json": NOT_JSON,
@@ -117,7 +109,7 @@ def _refresh(page: Page) -> None:
     )
 
 
-def _state(page: Page, renderer: str) -> dict[str, Any]:
+def _state(page: Page) -> dict[str, Any]:
     return {
         "renderer": page.evaluate("document.body.dataset.renderer"),
         "labels": [
@@ -131,54 +123,68 @@ def _state(page: Page, renderer: str) -> dict[str, Any]:
     }
 
 
+def _shown(page: Page) -> list[str]:
+    return page.locator("#electionList > li").all_text_contents()
+
+
 def test_renderer_switches_inside_one_popup(ext: Ext) -> None:
     feed, status = artifact_pair()
     pair_at = datetime(2026, 10, 19, 13, 0, tzinfo=UTC)
-    rollback_feed, rollback_status = republication(_v1_fresh(), now=pair_at)
+    rollback_feed, rollback_status = republication(fresh_v1_feed(), now=pair_at)
     newer = published_at(feed, "2026-10-19T13:30:00Z")
     newer_status = linking(newer, status, "2026-10-19T13:30:00Z")
 
+    # (renderer, feed, status, search typed before the step, banner text, tab left on)
+    # The search is typed while the outgoing renderer is shown, so the incoming renderer last saw
+    # the previous step's term; consecutive terms differ, so a stale query shows. The two renderers
+    # are left on different tabs (legacy on Past, v2 on All).
     steps = [
-        ("legacy", (_v1_fresh(), None)),
-        ("v2", (feed, status)),
-        ("legacy", (rollback_feed, rollback_status)),
-        ("v2", (newer, newer_status)),
+        ("legacy", fresh_v1_feed(), None, "Brazil", UNCONFIRMED, "past"),
+        ("v2", feed, status, "Canada", None, "all"),
+        ("legacy", rollback_feed, rollback_status, "Brazil", NO_HEALTH, "past"),
+        ("v2", newer, newer_status, "Canada", None, "all"),
     ]
     labels = {"legacy": ["Total Scheduled", "Held This Month"], "v2": ["Election records", "Confirmed held"]}
 
-    ext.served.set("elections.json", steps[0][1][0])
+    ext.served.set("elections.json", steps[0][1])
     page = ext.popup()
-    # per-renderer tab state: both show Past (each keeps its own)
-    page.click("#tabPast")
-    seen_tab = {"legacy": "past"}
-    for index, (renderer, (step_feed, step_status)) in enumerate(steps):
+    page.click("#tabPast")  # legacy's tab; v2 keeps its default (All) until it is clicked
+    for index, (renderer, step_feed, step_status, term, banner, tab) in enumerate(steps):
+        _search(page, term)  # typed while the previous renderer is shown
         if index > 0:
             ext.served.set("elections.json", step_feed)
             ext.served.set("status.json", step_status)
-            _search(page, "Brazil")
             _refresh(page)
-        if renderer == "v2" and "v2" not in seen_tab:
-            page.click("#tabPast")
-            seen_tab["v2"] = "past"
-        got = _state(page, renderer)
+        # right after the refresh, before any more typing: the new list is already filtered
+        got = _state(page)
         assert got["renderer"] == renderer, index
         assert got["labels"] == labels[renderer], index
         assert got["record_count_visible"] is (renderer == "v2"), index
         other = "legacy_cards" if renderer == "v2" else "v2_cards"
         assert got[other] == 0, index
         assert got["v2_cards" if renderer == "v2" else "legacy_cards"] > 0, index
-        assert got["active_tabs"] == [seen_tab[renderer]], index
+        assert got["active_tabs"] == [tab], index
+        filtered = _shown(page)
+        assert filtered and all(term.lower() in t.lower() for t in filtered), index
+        if banner is not None:
+            assert page.locator("#bannerText").text_content() == banner, index
         if index == 2:
-            assert page.locator("#healthNote").text_content() == NO_HEALTH
-        # a search typed before the step filters the new list; one renderer answers it
-        _search(page, "Brazil")
-        filtered = page.locator("#electionList > li").count()
-        texts = page.locator("#electionList > li").all_text_contents()
-        assert filtered > 0 and all("brazil" in t.lower() for t in texts), index
+            assert page.locator("#banner").get_attribute("data-level") == "amber"
+        # the list is the highlighted tab's list
+        if renderer == "legacy":
+            chips = page.locator("#electionList > li .election-chips").evaluate_all(
+                "els => els.map(e => e.lastElementChild.textContent)"
+            )
+            assert chips == ["Held"] * len(filtered), index
+        else:
+            page.click("#tabAll")
+            assert len(_shown(page)) == len(filtered), index
+        # one renderer answers the box
         _search(page, "")
-        assert page.locator("#electionList > li").count() > filtered, index
-        after = _state(page, renderer)
+        assert len(_shown(page)) > len(filtered), index
+        after = _state(page)
         assert after["renderer"] == renderer and after[other] == 0, index
-        _search(page, "Brazil")
-        assert page.locator("#electionList > li").count() == filtered, index
+        assert after["active_tabs"] == [tab], index
+        _search(page, term)
+        assert len(_shown(page)) == len(filtered), index
     assert ext.page_errors == []
