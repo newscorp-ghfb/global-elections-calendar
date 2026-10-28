@@ -5,17 +5,20 @@ import hashlib
 import json
 import time
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, Final
 
 import pytest
-from playwright.sync_api import Page
+from playwright.sync_api import Page, Playwright
 
 from tests.support.extension import (
     PAGE_NOW,
     Ext,
     artifact_pair,
+    extension_copy,
     feed_record,
     js,
+    launch,
     republication,
     status_record,
     v1_feed,
@@ -318,8 +321,10 @@ def test_the_footer(lab: Page, feed_doc: dict[str, Any]) -> None:
 def test_acknowledged_issues_describe_the_real_condition(
     lab: Page, feed_doc: dict[str, Any]
 ) -> None:
+    now = _g(feed_doc) + 2 * HOUR
+
     def found(doc: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
-        got: dict[str, list[dict[str, Any]]] = js(lab, HEALTH, "issues", doc)
+        got: dict[str, list[dict[str, Any]]] = js(lab, HEALTH, "issues", doc, now)
         return got
 
     base = found(feed_doc)
@@ -373,7 +378,10 @@ def test_panel_rows(lab: Page, feed_doc: dict[str, Any], status_doc: dict[str, A
     def rows(doc: dict[str, Any], *, fmt: str = "v2", linked: bool = True) -> list[dict[str, Any]]:
         got: list[dict[str, Any]] = js(
             lab, HEALTH, "panelRows",
-            {"format": fmt, "doc": doc, "status": status_doc, "linked": linked},
+            {
+                "format": fmt, "doc": doc, "status": status_doc, "linked": linked,
+                "now": _g(feed_doc) + 2 * HOUR,
+            },
         )
         return got
 
@@ -544,3 +552,170 @@ def test_health_text_is_inserted_as_text(ext: Ext, pair: tuple[bytes, bytes]) ->
     assert page.locator("#healthPanel img").count() == 0
     assert page.title() != "1"
     assert ext.page_errors == []
+
+
+U: Final = "2026-10-20T00:00:00Z"
+ENDED: Final = "(acknowledgement ended 20 Oct 2026)"
+IN_EFFECT: Final = "(acknowledged until 20 Oct 2026)"
+
+
+def _ended_doc(feed_doc: dict[str, Any]) -> dict[str, Any]:
+    """The fixture feed with Wikipedia's first warning and one Carter Center error acknowledged
+    until ``U``."""
+    doc = copy.deepcopy(feed_doc)
+    wikipedia = _source(doc, "wikipedia")
+    first = wikipedia["reasons"][0]
+    assert (first["code"], first["level"]) == ("unparsed_relevant", "warning")
+    _acknowledge(wikipedia, first, U)
+    carter = _source(doc, "carter")
+    assert carter["reasons"] == [] and carter["acknowledged"] == []
+    broken = copy.deepcopy(_source(doc, "ipu")["reasons"][0])
+    broken["level"], broken["code"], broken["text"] = "error", "unavailable", "Carter Center is down"
+    carter["reasons"] = [broken]
+    _acknowledge(carter, broken, U)
+    return doc
+
+
+def _linked_status(feed: bytes, status_doc: dict[str, Any]) -> bytes:
+    return _dump(status_doc | {"serving_feed_sha256": _sha(feed)})
+
+
+def _rows(lab: Page, doc: dict[str, Any], status: dict[str, Any], now: int) -> dict[str, Any]:
+    args = {"format": "v2", "doc": doc, "status": status, "linked": True, "now": now}
+    panel: list[dict[str, Any]] = js(lab, HEALTH, "panelRows", args)
+    return {
+        "banner": _banner(lab, **args),
+        "issues": js(lab, HEALTH, "issues", doc, now),
+        "lines": {r["source"]: r["lines"] for r in panel},
+    }
+
+
+def _tally(rows: dict[str, Any]) -> list[int]:
+    return [len(rows["issues"][k]) for k in ("errors", "warnings", "acknowledged")]
+
+
+def test_ended_acknowledgements_count_again(
+    lab: Page, feed_doc: dict[str, Any], status_doc: dict[str, Any]
+) -> None:
+    doc = _ended_doc(feed_doc)
+    u = _ms(U)
+    first = _source(doc, "wikipedia")["reasons"][0]["text"]
+    before = _rows(lab, doc, status_doc, u - 1)
+    assert _tally(before) == [0, 6, 2]
+    assert before["banner"] == {
+        "level": "amber", "text": "6 warnings", "counts": "6 warnings · 2 acknowledged",
+    }
+    assert before["lines"]["wikipedia"][0] == f"{first} {IN_EFFECT}"
+    assert before["lines"]["carter"] == [f"Carter Center is down {IN_EFFECT}"]
+    for now in (u, u + 1):
+        after = _rows(lab, doc, status_doc, now)
+        assert _tally(after) == [1, 7, 0]
+        assert after["banner"] == {
+            "level": "red", "text": "1 source error", "counts": "1 error · 7 warnings",
+        }
+        assert after["lines"]["wikipedia"][0] == f"{first} {ENDED}"
+        assert after["lines"]["carter"] == [f"Carter Center is down {ENDED}"]
+        assert after["issues"]["errors"][0]["until"] == u  # the ended acknowledgement's end
+
+    # one to one: of two acknowledgements of the same key, the one in effect is used
+    twice = copy.deepcopy(feed_doc)
+    wikipedia = _source(twice, "wikipedia")
+    _acknowledge(wikipedia, wikipedia["reasons"][0], U)
+    _acknowledge(wikipedia, wikipedia["reasons"][0], UNTIL)
+    got = _rows(lab, twice, status_doc, u + 1)
+    assert _tally(got) == [0, 6, 1]
+    assert got["lines"]["wikipedia"][0].endswith("(acknowledged until 1 Jan 2027)")
+    assert got["banner"]["counts"] == "6 warnings · 1 acknowledged"
+
+
+def _ended_ext(playwright: Playwright, tmp_path: Path, pair: tuple[bytes, bytes]) -> Ext:
+    """A Los Angeles browser whose cache holds the ended-acknowledgement feed, linked, routed."""
+    feed = _dump(_ended_doc(json.loads(pair[0])))
+    status = _linked_status(feed, json.loads(pair[1]))
+    e = launch(
+        playwright,
+        tmp_path / "p",
+        extension_copy(tmp_path / "x", legacy=False),
+        timezone_id="America/Los_Angeles",
+        settle_install_check=True,
+    )
+    e.seed({FEED: feed_record(feed), STATUS: status_record(status), CHECK: _fresh_check()})
+    e.served.set("elections.json", feed)
+    e.served.set("status.json", status)
+    return e
+
+
+def _popup_rows(page: Page) -> dict[str, Any]:
+    page.click("#banner")
+    lines = {
+        s: page.locator(f"#healthList > li[data-source={s}] > div").all_text_contents()
+        for s in ("wikipedia", "carter")
+    }
+    page.click("#banner")
+    return {
+        "level": page.locator("#banner").get_attribute("data-level"),
+        "text": page.locator("#bannerText").text_content(),
+        "counts": page.locator("#bannerCounts").text_content(),
+        "lines": lines,
+    }
+
+
+def test_ended_acknowledgements_in_the_popup(
+    playwright: Playwright, tmp_path: Path, lab: Page, pair: tuple[bytes, bytes]
+) -> None:
+    doc = _ended_doc(json.loads(pair[0]))
+    status = json.loads(pair[1])
+    u = _ms(U)
+    e = _ended_ext(playwright, tmp_path, pair)
+    try:
+        # The boundary follows the instant; the date shown follows the reader's zone: U is 17:00
+        # on 19 October in Los Angeles.
+        for now, shown in ((u - 1000, IN_EFFECT), (u + 1000, ENDED)):
+            want = _rows(lab, doc, status, now)
+            page = e.popup(now=_iso(now))
+            got = _popup_rows(page)
+            assert got["level"] == want["banner"]["level"]
+            assert got["text"] == want["banner"]["text"]
+            assert got["counts"] == want["banner"]["counts"]
+            local = shown.replace("20 Oct 2026", "19 Oct 2026")
+            for source in ("wikipedia", "carter"):
+                assert got["lines"][source] == [
+                    line.replace(shown, local) for line in want["lines"][source]
+                ]
+                assert got["lines"][source][0].endswith(local)
+            page.close()
+
+        # An open popup across `until` changes at its next render, not at the instant (P139).
+        page = e.popup(now=_iso(u - 1000))
+        assert page.locator("#banner").get_attribute("data-level") == "amber"
+        e.context.clock.set_fixed_time(_iso(u + 1000))
+        assert page.locator("#banner").get_attribute("data-level") == "amber"
+        page.click("#refreshBtn")
+        _settled(page)
+        assert page.locator("#banner").get_attribute("data-level") == "red"
+        page.click("#banner")
+        line = page.locator("#healthList > li[data-source=carter] > div").first.text_content()
+        assert line == "Carter Center is down (acknowledgement ended 19 Oct 2026)"
+        assert e.page_errors == []
+    finally:
+        e.close()
+
+
+def test_banner_counts_are_not_repeated(ext: Ext, pair: tuple[bytes, bytes]) -> None:
+    feed, status = pair
+    ext.seed({FEED: feed_record(feed), STATUS: status_record(status), CHECK: _fresh_check()})
+    ext.served.set("elections.json", feed)
+    ext.served.set("status.json", status)
+    page = ext.popup()
+    assert page.locator("#bannerText").text_content() == "7 warnings"
+    assert page.locator("#bannerCounts").is_hidden()
+
+    ended = _dump(_ended_doc(json.loads(feed)))
+    linked = _linked_status(ended, json.loads(status))
+    ext.seed({FEED: feed_record(ended), STATUS: status_record(linked), CHECK: _fresh_check()})
+    ext.served.set("elections.json", ended)
+    ext.served.set("status.json", linked)
+    page = ext.popup(now=_iso(_ms(U) - 1000))
+    assert page.locator("#bannerText").text_content() == "6 warnings"
+    assert page.locator("#bannerCounts").is_visible()
+    assert page.locator("#bannerCounts").text_content() == "6 warnings · 2 acknowledged"

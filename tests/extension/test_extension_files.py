@@ -84,6 +84,9 @@ def test_the_worker_wires_its_handlers() -> None:
     ):
         assert text.count(event + ".addListener(") == 1, event
     assert text.count("const DATA_URL = ") == 1
+    assert re.search(r"fetchBytes = \(url, options\) => fetchLimited\(fetch, url, options\);", text)
+    load = (ROOT / "extension" / "lib" / "load.js").read_text(encoding="utf-8")
+    assert "export const REQUEST_TIMEOUT_MS = 25_000;" in load
 
 
 def test_no_feed_text_through_inner_html_in_v2_code() -> None:

@@ -24,8 +24,11 @@ export function handlers({ runCheck, ensureAlarm, isDue, openHelp }) {
     },
     async alarm(alarm) {
       if (alarm.name !== ALARM_NAME) return;
-      await runCheck();
-      await ensureAlarm();
+      try {
+        await runCheck();
+      } finally {
+        await ensureAlarm(); // kept even when the check rejects
+      }
     },
     message(msg) {
       if (typeof msg !== "object" || msg === null || msg.type !== "CHECK") return undefined;

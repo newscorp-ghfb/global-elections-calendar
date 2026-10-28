@@ -54,16 +54,17 @@ function drawPanel(rows, note) {
   }
 }
 
-// The banner, the panel and the footer for the feed just drawn.
-function drawHealth(record, statusRecord, check) {
-  const now = Date.now();
+// The banner, the panel and the footer for the feed just drawn, all at the render's `now` (P139).
+function drawHealth(record, statusRecord, check, now) {
   const status = statusRecord === null ? null : statusRecord.data;
   const linked = isLinked(record.sha256, status);
-  const args = { format: record.format, doc: record.data, status, linked };
-  const state = bannerState({ ...args, now });
+  const args = { format: record.format, doc: record.data, status, linked, now };
+  const state = bannerState(args);
   banner.dataset.level = state.level;
   $("bannerText").textContent = state.text;
+  // the counts are shown only when they say more than the banner's own text (R57)
   $("bannerCounts").textContent = state.counts;
+  $("bannerCounts").hidden = state.counts === "" || state.counts === state.text;
   banner.classList.remove("hidden");
   const rows = panelRows(args);
   drawPanel(rows, record.format === "v2" ? "" : NO_HEALTH);
@@ -80,15 +81,15 @@ async function render() {
   const record = storedFeed(stored[KEYS.feed], schemas);
   if (record === null) return false;
   const pinned = Array.isArray(stored[PINNED_COUNTRIES_KEY]) ? stored[PINNED_COUNTRIES_KEY] : [];
+  const now = Date.now(); // read once: the cards, the banner and the panel agree (P139)
   if (record.format === "v2") {
-    const now = Date.now();
     document.body.dataset.renderer = "v2";
     renderV2(record.data, { pinned, today: localToday(now), now });
   } else {
     document.body.dataset.renderer = "legacy";
     renderLegacy(record.data, { pinned });
   }
-  drawHealth(record, storedStatus(stored[KEYS.status], schemas), stored[KEYS.check]);
+  drawHealth(record, storedStatus(stored[KEYS.status], schemas), stored[KEYS.check], now);
   document.body.dataset.state = "ready";
   return true;
 }

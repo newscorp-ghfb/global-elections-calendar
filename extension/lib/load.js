@@ -11,7 +11,9 @@ export const KEYS = {
   check: "check_state_v2",
 };
 export const CHECK_INTERVAL_MS = 1_800_000;
-export const REQUEST_TIMEOUT_MS = 30_000;
+export const REQUEST_TIMEOUT_MS = 25_000; // below Chrome's 30 s limit for a worker's fetch()
+export const UNEXPECTED = "the check failed unexpectedly";
+const MESSAGE_MAX = 200;
 
 const HASH = /^[0-9a-f]{64}$/;
 const HTTP = /^HTTP [0-9]+$/;
@@ -74,25 +76,76 @@ export async function loadSchemas(getURL) {
 
 class Deadline extends Error {}
 
-function withDeadline(promise, ms) {
+export class OverLimit extends Error {
+  constructor(limit) {
+    super(`over the limit of ${limit} bytes`);
+    this.limit = limit;
+  }
+}
+
+// The body of `response` as bytes, read in chunks: past `limit` bytes the stream is cancelled and
+// OverLimit thrown, so an endless body is never buffered whole.
+export async function readLimited(response, limit) {
+  if (response.body === null) return new Uint8Array(0);
+  const reader = response.body.getReader();
+  const chunks = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.length;
+      if (total > limit) throw new OverLimit(limit);
+      chunks.push(value);
+    }
+  } catch (err) {
+    await reader.cancel().catch(() => {}); // a stream that cannot be cancelled is dropped anyway
+    throw err;
+  }
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, at);
+    at += chunk.length;
+  }
+  return out;
+}
+
+// The real request: `fetchImpl` is the global fetch in the worker, a fake in tests.
+export async function fetchLimited(fetchImpl, url, { signal, limit }) {
+  const response = await fetchImpl(url, { cache: "no-store", signal });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return readLimited(response, limit);
+}
+
+// Runs `start(signal)` for at most `ms`; the deadline aborts the request, and the request's own
+// late rejection is handled here, so it is never an unhandled rejection.
+function withDeadline(start, ms) {
+  const controller = new AbortController();
+  const request = (async () => start(controller.signal))();
+  request.catch(() => {});
   let timer;
   const deadline = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Deadline("no response in time")), ms);
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Deadline("no response in time"));
+    }, ms);
   });
-  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+  return Promise.race([request, deadline]).finally(() => clearTimeout(timer));
 }
 
 // {data, sha256} or {error}: the error is the text after "<name>: ".
 async function fetchDocument(deps, url, limit) {
   let bytes;
   try {
-    bytes = await withDeadline(deps.fetchBytes(url), deps.timeoutMs);
+    bytes = await withDeadline((signal) => deps.fetchBytes(url, { signal, limit }), deps.timeoutMs);
   } catch (err) {
     if (err instanceof Deadline) return { error: "no response in time" };
+    if (err instanceof OverLimit) return { error: err.message };
     const message = err instanceof Error ? err.message : "";
     return { error: HTTP.test(message) ? message : "the request failed" };
   }
-  if (bytes.length > limit) return { error: `${bytes.length} bytes is over the limit of ${limit}` };
+  if (bytes.length > limit) return { error: `over the limit of ${limit} bytes` };
   let data;
   try {
     data = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
@@ -130,13 +183,15 @@ async function fetchStatus(deps, t) {
   return { data: got.data, sha256: got.sha256, received_at: t };
 }
 
+// Records a failed check, keeping the last good time. Never throws: a failure that cannot be
+// saved is still returned.
 async function fail(deps, stored, t, error) {
-  const previous = stored[KEYS.check];
-  const okAt =
-    isObject(previous) && typeof previous.ok_at === "number" && Number.isFinite(previous.ok_at)
-      ? previous.ok_at
-      : null;
   try {
+    const previous = stored[KEYS.check];
+    const okAt =
+      isObject(previous) && typeof previous.ok_at === "number" && Number.isFinite(previous.ok_at)
+        ? previous.ok_at
+        : null;
     await deps.set({ [KEYS.check]: { ok_at: okAt, failed_at: t, error } });
   } catch {
     // the failure is reported either way
@@ -144,9 +199,41 @@ async function fail(deps, stored, t, error) {
   return { ok: false, error };
 }
 
+// The final boundary (P147). The first read's result may be what failed, so the check state is
+// read again; when that read or the write fails, nothing is written.
+async function unexpected(deps, t, err) {
+  const error = `${UNEXPECTED}: ${bounded(errorText(err))}`;
+  try {
+    deps.report?.(err);
+  } catch {
+    // a failing report must not escape either
+  }
+  if (t === null) return { ok: false, error };
+  let again;
+  try {
+    again = await deps.get([KEYS.check]);
+  } catch {
+    return { ok: false, error };
+  }
+  return fail(deps, again, t, error);
+}
+
+function bounded(text) {
+  return text.length > MESSAGE_MAX ? `${text.slice(0, MESSAGE_MAX)}…` : text;
+}
+
 // {ok: true, changed} or {ok: false, error}. Never rejects.
 export async function check(deps) {
-  const t = deps.now();
+  let t = null;
+  try {
+    t = deps.now();
+    return await checkOnce(deps, t);
+  } catch (err) {
+    return unexpected(deps, t, err);
+  }
+}
+
+async function checkOnce(deps, t) {
   let stored;
   try {
     stored = await deps.get([KEYS.feed, KEYS.status, KEYS.check]);
@@ -190,5 +277,9 @@ export async function check(deps) {
 }
 
 function errorText(err) {
-  return err instanceof Error ? err.message : String(err);
+  try {
+    return String(err instanceof Error ? err.message : err);
+  } catch {
+    return "unknown error";
+  }
 }
