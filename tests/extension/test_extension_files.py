@@ -24,7 +24,7 @@ V1_SHA256: Final[dict[str, str]] = {
 }
 
 
-PURE_MODULES: Final = ("dates.js", "labels.js", "schema.js", "validate.js", "order.js", "worker.js", "health.js", "count.js", "pins.js", "links.js")
+PURE_MODULES: Final = ("dates.js", "labels.js", "schema.js", "validate.js", "order.js", "worker.js", "health.js", "count.js", "pins.js", "links.js", "details.js")
 # A bare word must not touch an identifier character, so `expected_window` is not `window`.
 BROWSER_TOKENS: Final = (
     "chrome.",

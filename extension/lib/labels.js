@@ -9,6 +9,7 @@ export const KINDS = [
 ];
 
 const WEEK_MS = 7 * 86400000;
+const UNDATED = "Unverified: the source data's date is unknown";
 const TENTATIVE_KINDS = ["scheduled", "today", "expected", "day_unconfirmed"];
 
 function sameMonth(a, b) {
@@ -93,7 +94,7 @@ function notesOf(card, child, kind, now) {
   const used = child.sources.filter((s) => s.selected && s.fallback);
   if (used.length > 0) {
     if (used.some((s) => s.fetched_at === null)) {
-      notes.push("Unverified: the source data's date is unknown");
+      notes.push(UNDATED);
     } else {
       const fetched = Math.min(...used.map((s) => parseTimestamp(s.fetched_at)));
       notes.push(
@@ -109,6 +110,8 @@ function notesOf(card, child, kind, now) {
       const times = held.map((s) => parseTimestamp(s.fetched_at)).filter((t) => t !== null);
       if (times.length > 0) {
         notes.push(`Confirmed by source data from ${stampDate(Math.max(...times))}`);
+      } else if (!notes.includes(UNDATED)) {
+        notes.push(UNDATED); // ruling 8: held only by saved data of unknown date
       }
     }
   }
@@ -118,8 +121,13 @@ function notesOf(card, child, kind, now) {
 export function childLabel(card, child, { today, now }) {
   const { kind, text } = kindAndText(card, child, today);
   const chips = [];
-  if (card.date_status === "tentative" && TENTATIVE_KINDS.includes(kind)) chips.push("Tentative");
-  if (card.level === "subnational") chips.push("Subnational");
+  if (card.date_status === "tentative" && TENTATIVE_KINDS.includes(kind)) {
+    chips.push({ kind: "tentative", text: "Tentative" });
+  }
+  if (card.level === "subnational") chips.push({ kind: "subnational", text: "Subnational" });
+  if (child.rescheduled_from.length > 0) {
+    chips.push({ kind: "rescheduled", text: `Rescheduled from ${child.rescheduled_from.join(", ")}` });
+  }
   return { kind, text, chips, notes: notesOf(card, child, kind, now) };
 }
 
