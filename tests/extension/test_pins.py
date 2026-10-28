@@ -75,6 +75,24 @@ def test_every_v1_pin_string_migrates(lab: Page) -> None:
     assert got == {"places": want, "unresolved": []}
 
 
+def test_corrupt_stored_pins_count_as_none(ext: Ext, lab: Page) -> None:
+    corrupt = {MIGRATED: True, PLACES: "Brazil", UNRESOLVED: [7]}
+    assert js(lab, "lib/pins.js", "currentPins", corrupt, TABLE) == {"places": [], "unresolved": []}
+    feed, status = artifact_pair()
+    ext.seed(
+        {
+            **corrupt,
+            FEED: feed_record(feed),
+            STATUS: status_record(status),
+            CHECK: {"ok_at": int(time.time() * 1000), "failed_at": None, "error": None},
+        }
+    )
+    page = ext.popup()
+    assert page.locator(".election-item").count() == 30
+    assert page.locator("#pinBar").is_hidden()
+    assert ext.page_errors == []
+
+
 def test_pin_migration(lab: Page) -> None:
     first = run_pins(lab, stored={LEGACY: SEED})
     assert first["result"] == {"ok": True, "migrated": True}

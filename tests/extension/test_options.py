@@ -90,11 +90,11 @@ def _wait_places(page: Page, places: list[str]) -> None:
     )
 
 
-def _shows(page: Page, pinned: list[str], unpinned: list[str]) -> None:
+def _shows(page: Page, pinned: list[str], unpinned: list[str], timeout: int = 5000) -> None:
     for place_id in pinned:
-        expect(_button(page, place_id)).to_have_attribute("aria-pressed", "true")
+        expect(_button(page, place_id)).to_have_attribute("aria-pressed", "true", timeout=timeout)
     for place_id in unpinned:
-        expect(_button(page, place_id)).to_have_attribute("aria-pressed", "false")
+        expect(_button(page, place_id)).to_have_attribute("aria-pressed", "false", timeout=timeout)
 
 
 def test_options_lists_feed_places_and_pins(ext: Ext, pair: tuple[bytes, bytes]) -> None:
@@ -109,6 +109,7 @@ def test_options_lists_feed_places_and_pins(ext: Ext, pair: tuple[bytes, bytes])
     assert page.locator("#unresolvedSection").is_hidden()
     assert page.locator("#noData").is_hidden()
     assert page.locator("#pinSummary").text_content() == "No countries pinned — popup shows all results."
+    assert ext.page_errors == []
     ext.reset()
 
     # (b) after an upgrade: v1's cache is still there, the v2 record is what is listed
@@ -125,6 +126,7 @@ def test_options_lists_feed_places_and_pins(ext: Ext, pair: tuple[bytes, bytes])
     assert len(ids) == 73 and "iso:LS" in ids
     only_v1 = v1_ids - set(ids)
     assert only_v1 >= {"iso:BD", "iso:CO", "iso:ZM"}
+    assert ext.page_errors == []
     ext.reset()
 
     # (c) an invalid v2 cache and no route: no data
@@ -132,6 +134,7 @@ def test_options_lists_feed_places_and_pins(ext: Ext, pair: tuple[bytes, bytes])
     page = _open(ext)
     assert page.locator("#noData").text_content() == NO_DATA
     assert _ids(page) == []
+    assert ext.page_errors == []
     ext.reset()
 
     # (c2) the same with saved pins: the text sits above a list of the saved pins
@@ -140,10 +143,12 @@ def test_options_lists_feed_places_and_pins(ext: Ext, pair: tuple[bytes, bytes])
     assert page.locator("#noData").text_content() == NO_DATA
     assert _ids(page) == ["iso:CV"]
     expect(_button(page, "iso:CV")).to_have_attribute("aria-pressed", "true")
+    assert ext.page_errors == []
     assert page.locator("#unresolvedList li").all_text_contents() == ["AtlantisRemove"]
     _button(page, "iso:CV").click()
     page.wait_for_function(IDLE)
     assert _stored_places(ext) == []
+    assert ext.page_errors == []
     ext.reset()
 
     # (d) pins kept: pinned rows first, a pinned place the feed lacks from the table's display
@@ -154,6 +159,7 @@ def test_options_lists_feed_places_and_pins(ext: Ext, pair: tuple[bytes, bytes])
     assert page.locator(".country-item .country-name").nth(1).text_content() == "Iceland"
     assert page.locator("#unresolvedList .unresolved-name").all_text_contents() == ["Atlantis"]
     assert page.locator("#pinSummary").text_content() == "2 countries pinned — popup shows only these."
+    assert ext.page_errors == []
     ext.reset()
 
     # (e) D4: no checkboxes, no Save, and the selection key is left alone
@@ -164,6 +170,7 @@ def test_options_lists_feed_places_and_pins(ext: Ext, pair: tuple[bytes, bytes])
     assert ext.storage()["selected_countries"] == ["Brazil"]
 
     # (f) the worker unreachable: the pins cannot be prepared
+    assert ext.page_errors == []
     ext.reset()
     ext.seed(_cached(pair))
     broken = ext.context.new_page()
@@ -225,11 +232,12 @@ def test_two_options_pages_edit_pins(ext: Ext, pair: tuple[bytes, bytes]) -> Non
     _button(b, "iso:LS").click()
     _wait_places(a, ["iso:MD", "iso:LS"])
     for page in (a, b):
-        _shows(page, ["iso:MD", "iso:LS"], ["iso:CV"])
+        _shows(page, ["iso:MD", "iso:LS"], ["iso:CV"], timeout=2000)
     # B learns of an edit it did not make only through storage.onChanged
     _button(a, "iso:LS").click()
     _wait_places(a, ["iso:MD"])
-    _shows(b, ["iso:MD"], ["iso:LS", "iso:CV"])
+    _shows(b, ["iso:MD"], ["iso:LS", "iso:CV"], timeout=2000)
+    assert ext.page_errors == []
 
 
 def test_a_rejected_pin_save_is_reported(ext: Ext, pair: tuple[bytes, bytes]) -> None:
@@ -261,6 +269,7 @@ def test_a_rejected_pin_save_is_reported(ext: Ext, pair: tuple[bytes, bytes]) ->
         expect(button).to_have_attribute("aria-pressed", "true")
         assert _stored_places(ext) == ["iso:CV", "iso:LS"]
         assert _status(page) == ""
+        assert ext.page_errors == []
     finally:
         worker.evaluate("() => { chrome.storage.local.set = globalThis.__realSet; }")
 
@@ -274,10 +283,13 @@ def test_a_late_pin_reply_never_repaints_an_older_state(ext: Ext, pair: tuple[by
     wrap_pin_messages(a, "hold")
     _button(a, "iso:CV").click()
     _wait_places(a, ["iso:MD"])
+    # A has redrawn from storage (CV is unpinned), and the redraw kept CV's pending state
+    expect(_button(a, "iso:CV")).to_have_attribute("aria-pressed", "false")
     expect(_button(a, "iso:CV")).to_have_attribute("aria-busy", "true")
     _button(b, "iso:LS").click()
     _wait_places(b, ["iso:MD", "iso:LS"])
     expect(_button(a, "iso:LS")).to_have_attribute("aria-pressed", "true")
+    expect(_button(a, "iso:CV")).to_have_attribute("aria-busy", "true")
     release_pin_reply(a)
     a.wait_for_function(IDLE)
     for page in (a, b):
@@ -301,6 +313,7 @@ def test_a_late_pin_reply_never_repaints_an_older_state(ext: Ext, pair: tuple[by
     release_pin_read(a)
     a.wait_for_function(IDLE)
     _shows(a, ["iso:LS", "iso:CV"], ["iso:MD"])
+    assert ext.page_errors == []
 
 
 def test_a_lost_pin_reply_is_reconciled(ext: Ext, pair: tuple[bytes, bytes]) -> None:
@@ -316,6 +329,7 @@ def test_a_lost_pin_reply_is_reconciled(ext: Ext, pair: tuple[bytes, bytes]) -> 
         " does not exist. The list shows your saved pins."
     )
     expect(_button(page, "iso:CV")).to_have_attribute("aria-pressed", "true")
+    assert ext.page_errors == []
     expect(_button(page, "iso:CV")).to_be_enabled()
     assert _button(page, "iso:CV").get_attribute("aria-busy") is None
     assert _stored_places(ext) == ["iso:CV", "iso:MD"]
@@ -361,3 +375,46 @@ def test_a_lost_pin_reply_is_reconciled(ext: Ext, pair: tuple[bytes, bytes]) -> 
     page.reload()
     page.wait_for_function(IDLE)
     expect(_button(page, "iso:CV")).to_have_attribute("aria-pressed", "true")
+    assert ext.page_errors == []
+
+
+def test_messages_in_sentences_lose_one_trailing_full_stop(ext: Ext, pair: tuple[bytes, bytes]) -> None:
+    # Chrome's own messages end in a full stop; the sentence supplies its own (no "..")
+    ext.seed(_cached(pair))
+    broken = ext.context.new_page()
+    broken.add_init_script(
+        "chrome.runtime.sendMessage = () => Promise.reject("
+        "new Error('Could not establish connection. Receiving end does not exist.'));"
+    )
+    broken.goto(f"chrome-extension://{ext.ext_id}/options.html")
+    broken.wait_for_function(IDLE)
+    assert broken.locator("#pinsFailed").text_content() == (
+        "Your pins could not be prepared: Could not establish connection. Receiving end does"
+        " not exist. Reload this page to try again."
+    )
+    ext.seed(_pins())
+    page = _open(ext)
+    page.evaluate(
+        """() => {
+          const real = chrome.storage.local.get.bind(chrome.storage.local);
+          chrome.storage.local.get = (keys, ...rest) => Array.isArray(keys) && keys.includes('pinned_places_v2')
+            ? Promise.reject(new Error('Storage is broken.')) : real(keys, ...rest);
+        }"""
+    )
+    _button(page, "iso:LS").click()
+    page.wait_for_function(IDLE)
+    assert _status(page) == "Your saved pins could not be read: Storage is broken. Reload this page to try again."
+    assert ext.page_errors == []
+
+
+def test_the_options_page_respects_the_check_throttle(ext: Ext, pair: tuple[bytes, bytes]) -> None:
+    # a recent successful check, but no valid record: the page asks without `force`, so the
+    # worker's due() throttle still applies and nothing is fetched
+    feed, status = pair
+    ext.served.set("elections.json", feed)
+    ext.served.set("status.json", status)
+    ext.seed({FEED: "garbage", CHECK: {"ok_at": int(time.time() * 1000), "failed_at": None, "error": None}})
+    page = _open(ext)
+    assert page.locator("#noData").text_content() == NO_DATA
+    assert ext.served.log == []
+    assert ext.page_errors == []

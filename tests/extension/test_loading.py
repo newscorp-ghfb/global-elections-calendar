@@ -887,7 +887,43 @@ def test_a_hung_request_is_aborted(ext: Ext, lab: Page, pair: tuple[bytes, bytes
     assert ext.page_errors == []
 
 
-_READ_LIMITED = """
+# A bounded source for the stream tests. It makes at most 32 chunks of 65,536 bytes on demand (no
+# prefetch: highWaterMark 0), then closes, so even a reader that buffers the whole body ends at
+# 2 MiB. `bounded(out, run)` races the whole call against a 2 s page timer; on expiry the timer
+# errors the source (so the work stops, not only the wait) and sets out.timedOut. `out.seen` is
+# copied the moment the call settles, before any teardown can change it.
+_BOUNDED_JS = """
+const bounded = async (out, run) => {
+  const live = { pulled: 0, ended: false, cancelled: false, pulledAtCancel: null };
+  let controller = null;
+  const stream = new ReadableStream({
+    start(c) { controller = c; },
+    pull(c) {
+      if (live.pulled >= 32) { live.ended = true; c.close(); return; }
+      live.pulled += 1;
+      c.enqueue(new Uint8Array(65536));
+    },
+    cancel() { live.cancelled = true; live.pulledAtCancel = live.pulled; },
+  }, { highWaterMark: 0 });
+  let timedOut = false;
+  let timer = null;
+  const expired = new Promise((resolve) => {
+    timer = setTimeout(() => {
+      timedOut = true;
+      try { controller.error(new Error('test deadline')); } catch { /* already closed */ }
+      resolve({ expired: true });
+    }, 2000);
+  });
+  const call = run(stream).then((value) => ({ value }), (error) => ({ error }));
+  const outcome = await Promise.race([call, expired]);
+  clearTimeout(timer);
+  out.seen = { pulled: live.pulled, ended: live.ended, cancelled: live.cancelled, timedOut };
+  return outcome;
+};
+"""
+
+_READ_LIMITED = (
+    """
 async () => {
   const { readLimited, OverLimit } = await import('/lib/load.js');
   const out = {};
@@ -897,49 +933,57 @@ async () => {
   } catch (e) {
     out.over = [e instanceof OverLimit, e.message, e.limit];
   }
-  out.cancelled = false;
-  const endless = new ReadableStream({
-    pull(c) { c.enqueue(new Uint8Array(65536)); },
-    cancel() { out.cancelled = true; },
-  });
-  try {
-    await readLimited(new Response(endless), 1000000);
-  } catch (e) {
-    out.endless = [e instanceof OverLimit, e.message];
-  }
   return out;
 }
 """
-
+)
 
 def test_a_body_is_read_up_to_its_limit(lab: Page) -> None:
-    started = time.monotonic()
     got = lab.evaluate(_READ_LIMITED)
-    assert time.monotonic() - started < 2
     assert got["exact"] == 10
     assert got["over"] == [True, "over the limit of 9 bytes", 9]
-    assert got["endless"] == [True, "over the limit of 1000000 bytes"]
-    assert got["cancelled"] is True
 
 
-_FETCH_LIMITED = """
-async () => {
+_READ_LONG: Final = (
+    "async () => {"
+    + _BOUNDED_JS
+    + """
+  const { readLimited, OverLimit } = await import('/lib/load.js');
+  const out = {};
+  const outcome = await bounded(out, (stream) => readLimited(new Response(stream), 1000000));
+  const e = outcome.error;
+  out.error = e === undefined ? null : [e instanceof OverLimit, e.message];
+  return out;
+}
+"""
+)
+
+
+def test_a_long_body_is_cancelled_before_its_end(lab: Page) -> None:
+    started = time.monotonic()
+    got = lab.evaluate(_READ_LONG)
+    assert time.monotonic() - started < 2
+    assert got["error"] == [True, "over the limit of 1000000 bytes"]
+    seen = got["seen"]
+    assert seen["timedOut"] is False
+    assert seen["cancelled"] is True and seen["ended"] is False
+    assert seen["pulled"] == 16  # the 16th chunk takes the total to 1,048,576 > 1,000,000
+
+
+_FETCH_LIMITED: Final = (
+    "async () => {"
+    + _BOUNDED_JS
+    + """
   const { fetchLimited, OverLimit } = await import('/lib/load.js');
   const out = { calls: [] };
   const signal = new AbortController().signal;
-  const endless = new ReadableStream({
-    pull(c) { c.enqueue(new Uint8Array(65536)); },
-    cancel() { out.cancelled = true; },
-  });
   const fake = (response) => (url, options) => {
     out.calls.push([url, options.cache, options.signal === signal, Object.keys(options).sort()]);
     return Promise.resolve(response);
   };
-  try {
-    await fetchLimited(fake(new Response(endless)), 'https://x/y.json', { signal, limit: 1000000 });
-  } catch (e) {
-    out.endless = e instanceof OverLimit;
-  }
+  const long = await bounded(out, (stream) => fetchLimited(
+    fake(new Response(stream)), 'https://x/y.json', { signal, limit: 1000000 }));
+  out.endless = long.error === undefined ? null : [long.error instanceof OverLimit, long.error.message];
   try {
     await fetchLimited(fake(new Response('', { status: 503 })), 'https://x/y.json', { signal, limit: 10 });
   } catch (e) {
@@ -950,13 +994,18 @@ async () => {
   return out;
 }
 """
+)
 
 
 def test_the_real_fetch_reads_a_bounded_body(lab: Page) -> None:
     started = time.monotonic()
     got = lab.evaluate(_FETCH_LIMITED)
     assert time.monotonic() - started < 2
-    assert got["endless"] is True and got["cancelled"] is True
+    assert got["endless"] == [True, "over the limit of 1000000 bytes"]
+    seen = got["seen"]
+    assert seen["timedOut"] is False
+    assert seen["cancelled"] is True and seen["ended"] is False
+    assert seen["pulled"] == 16  # the 16th chunk takes the total to 1,048,576 > 1,000,000
     assert got["http"] == "HTTP 503" and got["length"] == 10
     assert got["calls"] == [["https://x/y.json", "no-store", True, ["cache", "signal"]]] * 3
 
