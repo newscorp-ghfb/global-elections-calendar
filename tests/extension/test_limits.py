@@ -221,10 +221,20 @@ def test_the_real_popup_keeps_its_width(ext: Ext, pair: tuple[bytes, bytes]) -> 
             anchor.wait_for_timeout(100)
         else:
             raise AssertionError("the real popup never became ready")
-        width = evaluate("getComputedStyle(document.body).width")
-        inner = evaluate("innerWidth")
+        # the popup starts near 182 px and grows: read when two readings 200 ms apart agree
+        reading: list[Any] = []
+        for _ in range(25):
+            now = evaluate("[innerWidth, getComputedStyle(document.body).width]")
+            if now == reading:
+                break
+            reading = now
+            anchor.wait_for_timeout(200)
+        else:
+            raise AssertionError(f"the real popup's size never settled: {reading}")
+    inner, width = reading
     assert width == "380px", width
-    assert inner <= 410, inner  # 16d2f40 measured 410; the "width: auto" variant gave 443
+    # 16d2f40 measured 410; a rule without max-width exceeded it (443 at 9d2b55f, 800 at 2ca492b)
+    assert inner <= 410, inner
 
 
 def test_a_long_unbroken_word_wraps_at_320px(ext: Ext, pair: tuple[bytes, bytes]) -> None:

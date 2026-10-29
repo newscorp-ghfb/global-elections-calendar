@@ -36,6 +36,7 @@ export function keepFocus(redraw) {
   const inPanel = held instanceof HTMLElement && held !== panel && panel.contains(held);
   redraw();
   if (key === null) {
+    // defensive: no current renderer keeps a keyless control in the panel connected across a redraw
     if (inPanel && !held.isConnected) panel.focus();
     return;
   }
