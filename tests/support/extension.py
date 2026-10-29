@@ -297,8 +297,9 @@ class Ext:
         """Open the real action popup (``chrome.action.openPopup``) and yield ``evaluate(js)``.
 
         ``evaluate`` runs an expression in the popup over CDP and returns its value, polling for
-        at most ``wait_s``. The popup is closed (``window.close()``) and detached on exit, also when
-        the body raised. ``anchor`` is any open page of the context; it hosts the polling waits.
+        at most ``wait_s``. The popup is closed (``window.close()``, or ``Target.closeTarget`` when
+        no session is attached) and detached on exit, also when the attach or the body raised.
+        ``anchor`` is any open page of the context; it hosts the polling waits.
         """
         before = self._popup_targets()
         anchor.bring_to_front()
@@ -323,9 +324,8 @@ class Ext:
                 replies[message["id"]] = message
 
         session.on("Target.receivedMessageFromTarget", on_message)
-        session_id = session.send(
-            "Target.attachToTarget", {"targetId": next(iter(found)), "flatten": False}
-        )["sessionId"]
+        target_id = next(iter(found))
+        attached: list[str] = []  # the session id, once attached
         counter = iter(range(1, 10**6))
 
         def evaluate(expression: str) -> Any:
@@ -334,7 +334,7 @@ class Ext:
             session.send(
                 "Target.sendMessageToTarget",
                 {
-                    "sessionId": session_id,
+                    "sessionId": attached[0],
                     "message": json.dumps({"id": ident, "method": "Runtime.evaluate", "params": params}),
                 },
             )
@@ -349,10 +349,16 @@ class Ext:
             return reply["result"]["result"].get("value")
 
         try:
+            attached.append(
+                session.send("Target.attachToTarget", {"targetId": target_id, "flatten": False})["sessionId"]
+            )
             yield evaluate
         finally:
             with contextlib.suppress(Exception):  # the popup may have closed itself
-                evaluate("window.close()")
+                if attached:
+                    evaluate("window.close()")
+                else:
+                    session.send("Target.closeTarget", {"targetId": target_id})
             with contextlib.suppress(Exception):
                 session.detach()
 
