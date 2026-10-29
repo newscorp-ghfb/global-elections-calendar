@@ -187,8 +187,9 @@ def problems(folder: Path) -> list[str]:
 
     Known limits of the reference scan, which is not a JS tokenizer: comments are stripped without
     regard to strings, so a ``/*`` inside a string can hide a later import; and import-like text
-    inside a comment or a string is followed. The second fails safe (the build refuses); the
-    first is covered by the extension suite, which loads every module.
+    in a string or in a trailing ``//`` comment (block comments and whole-line ``//`` comments
+    are stripped first) is followed. The second fails safe (the build refuses); the first is
+    covered by the extension suite, which loads every module.
     """
     found: list[str] = []
     present = _files_under(folder)
