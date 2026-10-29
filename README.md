@@ -239,6 +239,22 @@ A run prints one line, for example `published, verdict red, 377390 feed bytes`: 
 `elections.json`. `red` means a source or the run has an open warning or error that nobody has
 acknowledged. The feed is still published.
 
+## Building the extension ZIP
+
+```powershell
+.venv\Scripts\python.exe -m scripts.build_extension_zip
+```
+
+- It builds `dist/Global_Elections_Calendar_v2.0.0.zip` (`dist/` is git-ignored) from the
+  explicit file list `FILES` in `scripts/build_extension_zip.py`, and refuses to write anything
+  if a check fails: the manifest is at the root, every referenced asset is present, the version
+  is 2.0.0, the permission-related manifest keys equal v1.0.2's, and `FILES` equals the files
+  under `extension/`. Add a new extension file to `FILES`.
+- The bytes are reproducible for one Python minor version and one zlib version.
+- It prints the ZIP's SHA-256 and the `RELEASES.md` row, naming both versions. It does not write
+  the row: the release's code SHA, destination, date and approval are recorded by hand.
+- The release notes are `docs/extension/v2.0.0-release-notes.md`.
+
 ## `ci adopt`: the first baselines
 
 The first baselines are not written by a publish job. The user approves one artifact, and

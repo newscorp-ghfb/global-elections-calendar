@@ -105,6 +105,8 @@ def test_permissions_are_v1_0_2s() -> None:
     now = json.loads((ROOT / "extension" / "manifest.json").read_text(encoding="utf-8"))
     was = json.loads((V1_EXTENSION / "manifest.json").read_text(encoding="utf-8"))
     assert now["background"].pop("type") == "module"
+    for field in ("version", "description"):  # test_the_manifest_is_2_0_0's
+        del now[field], was[field]
     assert now == was
     assert "key" not in now and "content_security_policy" not in now
 

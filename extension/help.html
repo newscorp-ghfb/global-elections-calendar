@@ -394,12 +394,12 @@
 
     <!-- Hero -->
     <div class="hero">
-      <div class="hero-eyebrow">Chrome Extension · How to Use</div>
+      <div class="hero-eyebrow">Chrome Extension · How to Use · Version 2.0.0</div>
       <h1 class="hero-title">Global Elections Calendar</h1>
       <p class="hero-sub">
-        A real-time calendar of elections worldwide, fused from 7 international
-        monitoring organisations. Track upcoming votes, check results, and filter
-        by country — all from your browser toolbar.
+        Elections worldwide, month by month, merged from 10 monitoring sources and checked every
+        day. The calendar tells you how sure it is of each date, and what is wrong with the data
+        when something is.
       </p>
     </div>
 
@@ -412,9 +412,9 @@
           <div class="step-body">
             <div class="step-title">Click the extension icon</div>
             <div class="step-desc">
-              The globe icon in your Chrome toolbar opens the popup. It loads
-              this month's elections automatically. Data is cached for 30 minutes
-              so it opens instantly on repeat visits.
+              The globe icon in your Chrome toolbar opens the popup. It draws the last data it
+              saved, so it opens at once, and then checks for newer data if the last check is more
+              than 30 minutes old. The extension also checks in the background about once an hour.
             </div>
           </div>
         </div>
@@ -423,28 +423,29 @@
           <div class="step-body">
             <div class="step-title">Browse by month</div>
             <div class="step-desc">
-              Use the <strong style="color:var(--primary)">◀ ▶</strong> arrows
-              at the top to navigate between the previous, current, and next
-              calendar month. The greyed labels beside the arrows show which
-              months are available.
+              Use the <strong style="color:var(--primary)">◀ ▶</strong> arrows at the top to move
+              between months. The data covers five months: the previous month, the current month
+              and the next three. A month shows every election whose dates overlap it, so a voting
+              period that runs across two months is listed in both.
             </div>
           </div>
         </div>
         <div class="step">
           <div class="step-num">3</div>
           <div class="step-body">
-            <div class="step-title">Click any election card to learn more</div>
+            <div class="step-title">Open a card to learn more</div>
             <div class="step-desc">
-              Tapping a card opens the primary source in a new tab. Each card
-              also shows coloured source chips — click a specific chip to open
-              that monitoring organisation's page directly.
+              A card is one place and one date range. Open it to see each contest it groups, what
+              every source says and the date each source gives. Source links open only on that
+              source's own website; if a link is not on the source's own site, the source's home
+              page opens instead.
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- What you're looking at -->
+    <!-- Reading a card -->
     <section>
       <div class="section-title">Reading a card</div>
       <p style="font-size:13px;color:var(--on-surf-var);margin-bottom:4px;">
@@ -461,20 +462,97 @@
           <div class="mock-chips">
             <span class="chip-source">ElectionGuide</span>
             <span class="chip-source">OSCE/ODIHR</span>
-            <span class="chip chip-upcoming">Upcoming</span>
+            <span class="chip chip-upcoming">Scheduled</span>
           </div>
         </div>
       </div>
       <p style="font-size:13px;color:var(--on-surf-var);margin-top:8px;">
-        The date badge shows the day and month. The source chips list every
-        monitoring organisation that reported this election — the same event
-        from multiple sources is merged into one card automatically.
+        The same election reported by several sources is merged into one card. The label under
+        the name says what the data supports, not more. A date that is only a month is shown
+        as that month with "day unconfirmed", never with an invented day.
       </p>
+    </section>
+
+    <!-- Labels -->
+    <section>
+      <div class="section-title">Date and status labels</div>
+      <div class="chip-table">
+        <div class="chip-row-item">
+          <span class="chip chip-upcoming">Scheduled</span>
+          <span class="chip-desc">A date in the future, or a voting period that has not ended.</span>
+        </div>
+        <div class="chip-row-item">
+          <span class="chip chip-upcoming">Scheduled voting period: today (approx.)</span>
+          <span class="chip-desc">Today falls inside the voting period, and the sources do not disagree.</span>
+        </div>
+        <div class="chip-row-item">
+          <span class="chip chip-postponed">October — day unconfirmed</span>
+          <span class="chip-desc">Only the month is known. A year-only date reads "date unconfirmed".</span>
+        </div>
+        <div class="chip-row-item">
+          <span class="chip chip-postponed">Expected between 2 Nov and 31 Jan</span>
+          <span class="chip-desc">The sources give an expected period, not a date. It also reads "Expected on …" or "Expected in …".</span>
+        </div>
+        <div class="chip-row-item">
+          <span class="chip chip-held">Held</span>
+          <span class="chip-desc">A source confirms that the vote took place.</span>
+        </div>
+        <div class="chip-row-item">
+          <span class="chip chip-held">Past</span>
+          <span class="chip-desc">The date has passed. Nothing confirms the vote, but the date was exact.</span>
+        </div>
+        <div class="chip-row-item">
+          <span class="chip chip-held">Past expected period — not confirmed</span>
+          <span class="chip-desc">An expected period or month that has ended, with no confirmation.</span>
+        </div>
+        <div class="chip-row-item">
+          <span class="chip chip-postponed">Postponed</span>
+          <span class="chip-desc">Pushed to a later date.</span>
+        </div>
+        <div class="chip-row-item">
+          <span class="chip chip-cancelled">Cancelled</span>
+          <span class="chip-desc">Called off entirely.</span>
+        </div>
+        <div class="chip-row-item">
+          <span class="chip chip-disputed">Disputed</span>
+          <span class="chip-desc">Legitimacy or results are contested.</span>
+        </div>
+        <div class="chip-row-item">
+          <span class="chip chip-postponed">Possibly postponed — sources disagree</span>
+          <span class="chip-desc">Some sources say postponed, others do not. "Possibly cancelled — sources disagree" is the same for a cancellation.</span>
+        </div>
+      </div>
+
+      <p style="font-size:13px;color:var(--on-surf-var);margin-top:8px;">
+        Small chips and notes can sit beside a label:
+      </p>
+      <div class="chip-table">
+        <div class="chip-row-item">
+          <span class="chip-source">Tentative</span>
+          <span class="chip-desc">The date is not final.</span>
+        </div>
+        <div class="chip-row-item">
+          <span class="chip-source">Subnational</span>
+          <span class="chip-desc">A regional or local election.</span>
+        </div>
+        <div class="chip-row-item">
+          <span class="chip-source">Rescheduled from …</span>
+          <span class="chip-desc">The date or dates it was moved from.</span>
+        </div>
+        <div class="chip-row-item">
+          <span class="chip-source">Sources disagree on date</span>
+          <span class="chip-desc">Open the card to see each source's date.</span>
+        </div>
+        <div class="chip-row-item">
+          <span class="chip-source">Using source data from …</span>
+          <span class="chip-desc">A source could not be read, so its last saved copy was used. After a week the note reads "Unverified since …".</span>
+        </div>
+      </div>
     </section>
 
     <!-- Tabs -->
     <section>
-      <div class="section-title">Tabs: Upcoming · Results · All</div>
+      <div class="section-title">Tabs: Upcoming · Past · All</div>
       <div class="feature-grid">
         <div class="feature-card">
           <div class="feature-card-head">
@@ -488,9 +566,8 @@
             <div class="feature-label">Upcoming</div>
           </div>
           <div class="feature-desc">
-            Shows only elections that have not yet taken place — status is
-            <span class="chip chip-upcoming" style="font-size:10px;padding:2px 7px;">Upcoming</span>
-            or Unknown.
+            Elections that are scheduled, expected, day-unconfirmed, postponed or in doubt
+            ("sources disagree").
           </div>
         </div>
         <div class="feature-card">
@@ -501,11 +578,11 @@
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
               </svg>
             </div>
-            <div class="feature-label">Results</div>
+            <div class="feature-label">Past (formerly Results)</div>
           </div>
           <div class="feature-desc">
-            Shows only elections that have already been held. Use this to
-            quickly find completed votes and check result sources.
+            Elections that are held, or whose date has passed. The tab was renamed because it
+            lists elections, not results.
           </div>
         </div>
         <div class="feature-card">
@@ -522,41 +599,72 @@
             <div class="feature-label">All</div>
           </div>
           <div class="feature-desc">
-            Shows every election for the selected month regardless of status.
-            Good for a complete overview of the period.
+            Every election in the month, whatever its label. The counters always match the
+            list shown.
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Status chips -->
+    <!-- Banner -->
     <section>
-      <div class="section-title">Status meanings</div>
+      <div class="section-title">The banner: is the data healthy?</div>
+      <p style="font-size:13px;color:var(--on-surf-var);">
+        One banner under the title shows the worst problem, with counts of errors, warnings and
+        acknowledged issues. Click it to open the source health panel, which lists every source
+        and the reason for each problem. The footer says when the data was generated and when the
+        extension last checked.
+      </p>
       <div class="chip-table">
         <div class="chip-row-item">
-          <span class="chip chip-upcoming">Upcoming</span>
-          <span class="chip-desc">Scheduled and not yet held.</span>
+          <span class="chip chip-cancelled">Red</span>
+          <span class="chip-desc">
+            "Data is N hours old — the daily update hasn't arrived" (older than 36 hours),
+            "The latest update failed its checks — showing the last good data", or
+            "N source errors" (one source error reads "1 source error").
+          </span>
         </div>
         <div class="chip-row-item">
-          <span class="chip chip-held">Held</span>
-          <span class="chip-desc">Election took place; results may be available.</span>
+          <span class="chip chip-postponed">Amber</span>
+          <span class="chip-desc">
+            "This data is newer than this extension — update the extension",
+            "Current health can't be confirmed for this data",
+            "Source health isn't available for this data" (data from an older feed), or
+            "N warnings".
+          </span>
         </div>
         <div class="chip-row-item">
-          <span class="chip chip-postponed">Postponed</span>
-          <span class="chip-desc">Originally scheduled but pushed to a later date.</span>
+          <span class="chip chip-held">Grey</span>
+          <span class="chip-desc">
+            Issues that someone has reviewed and acknowledged for a set time. They still describe
+            the real condition.
+          </span>
         </div>
         <div class="chip-row-item">
-          <span class="chip chip-cancelled">Cancelled</span>
-          <span class="chip-desc">Called off entirely.</span>
-        </div>
-        <div class="chip-row-item">
-          <span class="chip chip-disputed">Disputed</span>
-          <span class="chip-desc">Legitimacy or results are contested.</span>
+          <span class="chip chip-upcoming">Green</span>
+          <span class="chip-desc">"All sources OK".</span>
         </div>
       </div>
     </section>
 
-    <!-- Filter & search -->
+    <!-- Attention -->
+    <section>
+      <div class="section-title">Needs attention &amp; undated</div>
+      <p style="font-size:13px;color:var(--on-surf-var);">
+        Above the list, a collapsed section reads "N items across the monitored window" with the
+        months it covers. It lists what the sources reported but the calendar could not place on
+        a date, or could not match with certainty, each with its source and link. Filters and tabs
+        never hide these items; only the search box narrows them, and then the title reads "k of N
+        items".
+      </p>
+      <div class="tip">
+        <strong>Long lists:</strong> When items are omitted from the feed, the full attention
+        list is in attention_full.json in the publishing run's generation artifact; retrieving it
+        may require operator access, and the artifact is retained for 14 days after upload.
+      </div>
+    </section>
+
+    <!-- Filtering -->
     <section>
       <div class="section-title">Filtering</div>
       <div class="steps">
@@ -569,14 +677,15 @@
             </svg>
           </div>
           <div class="step-body">
-            <div class="step-title">Search filter (funnel icon)</div>
+            <div class="step-title">Search and level (funnel icon)</div>
             <div class="step-desc">
-              Click the funnel icon (≡) next to "Schedule" to reveal a search box.
-              Type any part of a <strong style="color:var(--on-surface)">country name</strong>,
-              <strong style="color:var(--on-surface)">election type</strong>,
-              <strong style="color:var(--on-surface)">source</strong>, or
-              <strong style="color:var(--on-surface)">status</strong> to filter the list live.
-              Clear the box to show all results again.
+              Click the funnel icon next to "Schedule" to open the filter bar. Type part of a
+              <strong style="color:var(--on-surface)">country</strong>,
+              <strong style="color:var(--on-surface)">office</strong>,
+              <strong style="color:var(--on-surface)">source</strong> or
+              <strong style="color:var(--on-surface)">label</strong> to filter the list live. With
+              data from the current feed, a level menu offers All, National + unclassified and
+              Subnational + unclassified.
             </div>
           </div>
         </div>
@@ -585,7 +694,7 @@
 
     <!-- Settings / pinning -->
     <section>
-      <div class="section-title">Settings — Country filter &amp; pinning</div>
+      <div class="section-title">Settings — pinning countries</div>
       <p style="font-size:13px;color:var(--on-surf-var);">
         Right-click the extension icon and choose <strong style="color:var(--on-surface)">Options</strong>
         to open the Settings page. You can also reach it from
@@ -594,16 +703,16 @@
       </p>
 
       <div class="settings-preview">
-        <div class="settings-preview-header">Country Filter</div>
+        <div class="settings-preview-header">Pinned places</div>
         <div class="settings-row">
-          <input type="checkbox" checked disabled /> Brazil
+          Georgia
           <span class="pin-indicator">Pinned</span>
         </div>
         <div class="settings-row">
-          <input type="checkbox" checked disabled /> France
+          Also shows: Abkhazia, South Ossetia
         </div>
         <div class="settings-row">
-          <input type="checkbox" disabled /> North Korea
+          France
         </div>
       </div>
 
@@ -611,37 +720,38 @@
         <div class="step">
           <div class="step-num">1</div>
           <div class="step-body">
-            <div class="step-title">Hide countries you don't need</div>
+            <div class="step-title">Pin the places you follow</div>
             <div class="step-desc">
-              Uncheck any country and click <strong style="color:var(--on-surface)">Save</strong>.
-              Unchecked countries are hidden from your feed. Use
-              <strong style="color:var(--on-surface)">Select All</strong> /
-              <strong style="color:var(--on-surface)">Clear All</strong> for bulk changes.
-              The search box at the top filters the country list as you type.
+              The page lists the places in the data, with your pinned places first. Click the pin
+              icon on a row to pin or unpin it. Pins save at once; there is no Save button. When
+              at least one place is pinned, the popup shows only those places, with a "Pinned
+              view" banner.
             </div>
           </div>
         </div>
         <div class="step">
           <div class="step-num">2</div>
           <div class="step-body">
-            <div class="step-title">Pin countries for a focused view</div>
+            <div class="step-title">A pinned country also shows its places</div>
             <div class="step-desc">
-              Hover a country row and click the 📌 pin icon. When at least one
-              country is pinned, the popup shows <em>only</em> those countries —
-              useful if you follow a specific region. A
-              <strong style="color:var(--primary)">"Pinned view · N countries"</strong>
-              banner appears at the top of the popup when active.
-              Pins save instantly; no Save button needed.
+              A pinned country also shows the places that belong to it, for example pinning Georgia
+              also shows Abkhazia and South Ossetia. The row says "Also shows" and names them.
+              Pinning one of those places by itself shows only that place.
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="tip">
-        <strong>Tip:</strong> Pinning is different from unchecking. Unchecking
-        permanently hides a country. Pinning temporarily focuses only the pinned
-        countries — unpinning them restores the full view without changing your
-        checkbox selections.
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Pins from version 1</div>
+            <div class="step-desc">
+              Your pins from version 1.0.2 are carried over once, when the extension updates. A
+              pin whose name matches no place is kept in a separate list on the Settings page,
+              with a Remove button. Those pins do not filter anything. The old "selected countries"
+              checkboxes are gone.
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -662,8 +772,8 @@
             <div class="feature-label">Refresh ↻</div>
           </div>
           <div class="feature-desc">
-            Forces a fresh fetch from the data source, bypassing the 30-minute
-            cache. Use this if you suspect the data is stale.
+            Checks for new data now, without waiting for the 30-minute interval. Use it if the
+            banner says the data is old.
           </div>
         </div>
         <div class="feature-card">
@@ -679,8 +789,8 @@
             <div class="feature-label">Help ?</div>
           </div>
           <div class="feature-desc">
-            Opens this page any time. Find it in the top-right corner of the
-            popup, next to the refresh button.
+            Opens this page any time, from the top-right corner of the popup. It also opens once,
+            when the extension is first installed.
           </div>
         </div>
       </div>
@@ -690,23 +800,75 @@
     <section>
       <div class="section-title">Data sources</div>
       <p style="font-size:13px;color:var(--on-surf-var);margin-bottom:8px;">
-        Elections are cross-referenced from 7 international monitoring bodies
-        and merged into single deduplicated records:
+        Elections are cross-referenced from ten sources, merged into single records, and
+        checked every day. A source that fails its checks is reported in the banner, not hidden:
       </p>
       <div class="source-strip">
-        <span class="source-badge">OSCE/ODIHR</span>
-        <span class="source-badge">EEAS (EU)</span>
-        <span class="source-badge">Carter Center</span>
         <span class="source-badge">ElectionGuide</span>
-        <span class="source-badge">A-WEB</span>
+        <span class="source-badge">Wikipedia (national calendar)</span>
+        <span class="source-badge">Wikipedia (local calendar)</span>
+        <span class="source-badge">NDI</span>
+        <span class="source-badge">OSCE/ODIHR</span>
         <span class="source-badge">IPU</span>
-        <span class="source-badge">Wikipedia</span>
+        <span class="source-badge">A-WEB</span>
+        <span class="source-badge">EISA</span>
+        <span class="source-badge">Carter Center</span>
+        <span class="source-badge">EEAS</span>
       </div>
       <div class="tip" style="margin-top:4px;">
-        <strong>Stale data warning:</strong> If the footer turns red and shows
-        "⚠️ WARNING: Stale Data", the underlying data file is more than 48 hours
-        old. The data is still usable but may not reflect very recent
-        announcements.
+        <strong>Window:</strong> the data covers five months, from the month before the current
+        one to three months ahead. Elections outside it are not listed.
+      </div>
+    </section>
+
+    <!-- Updating -->
+    <section>
+      <div class="section-title">Updating from version 1</div>
+      <p style="font-size:13px;color:var(--on-surf-var);">
+        If you installed from the Chrome Web Store, Chrome updates the extension itself and your
+        pins stay. If you loaded the extension unpacked from a folder:
+      </p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Find the folder</div>
+            <div class="step-desc">
+              Open chrome://extensions and note the folder the extension was loaded from.
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Empty the folder</div>
+            <div class="step-desc">
+              Delete the folder's contents, but keep the folder itself.
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Extract the new version</div>
+            <div class="step-desc">
+              Extract the version 2 ZIP into that folder.
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">Reload</div>
+            <div class="step-desc">
+              Back on chrome://extensions, find the extension. Click Reload on its card.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tip">
+        <strong>Warning:</strong> Don't remove the extension. Removing it deletes your pins and
+        settings, and loading it again from the same folder would not bring them back.
       </div>
     </section>
 

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Global Elections Calendar",
-  "version": "1.0.2",
-  "description": "Displays this month's global elections from 7 international monitoring sources.",
+  "version": "2.0.0",
+  "description": "Global elections month by month from 10 monitoring sources, with data health checks, honest date labels and items to review.",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
