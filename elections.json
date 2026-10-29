@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-28T00:01:46Z",
+  "generated_at": "2026-10-29T00:01:40Z",
   "current_month": "2026-10",
   "months": {
     "2026-09": [
@@ -151,48 +151,6 @@
     "2026-10": [
       {
         "date": "2026-10-04",
-        "country": "Bosnia and Herzegovina",
-        "type": "Bosnia and Herzegovina House of Representatives",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5096/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5096/"
-          }
-        ]
-      },
-      {
-        "date": "2026-10-04",
-        "country": "Brazil",
-        "type": "Brazilian Federal Senate",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide",
-          "Wikipedia"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5089/",
-          "https://en.wikipedia.org/wiki/Elections_in_Brazil"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5089/"
-          },
-          {
-            "name": "Wikipedia",
-            "link": "https://en.wikipedia.org/wiki/Elections_in_Brazil"
-          }
-        ]
-      },
-      {
-        "date": "2026-10-04",
         "country": "Brazil",
         "type": "Brazilian Chamber of Deputies",
         "status": "Held",
@@ -206,6 +164,42 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5090/"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-04",
+        "country": "Brazil",
+        "type": "Governors (1st round) Acre , Governor (1st round) Alagoas , Governor Amapá , Governor Amazonas , Governor (1st round) Bahia , Governor Ceará , Governor Espírito Santo , Governor (1st round) Federal District , Governor (1st round) Goiás , Governor Maranhão , Governor Mato Grosso , Governor Mato Grosso do Sul , Governor Minas Gerais , Governor Pará , Governor Paraíba , Governor Paraná , Governor Pernambuco , Governor Piauí , Governor Rio de Janeiro , Governor Rio Grande do Norte , Governor (1st round) Rio Grande do Sul , Governor Rondônia , Governor Roraima , Governor Santa Catarina , Governor São Paulo , Governor Sergipe , Governor Tocantins , Governor (1st round) Bosnia and Herzegovina Federation of Bosnia and Herzegovina , entity parliament and canton assemblies Republika Srpska , entity president and parliament Paraguay , municipal elections [ es ] Peru , regional and municipal elections [ es ] Lima , Mayor",
+        "status": "Held",
+        "source_names": [
+          "Wikipedia"
+        ],
+        "links": [
+          "https://en.wikipedia.org/wiki/Elections_in_Brazil"
+        ],
+        "sources": [
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_Brazil"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-04",
+        "country": "Bosnia and Herzegovina",
+        "type": "Bosnia and Herzegovina House of Representatives",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5096/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5096/"
           }
         ]
       },
@@ -409,24 +403,6 @@
       },
       {
         "date": "2026-10-25",
-        "country": "Serbia",
-        "type": "Serbian National Assembly",
-        "status": "Held",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5252/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5252/"
-          }
-        ]
-      },
-      {
-        "date": "2026-10-25",
         "country": "Brazil",
         "type": "Brazilian Presidency",
         "status": "Held",
@@ -458,6 +434,24 @@
           {
             "name": "Wikipedia",
             "link": "https://en.wikipedia.org/wiki/Elections_in_Brazil"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-25",
+        "country": "Serbia",
+        "type": "Serbian National Assembly",
+        "status": "Held",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5252/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5252/"
           }
         ]
       },
@@ -573,19 +567,61 @@
       },
       {
         "date": "2026-11-03",
-        "country": "Northern Mariana Islands",
-        "type": "Northern Mariana Islands Senate",
+        "country": "Guam",
+        "type": "Guamanian Legislature",
         "status": "Upcoming",
         "source_names": [
           "ElectionGuide"
         ],
         "links": [
-          "https://www.electionguide.org/elections/id/5104/"
+          "https://www.electionguide.org/elections/id/5102/"
         ],
         "sources": [
           {
             "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5104/"
+            "link": "https://www.electionguide.org/elections/id/5102/"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-03",
+        "country": "Northern Mariana Islands",
+        "type": "Northern Mariana Islands Governor",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5105/"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5105/"
+          }
+        ]
+      },
+      {
+        "date": "2026-11-03",
+        "country": "United States",
+        "type": "US House of Representatives",
+        "status": "Upcoming",
+        "source_names": [
+          "ElectionGuide",
+          "Wikipedia"
+        ],
+        "links": [
+          "https://www.electionguide.org/elections/id/5099/",
+          "https://en.wikipedia.org/wiki/Elections_in_the_United_States"
+        ],
+        "sources": [
+          {
+            "name": "ElectionGuide",
+            "link": "https://www.electionguide.org/elections/id/5099/"
+          },
+          {
+            "name": "Wikipedia",
+            "link": "https://en.wikipedia.org/wiki/Elections_in_the_United_States"
           }
         ]
       },
@@ -604,78 +640,6 @@
           {
             "name": "ElectionGuide",
             "link": "https://www.electionguide.org/elections/id/5216/"
-          }
-        ]
-      },
-      {
-        "date": "2026-11-03",
-        "country": "Guam",
-        "type": "Guamanian Governor",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5213/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5213/"
-          }
-        ]
-      },
-      {
-        "date": "2026-11-03",
-        "country": "United States",
-        "type": "US Senate",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5098/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5098/"
-          }
-        ]
-      },
-      {
-        "date": "2026-11-03",
-        "country": "United States",
-        "type": "midterm elections Alabama , Governor , Lieutenant Governor , Secretary of State , Attorney General , ballot measures, and local elections Alaska , Governor and Lieutenant Governor Arizona , Governor, Lieutenant Governor , Secretary of State , and Attorney General Arkansas , Governor , Lieutenant Governor , Secretary of State , and Attorney General California Governor , Lieutenant Governor , Secretary of State , and Attorney General Anaheim , Mayor Chula Vista , Mayor Irvine , Mayor Los Angeles , Mayor (2nd round) Oakland , Mayor Santa Ana , Mayor Colorado , Governor, Lieutenant Governor , Secretary of State , and Attorney General Connecticut , Governor, Lieutenant Governor , Secretary of the State , Attorney General , Comptroller , and Treasurer District of Columbia , Mayor and Attorney General Florida Governor, Lieutenant Governor , and Attorney General St. Petersburg , Mayor (2nd round) Tallahassee , Mayor (2nd round) Georgia , Governor , Lieutenant Governor , Secretary of State , and Attorney General Hawaii , Governor and Lieutenant Governor Idaho , Governor and Lieutenant Governor Illinois , Governor, Lieutenant Governor , Secretary of State , and Attorney General Indiana , Secretary of State Iowa , Governor, Lieutenant Governor , Secretary of State , and Attorney General Kansas , Governor, Lieutenant Governor , Secretary of State , Attorney General , and ballot measure Kentucky Lexington , Mayor Louisville , Mayor Maine , Governor Maryland , Governor, Lieutenant Governor , and Attorney General Massachusetts , Governor, Lieutenant Governor , Secretary of the Commonwealth , and Attorney General Michigan , Governor, Lieutenant Governor , Secretary of State , and Attorney General Minnesota Governor, Lieutenant Governor , Secretary of State , and Attorney General Hennepin County , County Attorney Nebraska , Governor and Lieutenant Governor Nevada Governor , Lieutenant Governor , Secretary of State , and Attorney General Henderson , Mayor (2nd round) North Las Vegas , Mayor (2nd round) Reno , Mayor New Hampshire , Governor New Mexico , Governor, Lieutenant Governor , and Secretary of State New York , Governor, Lieutenant Governor , and Attorney General North Carolina , Raleigh , Mayor Ohio , Governor, Lieutenant Governor , Secretary of State , and Attorney General Oklahoma , Governor , Lieutenant Governor , and Attorney General Oregon , Governor Pennsylvania , Governor and Lieutenant Governor Rhode Island , Governor , Lieutenant Governor , and Attorney General South Carolina , Governor, Lieutenant Governor , and Attorney General South Dakota , Governor, Lieutenant Governor , Secretary of State , Attorney General , and ballot measure Tennessee , Governor and county elections Texas Governor , Lieutenant Governor , and Attorney General Corpus Christi , Mayor Laredo , Mayor Vermont , Governor , Lieutenant Governor , and ballot measure Virginia , ballot measures Wisconsin , Governor, Lieutenant Governor , Secretary of State , and Attorney General Wyoming , Governor and local elections",
-        "status": "Upcoming",
-        "source_names": [
-          "Wikipedia"
-        ],
-        "links": [
-          "https://en.wikipedia.org/wiki/Elections_in_the_United_States"
-        ],
-        "sources": [
-          {
-            "name": "Wikipedia",
-            "link": "https://en.wikipedia.org/wiki/Elections_in_the_United_States"
-          }
-        ]
-      },
-      {
-        "date": "2026-11-03",
-        "country": "American Samoa",
-        "type": "American Samoan House of Representatives",
-        "status": "Upcoming",
-        "source_names": [
-          "ElectionGuide"
-        ],
-        "links": [
-          "https://www.electionguide.org/elections/id/5214/"
-        ],
-        "sources": [
-          {
-            "name": "ElectionGuide",
-            "link": "https://www.electionguide.org/elections/id/5214/"
           }
         ]
       },
