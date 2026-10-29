@@ -91,11 +91,14 @@ async function render() {
   const now = Date.now(); // read once: the cards, the banner and the panel agree (P139)
   if (record.format === "v2") {
     document.body.dataset.renderer = "v2";
+    // the outer wrap (renderV2 wraps its own redraws too) is what covers a switch from legacy
     keepFocus(() => renderV2(record.data, { pinned, table, today: localToday(now), now }));
   } else {
     document.body.dataset.renderer = "legacy";
-    hideAttention(); // the section is v2's only
-    keepFocus(() => renderLegacy(record.data, { pinned, table }));
+    keepFocus(() => {
+      hideAttention(); // the section is v2's only; inside the wrap, so its focused button is noted first
+      renderLegacy(record.data, { pinned, table });
+    });
   }
   drawHealth(record, storedStatus(stored[KEYS.status], schemas), stored[KEYS.check], now);
   if (mark) {
