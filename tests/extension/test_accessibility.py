@@ -124,6 +124,7 @@ def test_keyboard_and_aria_semantics(ext: Ext, pair: tuple[bytes, bytes]) -> Non
     assert toggle.get_attribute("aria-expanded") == "false"
     assert _expanded(page, "#attentionToggle", False) and _expanded(page, "#banner", False)
     assert _expanded(page, "#filterToggle", False)
+    assert page.locator("#filterToggle").get_attribute("aria-controls") == "filterBar"
     page.click("#attentionToggle")
     page.click("#banner")
     page.click("#filterToggle")
@@ -243,8 +244,10 @@ def test_focus_survives_a_redraw(ext: Ext, pair: tuple[bytes, bytes]) -> None:
     pair_at = datetime(2026, 10, 19, 13, 0, tzinfo=UTC)
     rollback_feed, rollback_status = republication(fresh_v1_feed(), now=pair_at)
     toggle_key = f"toggle:{BRAZIL_CARD}"
+    errors: list[str] = []  # reset() clears ext.page_errors, so each segment's are kept here
 
     def held_popup() -> Page:
+        errors.extend(ext.page_errors)
         ext.reset()
         ext.seed({
             FEED: feed_record(feed), STATUS: status_record(status),
@@ -315,6 +318,17 @@ def test_focus_survives_a_redraw(ext: Ext, pair: tuple[bytes, bytes]) -> None:
     assert _focused_key(page) == key
     assert page.evaluate("document.activeElement.closest('.attention-row').dataset.itemId") == item_id
 
+    # the same with an attention Open button focused: hidden before the redraw, still ends on the panel
+    page = held_popup()
+    page.click("#attentionToggle")
+    page.locator(".attention-row").nth(1).locator("button.attention-open").focus()
+    assert (_focused_key(page) or "").startswith("attention-open:")
+    ext.served.set("status.json", rollback_status)
+    settle(page, rollback_feed)
+    assert page.evaluate("document.body.dataset.renderer") == "legacy"
+    assert page.locator("#attention").is_hidden()
+    assert _active(page) == "listPanel"
+
     # a focused control that is gone: the real rollback draws the legacy view
     page = held_popup()
     page.locator(f'.election-item[data-group-id="{BRAZIL_CARD}"] button.card-toggle').focus()
@@ -334,4 +348,26 @@ def test_focus_survives_a_redraw(ext: Ext, pair: tuple[bytes, bytes]) -> None:
         "() => [document.activeElement.id, document.activeElement.value, document.activeElement.selectionStart]"
     )
     assert got == ["searchInput", "Bra", 3]
+    assert errors + ext.page_errors == []
+
+
+def test_a_legacy_redraw_sends_a_lost_icon_focus_to_the_panel(ext: Ext) -> None:
+    legacy = fresh_v1_feed()
+    old = int(time.time() * 1000) - 3 * 3_600_000  # a check is due
+    ext.seed({
+        FEED: feed_record(legacy, fmt="legacy"),
+        CHECK: {"ok_at": old, "failed_at": None, "error": None},
+    })
+    ext.served.set("elections.json", "hold")
+    page = ext.open("popup.html")
+    page.wait_for_function("() => document.body.dataset.state === 'ready'")
+    _hold_until_requested(ext, page)
+    assert page.evaluate("document.body.dataset.renderer") == "legacy"
+    icon = page.locator(".election-link-icon").first
+    icon.focus()
+    assert page.evaluate("document.activeElement.classList.contains('election-link-icon')")
+    assert _focused_key(page) is None  # the icon has no data-focus key
+    ext.served.release("elections.json", legacy)
+    page.wait_for_function("() => document.body.dataset.checking === 'false'")
+    assert _active(page) == "listPanel"
     assert ext.page_errors == []

@@ -54,6 +54,9 @@ def _crowded(feed: bytes) -> tuple[bytes, int]:
     by_name["OSCE/ODIHR"]["reasons"] = [_reason("unavailable", "error", "OSCE/ODIHR did not answer")]
     by_name["Carter Center"]["reasons"] = [_reason("partial_relevant", "warning", "relevant units partly parsed: 5")]
     by_name["EEAS"]["reasons"] = [_reason("unparsed_relevant", "warning", "relevant units unparsed: 9")]
+    for entry in doc["source_health"]:  # the producer's rule: any error, else any warning, else ok
+        levels = {r["level"] for r in entry["reasons"]}
+        entry["severity"] = "error" if "error" in levels else "warning" if "warning" in levels else "ok"
     issues = sum(
         1 for e in doc["source_health"] for r in e["reasons"] if r["level"] in ("warning", "error")
     )
@@ -96,6 +99,11 @@ def test_layout_in_a_narrow_or_short_popup(ext: Ext, pair: tuple[bytes, bytes]) 
         assert page.locator("#currentMonthLabel").text_content() == "NOVEMBER 2026"
         page.click("#banner")
         assert page.locator("#healthList > li").count() >= 4
+        severities = page.locator("#healthList > li").evaluate_all(
+            "els => Object.fromEntries(els.map(e => [e.querySelector('strong').textContent, e.dataset.severity]))"
+        )
+        assert severities["OSCE/ODIHR"] == "error" and severities["ElectionGuide"] == "warning", severities
+        assert severities.get("IPU", "ok") == "ok", severities
         card = page.locator(f'.election-item[data-group-id="{US_CARD}"]')
         card.locator("button.card-toggle").click()
         assert card.locator(".child-entry").count() == 27
@@ -166,7 +174,8 @@ def test_popup_renders_the_fixture_feed_within_the_budget(
 
 
 def _show_october(page: Page) -> None:
-    """The popup opens on the real month; step to October 2026 (the fixture's window is Sep-Jan)."""
+    """The popup opens on the feed's current_month (count.startMonth); step to October 2026 in case
+    a fixture changes that (the window is Sep-Jan)."""
     for _ in range(6):
         label = page.locator("#currentMonthLabel").text_content() or ""
         shown = datetime.strptime(label.title(), "%B %Y")
@@ -198,3 +207,38 @@ def test_large_collections_render_bounded(fresh_ext: Ext, pair: tuple[bytes, byt
     page.click("#attentionToggle")
     assert page.locator(".attention-row").count() == 200
     assert fresh_ext.page_errors == []
+
+
+def test_the_real_popup_keeps_its_width(ext: Ext, pair: tuple[bytes, bytes]) -> None:
+    # Chrome sizes an action popup from a small starting viewport: a viewport-relative body width
+    # shrank it to 196 px. The tab tests above cannot see that, so this opens the real popup.
+    ext.seed({FEED: feed_record(pair[0]), STATUS: status_record(pair[1]), CHECK: _fresh_check()})
+    anchor = ext.open("test/test.html", now=None)
+    with ext.real_popup(anchor) as evaluate:
+        for _ in range(80):
+            if evaluate("document.body.dataset.state") == "ready":
+                break
+            anchor.wait_for_timeout(100)
+        else:
+            raise AssertionError("the real popup never became ready")
+        width = evaluate("getComputedStyle(document.body).width")
+        inner = evaluate("innerWidth")
+    assert width == "380px", width
+    assert inner <= 410, inner  # 16d2f40 measured 410; the "width: auto" variant gave 443
+
+
+def test_a_long_unbroken_word_wraps_at_320px(ext: Ext, pair: tuple[bytes, bytes]) -> None:
+    word = "W" * 120
+    doc = json.loads(pair[0])
+    next(e for e in doc["source_health"] if e["name"] == "Wikipedia")["reasons"][0]["text"] = word
+    ext.seed({FEED: feed_record(_dump(doc)), STATUS: status_record(pair[1]), CHECK: _fresh_check()})
+    page = ext.open("popup.html")
+    page.set_viewport_size({"width": 320, "height": 600})
+    page.wait_for_function(
+        "() => document.body.dataset.state === 'ready' && document.body.dataset.checking === 'false'"
+    )
+    page.click("#banner")
+    assert word in (page.locator("#healthList").text_content() or "")
+    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    assert page.evaluate("() => { const p = document.getElementById('healthPanel'); return p.scrollWidth <= p.clientWidth; }")
+    assert ext.page_errors == []

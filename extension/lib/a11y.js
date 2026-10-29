@@ -26,13 +26,19 @@ export function syncTabs(tabs, filter) {
 }
 
 // Calls `redraw()`. When a control with a data-focus key had focus, the visible control with the
-// same key is focused afterwards, or #listPanel when there is none. Focus on a control without a
-// key (the search box, Refresh, the month arrows) is left alone.
+// same key is focused afterwards, or #listPanel when there is none. A control without a key inside
+// #listPanel (the legacy Open icon) that the redraw removed also sends focus to #listPanel. Focus
+// anywhere else without a key (the search box, Refresh, the month arrows) is left alone.
 export function keepFocus(redraw) {
   const held = document.activeElement;
+  const panel = document.getElementById("listPanel");
   const key = held instanceof HTMLElement && held.dataset.focus !== undefined ? held.dataset.focus : null;
+  const inPanel = held instanceof HTMLElement && held !== panel && panel.contains(held);
   redraw();
-  if (key === null) return;
+  if (key === null) {
+    if (inPanel && !held.isConnected) panel.focus();
+    return;
+  }
   const again = [...document.querySelectorAll("[data-focus]")]
     .find((el) => el.dataset.focus === key && el.getClientRects().length > 0);
   (again ?? document.getElementById("listPanel")).focus();

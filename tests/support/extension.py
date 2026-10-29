@@ -13,7 +13,7 @@ import json
 import re
 import shutil
 import time
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Final, Literal
@@ -88,6 +88,10 @@ class Served:
     def reset(self) -> None:
         self._responses.clear()
         self._taken.clear()
+        for waiting in self._held.values():  # an unanswered route would hang its fetch for good
+            for route in waiting:
+                with contextlib.suppress(Exception):  # the page may be gone already
+                    route.abort()
         self._held.clear()
         self.log.clear()
 
@@ -277,6 +281,80 @@ class Ext:
             for page in list(self.context.pages):
                 if page not in before:
                     page.close()
+
+    def _popup_targets(self) -> set[str]:
+        browser = self.context.browser
+        assert browser is not None, "a persistent context has a browser"
+        session = browser.new_browser_cdp_session()
+        try:
+            infos: list[dict[str, Any]] = session.send("Target.getTargets")["targetInfos"]
+        finally:
+            session.detach()
+        return {i["targetId"] for i in infos if i["url"] == self._prefix() + "popup.html"}
+
+    @contextlib.contextmanager
+    def real_popup(self, anchor: Page, wait_s: float = 8) -> Iterator[Callable[[str], Any]]:
+        """Open the real action popup (``chrome.action.openPopup``) and yield ``evaluate(js)``.
+
+        ``evaluate`` runs an expression in the popup over CDP and returns its value, polling for
+        at most ``wait_s``. The popup is closed (``window.close()``) and detached on exit, also when
+        the body raised. ``anchor`` is any open page of the context; it hosts the polling waits.
+        """
+        before = self._popup_targets()
+        anchor.bring_to_front()
+        opened = self.worker().evaluate("() => chrome.action.openPopup().then(() => 'opened', e => String(e))")
+        assert opened == "opened", opened
+        deadline = time.monotonic() + wait_s
+        found: set[str] = set()
+        while not found:
+            found = self._popup_targets() - before
+            if time.monotonic() > deadline:
+                raise TimeoutError("the action popup did not open")
+            if not found:
+                anchor.wait_for_timeout(int(_STEP_S * 1000))
+        browser = self.context.browser
+        assert browser is not None, "a persistent context has a browser"
+        session = browser.new_browser_cdp_session()
+        replies: dict[int, Any] = {}
+
+        def on_message(event: dict[str, Any]) -> None:
+            message = json.loads(event["message"])
+            if "id" in message:
+                replies[message["id"]] = message
+
+        session.on("Target.receivedMessageFromTarget", on_message)
+        session_id = session.send(
+            "Target.attachToTarget", {"targetId": next(iter(found)), "flatten": False}
+        )["sessionId"]
+        counter = iter(range(1, 10**6))
+
+        def evaluate(expression: str) -> Any:
+            ident = next(counter)
+            params = {"expression": expression, "returnByValue": True}
+            session.send(
+                "Target.sendMessageToTarget",
+                {
+                    "sessionId": session_id,
+                    "message": json.dumps({"id": ident, "method": "Runtime.evaluate", "params": params}),
+                },
+            )
+            until = time.monotonic() + wait_s
+            while ident not in replies:
+                if time.monotonic() > until:
+                    raise TimeoutError(f"no reply from the popup to {expression!r}")
+                anchor.wait_for_timeout(int(_STEP_S * 1000))
+            reply = replies[ident]
+            if "error" in reply or "exceptionDetails" in reply.get("result", {}):
+                raise AssertionError(f"the popup could not evaluate {expression!r}: {reply}")
+            return reply["result"]["result"].get("value")
+
+        try:
+            yield evaluate
+        finally:
+            with contextlib.suppress(Exception):  # the popup may have closed itself
+                evaluate("window.close()")
+            with contextlib.suppress(Exception):
+                session.detach()
 
     def lab(self) -> Page:
         if self._lab is None or self._lab.is_closed():

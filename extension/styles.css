@@ -46,7 +46,7 @@ body {
   font-family: var(--font-body);
   font-size: 13px;
   line-height: 1.5;
-  width: min(380px, 100vw);
+  width: 380px;
   height: 600px;
   overflow-x: hidden;
   overflow-wrap: anywhere;
@@ -54,6 +54,12 @@ body {
   flex-direction: column;
   scrollbar-width: thin;
   scrollbar-color: var(--border) var(--bg);
+}
+/* Chrome sizes an action popup from a small starting viewport, so a viewport-relative width never
+   grows (min(380px, 100vw) gave a 196 px popup). The body keeps 380 px; this rule applies only when
+   the popup really is narrower than that (high zoom). */
+@media (max-width: 379px) {
+  body { width: auto; max-width: 380px; }
 }
 
 /* ── Top App Bar ────────────────────────────────────────────── */
@@ -557,6 +563,8 @@ html { scroll-padding-top: 56px; }
 
 /* ── A short popup (200 % zoom): the document scrolls and the dock sticks to the bottom ── */
 @media (max-height: 520px) {
+  /* 120px clears the sticky dock, which measures 109.5px (two footer lines plus the tabs); a
+     taller footer needs a larger value. */
   html { scroll-padding-top: 4px; scroll-padding-bottom: 120px; }
   body { height: auto; }
   .topbar { position: static; }
