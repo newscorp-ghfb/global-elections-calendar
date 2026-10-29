@@ -6,6 +6,7 @@ import os
 import platform
 import re
 import shutil
+import struct
 import zipfile
 import zlib
 from collections.abc import Callable
@@ -51,6 +52,20 @@ def test_every_extension_file_is_listed() -> None:
     assert len(set(FILES)) == len(FILES)
 
 
+def _deflate_9(data: bytes) -> bytes:
+    packer = zlib.compressobj(9, zlib.DEFLATED, -15)
+    return packer.compress(data) + packer.flush()
+
+
+def _raw_stream(path: Path, info: zipfile.ZipInfo) -> bytes:
+    """The entry's compressed bytes, read from after its local header."""
+    raw = path.read_bytes()
+    start = info.header_offset
+    name_length, extra_length = struct.unpack("<HH", raw[start + 26 : start + 30])
+    begin = start + 30 + name_length + extra_length
+    return raw[begin : begin + info.compress_size]
+
+
 def test_the_zip_is_built_from_the_explicit_list(tmp_path: Path) -> None:
     path, digest = build(EXTENSION, tmp_path / "dist")
     assert path == tmp_path / "dist" / ZIP_NAME
@@ -65,6 +80,7 @@ def test_the_zip_is_built_from_the_explicit_list(tmp_path: Path) -> None:
             assert info.create_system == 3
             assert info.external_attr == 0o100644 << 16
             assert info.compress_type == zipfile.ZIP_DEFLATED
+            assert _raw_stream(path, info) == _deflate_9(archive.read(info))
 
 
 def test_the_zip_is_reproducible(tmp_path: Path) -> None:
@@ -118,7 +134,7 @@ def _edit_delete(folder: Path) -> None:
 
 
 REFUSALS: list[tuple[str, Callable[[Path], None], str]] = [
-    ("missing asset", _edit_popup, "popup.html references missing.js"),
+    ("missing asset", _edit_popup, "popup.html references missing.js, which is not in the folder"),
     ("old version", _edit_version, "version is 1.0.2, expected 2.0.0"),
     ("tabs permission", _edit_tabs, "permissions differs from v1.0.2's"),
     ("added host", _edit_host, "host_permissions differs from v1.0.2's"),
@@ -132,15 +148,26 @@ REFUSALS: list[tuple[str, Callable[[Path], None], str]] = [
 def test_zip_checks_refuse(tmp_path: Path, edit: Callable[[Path], None], expected: str) -> None:
     folder = _copy(tmp_path)
     edit(folder)
-    assert any(expected in line for line in problems(folder)), problems(folder)
-    with pytest.raises(ZipCheckError, match=re.escape(expected)):
+    assert expected in problems(folder)
+    with pytest.raises(ZipCheckError, match=rf"(^|\n){re.escape(expected)}($|\n)"):
         build(folder, tmp_path / "dist")
     assert not (tmp_path / "dist" / ZIP_NAME).exists()
 
 
 def test_the_permission_literal_matches_the_v1_fixture() -> None:
     was = json.loads((V1_EXTENSION / "manifest.json").read_text(encoding="utf-8"))
-    assert len(COMPARED_KEYS) == 10
+    assert COMPARED_KEYS == (
+        "permissions",
+        "host_permissions",
+        "optional_permissions",
+        "optional_host_permissions",
+        "content_scripts",
+        "externally_connectable",
+        "web_accessible_resources",
+        "key",
+        "content_security_policy",
+        "update_url",
+    )
     for key in COMPARED_KEYS:
         assert V1_PERMISSIONS.get(key) == was.get(key), key
     assert VERSION == "2.0.0"
@@ -191,3 +218,42 @@ def test_references_follow_the_rules(tmp_path: Path) -> None:
     script = folder / "lib" / "a11y.js"
     script.write_text('import {\n  a,\n} from "./nope.js";\n' + script.read_text(encoding="utf-8"), encoding="utf-8")
     assert problems(folder) == ["lib/a11y.js references ./nope.js, which is not in the folder"]
+
+    page.write_text(original, encoding="utf-8")
+    script.write_text(script.read_text(encoding="utf-8").split("\n", 3)[3], encoding="utf-8")
+    assert problems(folder) == []
+
+    kept = script.read_text(encoding="utf-8")
+    script.write_text('import "/lib/nope.js";\n' + kept, encoding="utf-8")
+    assert problems(folder) == ["lib/a11y.js references /lib/nope.js, which is not in the folder"]
+    script.write_text('import "//cdn.example.com/x.js";\n' + kept, encoding="utf-8")
+    assert problems(folder) == []
+    script.write_text(kept, encoding="utf-8")
+
+    page.write_text(original.replace("</body>", "<img src=missing.png></body>"), encoding="utf-8")
+    assert problems(folder) == ["help.html references missing.png, which is not in the folder"]
+
+    page.write_text(original.replace("</body>", '<img src="/lib/a11y.js"></body>'), encoding="utf-8")
+    assert problems(folder) == []
+    page.write_text(original.replace("</body>", '<img src="/lib/nope.js"></body>'), encoding="utf-8")
+    assert problems(folder) == ["help.html references /lib/nope.js, which is not in the folder"]
+    page.write_text(original, encoding="utf-8")
+
+    manifest = _manifest(folder)
+    manifest["action"]["default_icon"] = "icons/missing.png"
+    _write_manifest(folder, manifest)
+    assert problems(folder) == ["manifest.json references icons/missing.png, which is not in the folder"]
+    manifest["action"]["default_icon"] = "icons/icon16.png"
+    _write_manifest(folder, manifest)
+    assert problems(folder) == []
+
+
+def test_an_unreadable_file_is_a_problem_not_a_crash(tmp_path: Path) -> None:
+    folder = _copy(tmp_path)
+    with (folder / "lib" / "a11y.js").open("ab") as handle:
+        handle.write(b"\xe9\n")
+    found = problems(folder)
+    assert len(found) == 1
+    assert found[0].startswith("lib/a11y.js could not be read as UTF-8 text: ")
+    with pytest.raises(ZipCheckError, match="lib/a11y.js could not be read"):
+        build(folder, tmp_path / "dist")
