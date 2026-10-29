@@ -97,7 +97,9 @@ V1_PERMISSIONS: Final[dict[str, Any]] = {
 _ENTRY_TIME: Final = (1980, 1, 1, 0, 0, 0)
 _ENTRY_MODE: Final = 0o100644 << 16
 _SCHEME: Final = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
-_ATTRIBUTE: Final = re.compile(r"""\b(?:src|href)\s*=\s*(?:"([^"]*)"|'([^']*)')""", re.IGNORECASE)
+_ATTRIBUTE: Final = re.compile(
+    r"""\b(?:src|href)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>=`]+))""", re.IGNORECASE
+)
 _BLOCK_COMMENT: Final = re.compile(r"/\*.*?\*/", re.DOTALL)
 _LINE_COMMENT: Final = re.compile(r"^[ \t]*//.*$", re.MULTILINE)
 _FROM: Final = re.compile(r"""\b(?:import|export)\b[^;"'`]*?\bfrom\s*["']([^"']+)["']""")
@@ -113,8 +115,14 @@ def _files_under(folder: Path) -> list[str]:
 
 
 def _resolve(origin: str, reference: str) -> str | None:
-    """The folder-relative path a reference from ``origin`` names; None if it leaves the folder."""
-    joined = posixpath.normpath(posixpath.join(posixpath.dirname(origin), reference))
+    """The folder-relative path a reference from ``origin`` names; None if it leaves the folder.
+
+    A leading ``/`` is the folder root (an extension page's ``/popup.js`` is valid).
+    """
+    if reference.startswith("/"):
+        joined = posixpath.normpath(reference.lstrip("/"))
+    else:
+        joined = posixpath.normpath(posixpath.join(posixpath.dirname(origin), reference))
     return None if joined == ".." or joined.startswith("../") else joined
 
 
@@ -139,6 +147,8 @@ def _manifest_references(manifest: dict[str, Any]) -> list[str]:
         if isinstance(table, dict):
             for value in table.values():
                 take(value)
+        else:
+            take(table)  # Chrome also accepts a single path for default_icon
     if isinstance(action, dict):
         take(action.get("default_popup"))
     options = manifest.get("options_ui")
@@ -153,7 +163,7 @@ def _manifest_references(manifest: dict[str, Any]) -> list[str]:
 def _html_references(text: str) -> list[str]:
     refs: list[str] = []
     for match in _ATTRIBUTE.finditer(text):
-        value = (match.group(1) or match.group(2) or "").strip()
+        value = (match.group(1) or match.group(2) or match.group(3) or "").strip()
         if value == "" or value.startswith(("#", "//")) or _SCHEME.match(value):
             continue
         value = re.split(r"[?#]", value, maxsplit=1)[0]
@@ -165,11 +175,21 @@ def _html_references(text: str) -> list[str]:
 def _js_references(text: str) -> list[str]:
     text = _LINE_COMMENT.sub("", _BLOCK_COMMENT.sub("", text))
     found = [*_FROM.findall(text), *_BARE_IMPORT.findall(text)]
-    return [spec for spec in found if spec.startswith(("./", "../"))]
+    return [
+        spec
+        for spec in found
+        if spec.startswith(("./", "../")) or (spec.startswith("/") and not spec.startswith("//"))
+    ]
 
 
 def problems(folder: Path) -> list[str]:
-    """Every failed check, one line each (an empty list means the folder may be released)."""
+    """Every failed check, one line each (an empty list means the folder may be released).
+
+    Known limits of the reference scan, which is not a JS tokenizer: comments are stripped without
+    regard to strings, so a ``/*`` inside a string can hide a later import; and import-like text
+    inside a comment or a string is followed. The second fails safe (the build refuses); the
+    first is covered by the extension suite, which loads every module.
+    """
     found: list[str] = []
     present = _files_under(folder)
     for name in FILES:
@@ -202,13 +222,18 @@ def problems(folder: Path) -> list[str]:
 
     for name in present:
         if name.endswith((".html", ".htm")):
-            text = (folder / name).read_text(encoding="utf-8")
-            for reference in _html_references(text):
-                _check_reference(folder, name, reference, found)
+            references = _html_references
         elif name.endswith(".js"):
+            references = _js_references
+        else:
+            continue
+        try:
             text = (folder / name).read_text(encoding="utf-8")
-            for reference in _js_references(text):
-                _check_reference(folder, name, reference, found)
+        except (OSError, ValueError) as err:
+            found.append(f"{name} could not be read as UTF-8 text: {err}")
+            continue
+        for reference in references(text):
+            _check_reference(folder, name, reference, found)
     return found
 
 

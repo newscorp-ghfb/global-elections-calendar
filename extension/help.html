@@ -191,13 +191,6 @@
     }
 
     /* ── Status chips (demo) ── */
-    .chip-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-
     .chip {
       font-size: 11px;
       font-weight: 700;
@@ -361,12 +354,6 @@
 
     .settings-row:last-child { border-bottom: none; }
 
-    .settings-row input[type="checkbox"] {
-      accent-color: var(--primary);
-      width: 15px;
-      height: 15px;
-    }
-
     .pin-indicator {
       margin-left: auto;
       font-size: 11px;
@@ -413,8 +400,8 @@
             <div class="step-title">Click the extension icon</div>
             <div class="step-desc">
               The globe icon in your Chrome toolbar opens the popup. It draws the last data it
-              saved, so it opens at once, and then checks for newer data if the last check is more
-              than 30 minutes old. The extension also checks in the background about once an hour.
+              saved, so it opens at once, and then checks for newer data if the last successful check
+              is 30 minutes old or more. The extension also checks in the background about once an hour.
             </div>
           </div>
         </div>
@@ -460,15 +447,15 @@
           <div class="mock-country">Ecuador</div>
           <div class="mock-type">Presidential Election (Second Round)</div>
           <div class="mock-chips">
-            <span class="chip-source">ElectionGuide</span>
-            <span class="chip-source">OSCE/ODIHR</span>
             <span class="chip chip-upcoming">Scheduled</span>
+            <span class="chip-source">Tentative</span>
           </div>
+          <div class="mock-type" style="margin-top:6px;margin-bottom:0;">Show details</div>
         </div>
       </div>
       <p style="font-size:13px;color:var(--on-surf-var);margin-top:8px;">
-        The same election reported by several sources is merged into one card. The label under
-        the name says what the data supports, not more. A date that is only a month is shown
+        The same election reported by several sources is merged into one card; "Show details"
+        lists the sources. The label under the name says what the data supports, not more. A date that is only a month is shown
         as that month with "day unconfirmed", never with an invented day.
       </p>
     </section>
@@ -581,8 +568,10 @@
             <div class="feature-label">Past (formerly Results)</div>
           </div>
           <div class="feature-desc">
-            Elections that are held, or whose date has passed. The tab was renamed because it
-            lists elections, not results.
+            Elections that are held, or whose date has passed. Postponed elections, and those the
+            sources disagree on ("Possibly … — sources disagree"), stay under Upcoming after their
+            date; cancelled ones are listed only under All. The tab was renamed because it lists
+            elections, not results.
           </div>
         </div>
         <div class="feature-card">
@@ -694,22 +683,19 @@
 
     <!-- Settings / pinning -->
     <section>
-      <div class="section-title">Settings — pinning countries</div>
+      <div class="section-title">Options — pinning countries</div>
       <p style="font-size:13px;color:var(--on-surf-var);">
         Right-click the extension icon and choose <strong style="color:var(--on-surface)">Options</strong>
-        to open the Settings page. You can also reach it from
+        to open the options page (Pinned countries). You can also reach it from
         <code style="background:var(--surface-high);padding:1px 5px;border-radius:4px;font-size:12px;">
           chrome://extensions</code> → Details → Extension options.
       </p>
 
       <div class="settings-preview">
-        <div class="settings-preview-header">Pinned places</div>
+        <div class="settings-preview-header">Pinned countries</div>
         <div class="settings-row">
-          Georgia
+          <span>Georgia<br /><span style="font-size:11px;color:var(--on-surf-var);">Also shows: Abkhazia, South Ossetia</span></span>
           <span class="pin-indicator">Pinned</span>
-        </div>
-        <div class="settings-row">
-          Also shows: Abkhazia, South Ossetia
         </div>
         <div class="settings-row">
           France
@@ -746,7 +732,7 @@
             <div class="step-title">Pins from version 1</div>
             <div class="step-desc">
               Your pins from version 1.0.2 are carried over once, when the extension updates. A
-              pin whose name matches no place is kept in a separate list on the Settings page,
+              pin whose name matches no place is kept in a separate list on the options page,
               with a Remove button. Those pins do not filter anything. The old "selected countries"
               checkboxes are gone.
             </div>
@@ -815,6 +801,9 @@
         <span class="source-badge">Carter Center</span>
         <span class="source-badge">EEAS</span>
       </div>
+      <p style="font-size:13px;color:var(--on-surf-var);margin-top:8px;">
+        The popup shows both Wikipedia calendars as "Wikipedia".
+      </p>
       <div class="tip" style="margin-top:4px;">
         <strong>Window:</strong> the data covers five months, from the month before the current
         one to three months ahead. Elections outside it are not listed.

@@ -77,6 +77,10 @@ def test_help_explains_v2() -> None:
         "When items are omitted from the feed, the full attention list is in attention_full.json in the "
         "publishing run's generation artifact; retrieving it may require operator access, and the "
         "artifact is retained for 14 days after upload.",
+        # Past tab, check timing, Wikipedia (fix round 1: M3, M8, M11)
+        "cancelled ones are listed only under All",
+        "if the last successful check is 30 minutes old or more",
+        "The popup shows both Wikipedia calendars as \"Wikipedia\"",
         # pins
         "A pinned country also shows the places that belong to it",
         # update
@@ -91,7 +95,8 @@ def test_help_explains_v2() -> None:
 
 
 def test_release_notes_cover_the_update() -> None:
-    notes = (ROOT / "docs" / "extension" / "v2.0.0-release-notes.md").read_text(encoding="utf-8")
+    raw = (ROOT / "docs" / "extension" / "v2.0.0-release-notes.md").read_text(encoding="utf-8")
+    notes = " ".join(raw.split())
     phrases = [
         "Load unpacked",
         "Chrome Web Store",
@@ -101,6 +106,8 @@ def test_release_notes_cover_the_update() -> None:
         "Viet Nam",
         "The Philippines",
         "São Tomé e Príncipe",
+        "If you stay on v1.0.2, or go back to it, a pin on one of these six spellings no longer matches",
+        "Re-pin the place under its display name on v1.0.2's options page",
         "1 OCT",
         "v1.0.1",
         "Select All",
