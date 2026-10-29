@@ -363,7 +363,9 @@ Plans 1–5b-1's Global Constraints still hold:
 - **The ZIP's file list is explicit** (`build_extension_zip.FILES`). Every file under `extension/`
   is in it, and the ZIP holds nothing else.
 - **Layout tests open `popup.html` as a tab with a set viewport.** The real action popup is not
-  driven (discovery Step 1).
+  driven (discovery Step 1), with one exception **(amended after Task 6)**:
+  `test_the_real_popup_keeps_its_width` opens it at 100 % zoom (`Ext.real_popup`) and checks its
+  width only.
   - **(rev 2) A surrogate, not a measurement.** Chrome caps an action popup at 800 × 600. At 200 %
     zoom that cap would be 400 × 300 CSS pixels, if it applies before zoom. That is reasoning and
     has not been measured.
@@ -448,8 +450,9 @@ out. Each is pinned by the named tests, in the task that owns the code.
      `test_the_worker_recovers_after_an_unexpected_failure` (Task 1).
 
 **Known limits, by design.** Each is visible:
-- **The real action popup is not driven.** Layout is tested on `popup.html` in a tab at the
-  viewports above. Chrome's own popup sizing under zoom is not measured.
+- **The real action popup is driven only for its width at 100 % zoom (amended after Task 6).**
+  Layout is tested on `popup.html` in a tab at the viewports above. Chrome's own popup sizing
+  under zoom is not measured.
 - **Chrome's Reload button is not driven** (R49). The same-folder upgrade relaunches the browser
   on the same profile, which reports `install`. The `update` path is tested through
   `lib/worker.js`.
