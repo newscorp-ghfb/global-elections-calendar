@@ -433,7 +433,8 @@ def test_only_the_active_renderer_handles_controls(ext: Ext, pair: tuple[bytes, 
     assert _text(page, "#statTotalLabel") == "Total Scheduled"
     assert _text(page, "#statTotal") == "27"
     tabs = _tabs(page)
-    assert tabs["tabAll"] == (True, None) and not tabs["tabUpcoming"][0]
+    # legacy now sets the tab attributes too (Plan 5b-2 Task 6, P146): it used to remove aria-selected
+    assert tabs["tabAll"] == (True, "true") and not tabs["tabUpcoming"][0]
     page.click("#tabPast")
     assert _cards(page) == 15
     # v2's listener would have drawn its controls back

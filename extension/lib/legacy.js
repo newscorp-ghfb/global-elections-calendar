@@ -7,6 +7,7 @@
 
 import { safeLink } from "./links.js";
 import { pinMatcher, placeOf } from "./pins.js";
+import { syncTabs, tabTarget } from "./a11y.js";
 
 const $ = (id) => document.getElementById(id);
 const stateLoading   = $("stateLoading");
@@ -29,6 +30,7 @@ const listTitle      = $("listTitle");
 const tabUpcoming    = $("tabUpcoming");
 const tabPast        = $("tabPast");
 const tabAll         = $("tabAll");
+const tabs           = [tabUpcoming, tabPast, tabAll];
 const pinBar         = $("pinBar");
 const pinBarText     = $("pinBarText");
 
@@ -268,10 +270,7 @@ export function renderLegacy(json, { pinned, table }) {
   filterQuery = searchInput.value;
   hide(levelFilter);
   hide(recordCount);
-  [tabUpcoming, tabPast, tabAll].forEach(t => {
-    t.classList.toggle("active", t.dataset.filter === activeTab);
-    t.removeAttribute("aria-selected");
-  });
+  syncTabs(tabs, activeTab);
   // Support both old format (json.elections flat) and new format (json.months)
   if (json.months) {
     monthsData = json.months;
@@ -325,12 +324,25 @@ nextMonthBtn.addEventListener("click", () => {
   }
 });
 
-[tabUpcoming, tabPast, tabAll].forEach(tab => {
+function selectTab(tab) {
+  activeTab = tab.dataset.filter;
+  syncTabs(tabs, activeTab);
+  renderCurrentMonth();
+}
+
+tabs.forEach(tab => {
   tab.addEventListener("click", () => {
     if (!active()) return;
-    [tabUpcoming, tabPast, tabAll].forEach(t => t.classList.remove("active"));
-    tab.classList.add("active");
-    activeTab = tab.dataset.filter;
-    renderCurrentMonth();
+    selectTab(tab);
   });
+});
+
+// The same keys as the v2 renderer (P146).
+$("tabs").addEventListener("keydown", (event) => {
+  if (!active()) return;
+  const next = tabTarget(event.key, tabs, event.target);
+  if (next === null) return;
+  event.preventDefault();
+  selectTab(next);
+  next.focus();
 });

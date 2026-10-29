@@ -36,7 +36,7 @@ PAGE_NOW_MS: Final = int(datetime(2026, 10, 19, 14, tzinfo=UTC).timestamp() * 10
 _INSTALL_CHECK_WAIT_S: Final = 10
 
 _STEP_S: Final = 0.1
-Response = bytes | int | None | Literal["hang"]
+Response = bytes | int | None | Literal["hang", "hold"]
 
 
 def artifact_pair() -> tuple[bytes, bytes]:
@@ -70,10 +70,14 @@ def extension_copy(dest: Path, *, legacy: bool) -> Path:
 
 
 class Served:
-    """The routed raw host: per file name, a queue of responses whose last one repeats."""
+    """The routed raw host: per file name, a queue of responses whose last one repeats.
+
+    A ``"hold"`` response keeps its route unanswered until ``release`` answers it.
+    """
 
     def __init__(self) -> None:
         self.log: list[str] = []
+        self._held: dict[str, list[Route]] = {}
         self._responses: dict[str, tuple[Response, ...]] = {}
         self._taken: dict[str, int] = {}
 
@@ -84,7 +88,14 @@ class Served:
     def reset(self) -> None:
         self._responses.clear()
         self._taken.clear()
+        self._held.clear()
         self.log.clear()
+
+    def release(self, name: str, response: bytes | int) -> None:
+        """Answer the oldest request of ``name`` held by a ``"hold"``, as a queued response would be."""
+        waiting = self._held.get(name, [])
+        assert waiting, f"nothing is held for {name}"
+        self._answer(waiting.pop(0), response)
 
     def _next(self, name: str) -> Response:
         queue = self._responses.get(name, (None,))
@@ -100,7 +111,14 @@ class Served:
             route.abort()
         elif response == "hang":
             return  # never answered
-        elif isinstance(response, bytes):
+        elif response == "hold":
+            self._held.setdefault(name, []).append(route)
+        else:
+            self._answer(route, response)
+
+    @staticmethod
+    def _answer(route: Route, response: bytes | int) -> None:
+        if isinstance(response, bytes):
             route.fulfill(
                 status=200,
                 body=response,
