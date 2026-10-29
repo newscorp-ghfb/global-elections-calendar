@@ -97,3 +97,21 @@ def test_launch_closes_the_browser_when_the_extension_never_starts(
     assert len(created) == 1
     browser = created[0].browser
     assert browser is not None and not browser.is_connected()  # the Chromium process is gone
+
+
+def test_served_holds_a_request_until_it_is_released(ext: Ext) -> None:
+    with pytest.raises(AssertionError, match="nothing is held"):
+        ext.served.release("elections.json", b"x")
+    ext.served.set("elections.json", "hold")
+    page = ext.open("test/test.html")
+    page.evaluate("u => { window.__got = fetch(u).then(r => r.text()); }", RAW_BASE + "elections.json")
+    for _ in range(50):
+        if ext.served.log:
+            break
+        page.wait_for_timeout(50)
+    assert ext.served.log == ["elections.json"]
+    assert page.evaluate("Promise.race([window.__got, 'pending'])") == "pending"
+    ext.served.release("elections.json", b'{"released": true}')
+    assert page.evaluate("window.__got") == '{"released": true}'
+    with pytest.raises(AssertionError, match="nothing is held"):
+        ext.served.release("elections.json", b"x")

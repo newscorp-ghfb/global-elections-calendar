@@ -171,6 +171,8 @@ async function reconcile() {
 // One edit: the button waits for the reply, then the page shows what is stored.
 async function edit(op, value, button) {
   const key = button.dataset.pinKey;
+  // refreshPending() disables the button and focus falls to <body>: remember to give it back
+  const hadFocus = document.activeElement === button;
   pending.add(key);
   begin();
   refreshPending();
@@ -195,6 +197,11 @@ async function edit(op, value, button) {
     const shown = reconcile(); // starts before end(), so the page is never idle in between
     end();
     await shown;
+    // unless the user has moved focus elsewhere meanwhile
+    if (hadFocus && (document.activeElement === document.body || document.activeElement === null)) {
+      const again = [...document.querySelectorAll("button[data-pin-key]")].find((b) => b.dataset.pinKey === key);
+      if (again && !again.disabled) again.focus();
+    }
   }
 }
 

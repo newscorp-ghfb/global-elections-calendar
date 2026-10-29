@@ -5,6 +5,7 @@ import { PIN_KEYS, currentPins } from "./lib/pins.js";
 // render.js loads before legacy.js, so on a click its listener runs first and legacy's second.
 import { hideAttention, renderV2 } from "./lib/render.js";
 import { renderLegacy } from "./lib/legacy.js";
+import { keepFocus } from "./lib/a11y.js";
 import { localToday } from "./lib/dates.js";
 
 const $ = (id) => document.getElementById(id);
@@ -74,7 +75,12 @@ function drawHealth(record, statusRecord, check, now) {
 }
 
 // Render the cached feed, if the stored record is valid. True when something was drawn.
+let firstRender = true; // the performance marks are made on the first render only
+
 async function render() {
+  const mark = firstRender;
+  firstRender = false;
+  if (mark) performance.mark("popup:read");
   const stored = await chrome.storage.local.get([
     KEYS.feed, KEYS.status, KEYS.check, ...Object.values(PIN_KEYS),
   ]);
@@ -85,13 +91,17 @@ async function render() {
   const now = Date.now(); // read once: the cards, the banner and the panel agree (P139)
   if (record.format === "v2") {
     document.body.dataset.renderer = "v2";
-    renderV2(record.data, { pinned, table, today: localToday(now), now });
+    keepFocus(() => renderV2(record.data, { pinned, table, today: localToday(now), now }));
   } else {
     document.body.dataset.renderer = "legacy";
     hideAttention(); // the section is v2's only
-    renderLegacy(record.data, { pinned, table });
+    keepFocus(() => renderLegacy(record.data, { pinned, table }));
   }
   drawHealth(record, storedStatus(stored[KEYS.status], schemas), stored[KEYS.check], now);
+  if (mark) {
+    performance.mark("popup:drawn");
+    performance.measure("popup:first-render", "popup:read", "popup:drawn");
+  }
   document.body.dataset.state = "ready";
   return true;
 }
@@ -143,7 +153,9 @@ banner.addEventListener("click", () => {
 
 filterToggle.addEventListener("click", () => {
   filterBar.classList.toggle("hidden");
-  if (!filterBar.classList.contains("hidden")) searchInput.focus();
+  const open = !filterBar.classList.contains("hidden");
+  filterToggle.setAttribute("aria-expanded", String(open));
+  if (open) searchInput.focus();
 });
 
 async function start() {

@@ -46,9 +46,10 @@ body {
   font-family: var(--font-body);
   font-size: 13px;
   line-height: 1.5;
-  width: 380px;
+  width: min(380px, 100vw);
   height: 600px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
   display: flex;
   flex-direction: column;
   scrollbar-width: thin;
@@ -231,26 +232,33 @@ body {
   color: var(--on-surface);
   font-size: 12px;
   padding: 6px 10px;
-  outline: none;
   transition: border-color 0.15s;
   font-family: var(--font-body);
 }
 .search-input::placeholder { color: var(--outline); }
 .search-input:focus { border-color: var(--primary); }
 
-/* ── Election list ──────────────────────────────────────────── */
+/* ── Tab panel and election list ────────────────────────────── */
+/* The panel takes what the sections above leave and scrolls; it never shrinks below 160px, so a
+   tall stack above it makes the document scroll instead (R59). */
+#listPanel {
+  flex: 1 1 0;
+  min-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+#listPanel::-webkit-scrollbar { width: 4px; }
+#listPanel::-webkit-scrollbar-track { background: transparent; }
+#listPanel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 .election-list {
   list-style: none;
-  overflow-y: auto;
-  flex: 1;
-  padding: 0 16px 96px;  /* 96px = bottom-nav + footer height */
+  flex: none;
+  padding: 0 16px 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.election-list::-webkit-scrollbar { width: 4px; }
-.election-list::-webkit-scrollbar-track { background: transparent; }
-.election-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 /* Election card */
 .election-item {
@@ -407,11 +415,11 @@ body {
 }
 .retry-btn:hover { background: rgba(173, 198, 255, 0.2); }
 
+/* ── Dock: the footer and the tabs, in the flow at the end of the column ── */
+.dock { flex-shrink: 0; z-index: 50; background: var(--bg); }
+
 /* ── Footer ─────────────────────────────────────────────────── */
 .footer {
-  position: fixed;
-  bottom: 56px;   /* sit above bottom-nav */
-  left: 0; right: 0;
   padding: 5px 16px;
   font-size: 9px;
   text-transform: uppercase;
@@ -421,7 +429,6 @@ body {
   border-top: 1px solid rgba(54, 56, 75, 0.15);
   text-align: center;
   opacity: 0.8;
-  z-index: 40;
 }
 
 .footer span { display: block; }
@@ -462,16 +469,13 @@ body {
 
 /* ── Bottom Navigation ──────────────────────────────────────── */
 .bottom-nav {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
   background: var(--surface-low);
   border-top: 1px solid rgba(54, 56, 75, 0.15);
   display: flex;
   justify-content: space-around;
   align-items: center;
   padding: 6px 16px;
-  height: 56px;
-  z-index: 50;
+  min-height: 56px;
   box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
 }
 
@@ -529,7 +533,7 @@ body {
   color: var(--outline);
   overflow-wrap: anywhere;
 }
-.attention-list { list-style: none; margin: 6px 0 0; padding: 0; }
+.attention-list { list-style: none; margin: 6px 0 0; padding: 0; max-height: 200px; overflow-y: auto; }
 .attention-row {
   padding: 8px 10px;
   margin-bottom: 4px;
@@ -542,6 +546,24 @@ body {
 .attention-undated,
 .attention-row .possible-line { margin-top: 2px; font-size: 11px; color: var(--on-surf-var); }
 .attention-open { margin-top: 4px; }
+
+/* ── Focus: every control shows a ring; none is removed without one (P146) ── */
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible,
+#listPanel:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+html { scroll-padding-top: 56px; }
+
+/* ── A short popup (200 % zoom): the document scrolls and the dock sticks to the bottom ── */
+@media (max-height: 520px) {
+  html { scroll-padding-top: 4px; scroll-padding-bottom: 120px; }
+  body { height: auto; }
+  .topbar { position: static; }
+  #listPanel { flex: none; min-height: 0; overflow-y: visible; }
+  .attention-list { max-height: none; overflow-y: visible; }
+  .dock { position: sticky; bottom: 0; }
+}
 
 /* ── Utility ─────────────────────────────────────────────────── */
 .hidden { display: none !important; }

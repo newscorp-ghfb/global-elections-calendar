@@ -7,6 +7,7 @@ import { attentionView, ATTENTION_PAGE, shownLine } from "./attention.js";
 import { badge, monthName, monthYear } from "./dates.js";
 import { childDetails, childIndex } from "./details.js";
 import { pinMatcher } from "./pins.js";
+import { keepFocus, syncTabs, tabTarget } from "./a11y.js";
 
 const $ = (id) => document.getElementById(id);
 const stateLoading      = $("stateLoading");
@@ -61,9 +62,10 @@ function text(tag, className, value) {
   return el;
 }
 
-function openButton(link, label, onOpen) {
+function openButton(link, label, onOpen, key) {
   const button = text("button", "open-button " + onOpen, "Open");
   button.type = "button";
+  button.dataset.focus = key;
   button.setAttribute("aria-label", label);
   button.addEventListener("click", () => {
     if (document.body.dataset.renderer !== "v2") return;
@@ -102,16 +104,17 @@ function buildChild(card, { child, label }) {
   labelEl.append(chips, notes);
   el.append(labelEl);
 
-  for (const s of d.sources) {
+  d.sources.forEach((s, n) => {
     const button = s.link === null ? null : openButton(
-      s.link, `Open ${s.name} for ${d.heading} (new tab)`, "source-open");
+      s.link, `Open ${s.name} for ${d.heading} (new tab)`, "source-open", `open:${child.child_id}:${n}`);
     el.append(line("source-line", s.text, button));
-  }
-  for (const u of d.umbrellas) {
+  });
+  d.umbrellas.forEach((u, n) => {
     const button = u.link === null ? null : openButton(
-      u.link, `Open ${u.name} (${u.officeLabel}) for ${d.heading} (new tab)`, "umbrella-open");
+      u.link, `Open ${u.name} (${u.officeLabel}) for ${d.heading} (new tab)`, "umbrella-open",
+      `umbrella:${child.child_id}:${n}`);
     el.append(line("umbrella-line", u.text, button));
-  }
+  });
   for (const p of d.possible) el.append(text("div", "possible-line", p));
   return el;
 }
@@ -173,6 +176,7 @@ function buildCard(entry) {
   box.id = `details-${card.group_id}`;
   const toggle = text("button", "card-toggle", "");
   toggle.type = "button";
+  toggle.dataset.focus = `toggle:${card.group_id}`;
   toggle.setAttribute("aria-controls", box.id);
   const sync = () => {
     const isOpen = open.has(card.group_id);
@@ -200,7 +204,7 @@ function buildAttentionRow(row) {
   li.append(text("div", "attention-text", row.text), text("div", "attention-source", row.source));
   if (row.undated !== null) li.append(text("div", "attention-undated", row.undated));
   for (const p of row.possible) li.append(text("div", "possible-line", p));
-  if (row.link !== null) li.append(openButton(row.link, row.label, "attention-open"));
+  if (row.link !== null) li.append(openButton(row.link, row.label, "attention-open", `attention-open:${row.id}`));
   return li;
 }
 
@@ -241,17 +245,18 @@ export function hideAttention() {
   attentionMore.hidden = true;
 }
 
+// Every redraw keeps keyboard focus on the control it had, by data-focus key (P146).
 function draw() {
+  keepFocus(paint);
+}
+
+function paint() {
   const months = doc.window.months;
   const idx = months.indexOf(month);
   const shown = view(doc, { month, tab, level, query, pins: matches, today, now });
 
   // tabs: the shown one only
-  for (const t of tabs) {
-    const on = t.dataset.filter === tab;
-    t.classList.toggle("active", on);
-    t.setAttribute("aria-selected", String(on));
-  }
+  syncTabs(tabs, tab);
   show(levelFilter);
   show(recordCount);
   statTotalLabel.textContent = "Election records";
@@ -320,13 +325,13 @@ function active() {
 attentionToggle.addEventListener("click", () => {
   if (!active()) return;
   attentionOpen = !attentionOpen;
-  drawAttention();
+  keepFocus(drawAttention);
 });
 
 attentionMore.addEventListener("click", () => {
   if (!active()) return;
   attentionRows += ATTENTION_PAGE;
-  drawAttention();
+  keepFocus(drawAttention);
 });
 
 searchInput.addEventListener("input", () => {
@@ -360,3 +365,14 @@ for (const t of tabs) {
     draw();
   });
 }
+
+// ArrowLeft and ArrowRight (wrapping), Home and End select and focus a tab (P146).
+$("tabs").addEventListener("keydown", (event) => {
+  if (!active()) return;
+  const next = tabTarget(event.key, tabs, event.target);
+  if (next === null) return;
+  event.preventDefault();
+  tab = next.dataset.filter;
+  draw();
+  next.focus();
+});

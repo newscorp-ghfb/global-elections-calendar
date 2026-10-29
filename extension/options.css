@@ -77,7 +77,6 @@ body {
   font-size: 14px;
   font-family: var(--font-body);
   padding: 10px 14px;
-  outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
   flex-shrink: 0;
 }
@@ -151,7 +150,10 @@ body {
 .country-item:hover .pin-btn,
 .pin-btn:focus-visible,
 .pin-btn.active { opacity: 1; }
-.pin-btn:focus-visible, .remove-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 .pin-btn[aria-busy="true"], .remove-btn[aria-busy="true"] { opacity: 0.5; cursor: progress; }
 .pin-btn:hover  { color: var(--primary); }
 .pin-btn.active { color: var(--primary); }
