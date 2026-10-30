@@ -188,17 +188,23 @@ class Ext:
     def clear(self) -> None:
         self.lab().evaluate("() => chrome.storage.local.clear()")
 
-    def open(self, path: str, *, now: str | None = PAGE_NOW) -> Page:
+    def open(self, path: str, *, now: str | None = PAGE_NOW, init_script: str | None = None) -> Page:
+        """An extension page, its uncaught exceptions recorded in ``page_errors``.
+
+        ``init_script`` runs in the page before any of its own scripts.
+        """
         if now is not None:
             self.context.clock.set_fixed_time(now)
         page = self.context.new_page()
         page.on("pageerror", lambda error: self.page_errors.append(str(error)))
+        if init_script is not None:
+            page.add_init_script(init_script)
         page.goto(self._prefix() + path)
         return page
 
-    def popup(self, *, now: str | None = PAGE_NOW) -> Page:
+    def popup(self, *, now: str | None = PAGE_NOW, init_script: str | None = None) -> Page:
         """The popup, once its first check has replied (``data-checking`` is ``false``)."""
-        page = self.open("popup.html", now=now)
+        page = self.open("popup.html", now=now, init_script=init_script)
         page.wait_for_function(
             "() => document.body.dataset.state !== 'loading'"
             " && document.body.dataset.checking === 'false'"
@@ -696,7 +702,11 @@ _WRAP_PIN_MESSAGES: Final = """mode => {
 }"""
 
 _WRAP_PIN_READS: Final = """mode => {
-  const real = chrome.storage.local.get.bind(chrome.storage.local);
+  const real = (window.__realStorageGet ??= chrome.storage.local.get.bind(chrome.storage.local));
+  if (mode === 'ok') {
+    chrome.storage.local.get = real;
+    return;
+  }
   let armed = mode === 'hold-next';
   chrome.storage.local.get = async (keys, ...rest) => {
     const isPinRead = Array.isArray(keys) && keys.includes('pinned_places_v2');
@@ -737,9 +747,10 @@ def wrap_pin_reads(page: Page, mode: str) -> None:
     """Change ``chrome.storage.local.get`` calls that read the pin keys.
 
     ``"hold-next"`` holds the next one's result until ``release_pin_read`` (``window.__pinReadHeld``
-    is the value the real read returned); ``"fail"`` rejects every one with "boom".
+    is the value the real read returned); ``"fail"`` rejects every one with "boom"; ``"ok"`` puts
+    the page's original ``get`` back (reads succeed again).
     """
-    assert mode in ("hold-next", "fail"), mode
+    assert mode in ("hold-next", "fail", "ok"), mode
     page.evaluate(_WRAP_PIN_READS, mode)
 
 

@@ -74,6 +74,7 @@ def test_help_explains_v2() -> None:
         "five months",
         # attention
         "items across the monitored window",
+        "and then the title says how many of them match.",
         "When items are omitted from the feed, the full attention list is in attention_full.json in the "
         "publishing run's generation artifact; retrieving it may require operator access, and the "
         "artifact is retained for 14 days after upload.",
@@ -86,6 +87,7 @@ def test_help_explains_v2() -> None:
         # update
         "Delete the folder's contents",
         "Click Reload",
+        "Turn on Developer mode (top right) if it is off",
         "Don't remove the extension",
     ]
     for phrase in phrases:
@@ -112,6 +114,7 @@ def test_release_notes_cover_the_update() -> None:
         "v1.0.1",
         "Select All",
         "Save",
+        "Turn on Developer mode (top right) if it is off",
         "not migrated again",
         "Also shows",
         "Restarting Chrome instead of clicking Reload can leave the old version's background worker"

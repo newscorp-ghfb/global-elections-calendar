@@ -151,6 +151,8 @@ function draw(pins) {
   }
 }
 
+const READ_FAILED = "Your saved pins could not be read";
+
 // Reads the pin keys and draws them, unless a later reconcile() has started since.
 async function reconcile() {
   generation += 1;
@@ -158,10 +160,14 @@ async function reconcile() {
   begin();
   try {
     const stored = await chrome.storage.local.get(Object.values(PIN_KEYS));
-    if (mine === generation) draw(currentPins(stored, table));
+    if (mine === generation) {
+      draw(currentPins(stored, table));
+      // a good read ends an earlier read failure's text (the edit texts stay)
+      if (statusEl.textContent.startsWith(READ_FAILED)) statusEl.textContent = "";
+    }
   } catch (err) {
     if (mine === generation) {
-      statusEl.textContent = `Your saved pins could not be read: ${clause(message(err))}. Reload this page to try again.`;
+      statusEl.textContent = `${READ_FAILED}: ${clause(message(err))}. Reload this page to try again.`;
     }
   } finally {
     end();

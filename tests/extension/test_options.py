@@ -173,11 +173,10 @@ def test_options_lists_feed_places_and_pins(ext: Ext, pair: tuple[bytes, bytes])
     assert ext.page_errors == []
     ext.reset()
     ext.seed(_cached(pair))
-    broken = ext.context.new_page()
-    broken.add_init_script(
-        "chrome.runtime.sendMessage = () => Promise.reject(new Error('down'));"
+    broken = ext.open(
+        "options.html",
+        init_script="chrome.runtime.sendMessage = () => Promise.reject(new Error('down'));",
     )
-    broken.goto(f"chrome-extension://{ext.ext_id}/options.html")
     broken.wait_for_function(IDLE)
     assert broken.locator("#pinsFailed").text_content() == (
         "Your pins could not be prepared: down. Reload this page to try again."
@@ -372,6 +371,13 @@ def test_a_lost_pin_reply_is_reconciled(ext: Ext, pair: tuple[bytes, bytes]) -> 
     assert _stored_places(ext) == ["iso:LS", "iso:CV"]
     assert _status(page) == "Your saved pins could not be read: boom. Reload this page to try again."
     expect(_button(page, "iso:CV")).to_be_enabled()
+    # a later good read clears the read-failure text and shows the pins from outside the page
+    wrap_pin_reads(page, "ok")
+    ext.seed(_pins(["iso:LS", "iso:CV", "iso:MD"]))
+    page.wait_for_function(IDLE)
+    page.wait_for_function("() => document.querySelector('#pinStatus').textContent === ''")
+    assert _status(page) == ""
+    expect(_button(page, "iso:MD")).to_have_attribute("aria-pressed", "true")
     page.reload()
     page.wait_for_function(IDLE)
     expect(_button(page, "iso:CV")).to_have_attribute("aria-pressed", "true")
@@ -381,12 +387,13 @@ def test_a_lost_pin_reply_is_reconciled(ext: Ext, pair: tuple[bytes, bytes]) -> 
 def test_messages_in_sentences_lose_one_trailing_full_stop(ext: Ext, pair: tuple[bytes, bytes]) -> None:
     # Chrome's own messages end in a full stop; the sentence supplies its own (no "..")
     ext.seed(_cached(pair))
-    broken = ext.context.new_page()
-    broken.add_init_script(
-        "chrome.runtime.sendMessage = () => Promise.reject("
-        "new Error('Could not establish connection. Receiving end does not exist.'));"
+    broken = ext.open(
+        "options.html",
+        init_script=(
+            "chrome.runtime.sendMessage = () => Promise.reject("
+            "new Error('Could not establish connection. Receiving end does not exist.'));"
+        ),
     )
-    broken.goto(f"chrome-extension://{ext.ext_id}/options.html")
     broken.wait_for_function(IDLE)
     assert broken.locator("#pinsFailed").text_content() == (
         "Your pins could not be prepared: Could not establish connection. Receiving end does"

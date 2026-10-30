@@ -214,8 +214,8 @@ function drawAttention() {
     attentionQuery = query;
     attentionRows = ATTENTION_PAGE;
   }
-  if (index === null) index = childIndex(doc);
-  const got = attentionView(doc, { query, index });
+  if (attentionOpen && index === null) index = childIndex(doc);
+  const got = attentionView(doc, { query, index, withRows: attentionOpen });
   show(attention);
   attentionToggle.textContent = got.title;
   attentionToggle.setAttribute("aria-expanded", String(attentionOpen));
@@ -223,14 +223,19 @@ function drawAttention() {
   attentionNote.hidden = got.note === "";
   attentionList.replaceChildren();
   attentionList.hidden = !attentionOpen;
+  if (!attentionOpen) {
+    attentionShown.textContent = "";
+    attentionShown.hidden = true;
+    attentionMore.hidden = true;
+    return;
+  }
   const shown = Math.min(attentionRows, got.rows.length);
   const left = got.rows.length - shown;
-  const line = attentionOpen ? shownLine(shown, got.rows.length) : "";
+  const line = shownLine(shown, got.rows.length);
   attentionShown.textContent = line;
   attentionShown.hidden = line === "";
-  attentionMore.hidden = !attentionOpen || left === 0;
+  attentionMore.hidden = left === 0;
   attentionMore.textContent = `Show ${Math.min(left, ATTENTION_PAGE)} more`;
-  if (!attentionOpen) return;
   const frag = document.createDocumentFragment();
   for (const row of got.rows.slice(0, shown)) frag.append(buildAttentionRow(row));
   attentionList.append(frag);
