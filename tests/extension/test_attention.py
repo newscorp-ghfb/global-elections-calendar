@@ -271,6 +271,65 @@ def test_attention_section_is_hidden_without_data_or_for_legacy(ext: Ext) -> Non
     assert ext.page_errors == []
 
 
+_VIEW_JS: Final = """async ([doc, query]) => {
+  const d = await import('/lib/details.js');
+  const a = await import('/lib/attention.js');
+  const index = d.childIndex(doc);
+  const full = a.attentionView(doc, { query, index, withRows: true });
+  const bare = a.attentionView(doc, { query, index: null, withRows: false });
+  return { full: { title: full.title, note: full.note, rows: full.rows.length },
+           bare: { title: bare.title, note: bare.note, rows: bare.rows } };
+}"""
+
+_COUNT_URL_PARSES: Final = """(() => {
+  const Real = window.URL;
+  window.__itemParses = 0;
+  window.URL = new Proxy(Real, {
+    construct(target, args) {
+      if (args[0] === 'https://en.wikipedia.org/wiki/Synthetic') window.__itemParses += 1;
+      return Reflect.construct(target, args);
+    },
+  });
+})();"""
+
+
+def test_a_collapsed_view_counts_without_rows(lab: Page, doc: dict[str, Any]) -> None:
+    edited = copy.deepcopy(doc)
+    listing = copy.deepcopy(edited["undated"][0])
+    listing.update(undated_id="cccccccccccc", country="Zorbland", office_label="Quuxoffice", year=2028)
+    edited["undated"].append(listing)
+    edited["attention_items"][0].update(undated_id="cccccccccccc", text="Alpha item")
+    matched = edited["attention_items"][1]["text"].split()[0]
+    for query in ("", matched, "no such text anywhere", "zorb", "QUUX"):
+        got = lab.evaluate(_VIEW_JS, [edited, query])
+        assert got["bare"]["rows"] is None, query
+        assert got["full"]["rows"] >= 0
+        assert got["bare"]["title"] == got["full"]["title"], query
+        assert got["bare"]["note"] == got["full"]["note"], query
+    assert lab.evaluate(_VIEW_JS, [edited, "zorb"])["full"]["rows"] == 1
+    assert lab.evaluate(_VIEW_JS, [edited, "no such text anywhere"])["full"]["rows"] == 0
+    assert lab.evaluate(_VIEW_JS, [edited, ""])["full"]["rows"] == len(edited["attention_items"])
+
+
+def test_a_collapsed_section_parses_no_item_links(
+    ext: Ext, lab: Page, pair: tuple[bytes, bytes]
+) -> None:
+    feed = synthetic_feed(pair[0], items=500)
+    _reads_as_v2(lab, feed)
+    ext.seed({FEED: feed_record(feed), CHECK: _fresh_check()})
+    page = ext.popup(init_script=_COUNT_URL_PARSES)
+    assert page.locator("#attentionToggle").get_attribute("aria-expanded") == "false"
+    assert page.evaluate("window.__itemParses") == 0  # the first paint
+    _search(page, "Synthetic item 1")
+    assert " of " in _text(page, "#attentionToggle")  # the title counts the matches
+    assert page.evaluate("window.__itemParses") == 0
+    page.click("#nextMonthBtn")
+    assert page.evaluate("window.__itemParses") == 0
+    page.click("#attentionToggle")
+    assert page.evaluate("window.__itemParses") > 0  # control: the wrapper sees the parses
+    assert ext.page_errors == []
+
+
 def test_attention_rendering_is_bounded(ext: Ext, lab: Page, pair: tuple[bytes, bytes]) -> None:
     feed = synthetic_feed(pair[0], items=500, truncated=1200)
     _reads_as_v2(lab, feed)

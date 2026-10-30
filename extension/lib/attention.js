@@ -56,22 +56,29 @@ function cut(text) {
 }
 
 // The items to list: the title, the note and a row per item matching the search (all of them
-// without one). `index` is details.childIndex(doc). Only the search box filters them.
-export function attentionView(doc, { query, index }) {
+// without one). `index` is details.childIndex(doc). Only the search box filters them. With
+// `withRows: false` it only counts the matches (rows is null, `index` is not read): the same
+// predicate picks the items, so the title cannot drift from the rows.
+export function attentionView(doc, { query, index, withRows = true }) {
   const items = doc.attention_items;
   const included = items.length;
   const total = included + doc.attention_truncated;
   const listings = new Map(doc.undated.map((u) => [u.undated_id, u]));
   const needle = query.trim().toLowerCase();
+  const matches = (item, listing, source) => {
+    if (needle === "") return true;
+    const fields = [item.text, source];
+    if (listing !== undefined) fields.push(listing.country, listing.office_label);
+    return fields.some((f) => f.toLowerCase().includes(needle));
+  };
   const rows = [];
+  let count = 0;
   for (const item of items) {
     const listing = item.undated_id === null ? undefined : listings.get(item.undated_id);
     const source = sourceName(item.source);
-    if (needle !== "") {
-      const fields = [item.text, source];
-      if (listing !== undefined) fields.push(listing.country, listing.office_label);
-      if (!fields.some((f) => f.toLowerCase().includes(needle))) continue;
-    }
+    if (!matches(item, listing, source)) continue;
+    count += 1;
+    if (!withRows) continue;
     const link = safeLink(item.source, item.link);
     rows.push({
       id: item.item_id,
@@ -85,10 +92,10 @@ export function attentionView(doc, { query, index }) {
       label: link === null ? null : `Open ${source}: ${cut(item.text)} (new tab)`,
     });
   }
-  const k = needle === "" ? null : rows.length;
+  const k = needle === "" ? null : count;
   return {
     title: attentionTitle({ k, included, total, months: doc.window.months }),
     note: truncationNote({ included, total }),
-    rows,
+    rows: withRows ? rows : null,
   };
 }

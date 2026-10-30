@@ -15,6 +15,7 @@ from tests.support.extension import (
     artifact_pair,
     extension_copy,
     feed_record,
+    fresh_v1_feed,
     js,
     launch,
     status_record,
@@ -641,4 +642,28 @@ def test_a_stale_v2_list_does_not_answer_the_legacy_renderer(
     page.evaluate("() => { document.body.dataset.renderer = 'v2'; }")
     big_toggle.click()
     assert big_toggle.get_attribute("aria-expanded") == "true"
+    assert ext.page_errors == []
+
+
+def test_a_stale_legacy_list_does_not_answer_the_v2_renderer(ext: Ext) -> None:
+    ext.served.set("elections.json", fresh_v1_feed())
+    page = ext.popup()
+    assert page.evaluate("document.body.dataset.renderer") == "legacy"
+    card = page.locator("li.election-item:has(.election-link-icon):has(.source-chip-link)").first
+    chip = card.locator(".source-chip-link").first
+    icon = card.locator(".election-link-icon")
+    body = card.locator(".election-type")
+
+    # control: while legacy is the active renderer, each click opens one tab
+    for target in (chip, icon, body):
+        assert len(ext.opened(target.click)) == 1
+
+    # the list is still drawn but v2 is the active renderer: nothing answers
+    page.evaluate("() => { document.body.dataset.renderer = 'v2'; }")
+    for target in (chip, icon, body):
+        assert ext.opened(target.click) == []
+
+    # and legacy answers again once it is the active renderer
+    page.evaluate("() => { document.body.dataset.renderer = 'legacy'; }")
+    assert len(ext.opened(lambda: chip.click())) == 1
     assert ext.page_errors == []

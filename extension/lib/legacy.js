@@ -104,6 +104,7 @@ function buildSourceChip(source) {
   const chip = el("span", "chip chip-source source-chip-link", name);
   chip.title = `Open ${name}`;
   chip.addEventListener("click", (e) => {
+    if (!active()) return;
     e.stopPropagation();
     openLink(href);
   });
@@ -160,10 +161,14 @@ function buildCard(election) {
   // External link icon and card body → primary source, when it has a safe link
   if (primary !== null) {
     icon.addEventListener("click", (e) => {
+      if (!active()) return;
       e.stopPropagation();
       openLink(primary);
     });
-    li.addEventListener("click", () => openLink(primary));
+    li.addEventListener("click", () => {
+      if (!active()) return;
+      openLink(primary);
+    });
   }
   return li;
 }
