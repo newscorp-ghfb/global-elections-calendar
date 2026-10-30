@@ -114,6 +114,8 @@ def test_release_notes_cover_the_update() -> None:
         "Save",
         "not migrated again",
         "Also shows",
+        "Restarting Chrome instead of clicking Reload can leave the old version's background worker"
+        " running until the next restart",
     ]
     for phrase in phrases:
         assert phrase in notes, phrase
