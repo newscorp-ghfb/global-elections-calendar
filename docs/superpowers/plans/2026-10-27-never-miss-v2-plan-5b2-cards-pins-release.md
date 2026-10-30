@@ -458,7 +458,8 @@ out. Each is pinned by the named tests, in the task that owns the code.
   open, switches on Developer mode and clicks the card's Reload button on `chrome://extensions`
   (R49). That is Chromium under `--load-extension`, not the user's Chrome. A relaunch is no
   stand-in: after a swap, the first relaunch gives the launch event to v1.0.2's cached worker
-  (`.scratch/plan5b2/t8_probe.py`).
+  (`.scratch/plan5b2/t8_probe.py`; a copy with its outputs is in
+  `handovers/elections-v2-tooling/plan5b2/`).
 - **(rev 2) The real worker's 25 s abort is not waited for.**
   - `load.check`'s abort is tested on fakes with a short deadline, and `load.fetchLimited` passes
     the signal to the `fetch` it is given.
@@ -1864,7 +1865,8 @@ markup from strings).
   - The help prose outside the pinned phrases is yours. The reviewer checks it against the code.
   - The release notes cover §12.8's list, D4, P140's parent rule and its version-1 caveat, D7,
     and the evidence limits:
-    - Chrome's Reload button is not driven (R49);
+    - Chrome's Reload button is not driven (R49) (amended 2026-10-30: Task 8 drives it on
+      Playwright's Chromium and rewrites this bullet in the notes; see R49);
     - "no permission prompt" is expected, and confirmed only once a Store update lands (O4).
   - `README.md` gains "Building the extension ZIP" (the command; that it prints the
     `RELEASES.md` row and does not write it).
