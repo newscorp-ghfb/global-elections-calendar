@@ -453,9 +453,12 @@ out. Each is pinned by the named tests, in the task that owns the code.
 - **The real action popup is driven only for its width at 100 % zoom (amended after Task 6).**
   Layout is tested on `popup.html` in a tab at the viewports above. Chrome's own popup sizing
   under zoom is not measured.
-- **Chrome's Reload button is not driven** (R49). The same-folder upgrade relaunches the browser
-  on the same profile, which reports `install`. The `update` path is tested through
-  `lib/worker.js`.
+- **Chrome's Reload button is driven on Playwright's Chromium only (amended 2026-10-30, after
+  Task 8's probe; the user's ruling).** The same-folder upgrade swaps the folder with the browser
+  open, switches on Developer mode and clicks the card's Reload button on `chrome://extensions`
+  (R49). That is Chromium under `--load-extension`, not the user's Chrome. A relaunch is no
+  stand-in: after a swap, the first relaunch gives the launch event to v1.0.2's cached worker
+  (`.scratch/plan5b2/t8_probe.py`).
 - **(rev 2) The real worker's 25 s abort is not waited for.**
   - `load.check`'s abort is tested on fakes with a short deadline, and `load.fetchLimited` passes
     the signal to the `fetch` it is given.
@@ -526,7 +529,7 @@ The completion review accepted this narrowing.
 |---|---|---|---|---|---|
 | R47 | v2 cards open no link in 5b-1 (P135). 5b-2 Task 7 adds the source entries, and Task 9 opens them only through the §12.6 allowlist | T4 (source entries), T3 (`links.js`) | `test_source_entries_open_only_safe_links`; `test_v2_cards_show_labels_and_badges` (the body opens nothing) | ships | T3 |
 | R48 | `count.view`'s pin filter compares v1's `pinned_countries` with the card's `country` (P135). 5b-2 Task 10 switches it to `pinned_places_v2` and a parent pin that includes its subdivisions | T2 | `test_a_parent_pin_includes_its_places`, `test_pins_survive_and_filter_the_popup` (S5-T15), `test_every_v1_pin_string_migrates` (S3-T17) | ships | — |
-| R49 | `chrome.runtime.reload()` loses the extension under `--load-extension` (P136). S5-T16 and RT-06 replace the folder's contents, then relaunch the browser on the same profile. That relaunch fires `onInstalled` with reason `install`, not `update` (probe5), so the test checks the kept storage and pins, never the reason. The `update` path is tested through `lib/worker.js`. Chrome's Reload button itself is not driven; the release notes' evidence says so | T8 (T2 for the `update` path) | `test_real_zip_same_folder_upgrade`; `test_the_worker_migrates_pins_on_install_update_and_startup` | test | T2, T7 |
+| R49 | `chrome.runtime.reload()` loses the extension under `--load-extension` (P136). **(amended 2026-10-30, after Task 8's probe; the user's ruling)** The relaunch that S5-T16 and RT-06 first used is no stand-in for an upgrade: after the folder's contents are replaced, the first relaunch gives `onInstalled` to v1.0.2's cached worker, and v2's handlers never run, so the pins are not migrated until the next launch. Chrome's own Reload (`chrome.developerPrivate.reload`, the card's button) leaves an unpacked extension disabled (`unsupportedDeveloperExtension`) unless Developer mode is on; with it on (as for every Load-unpacked user), Reload runs v2 alone with the `update` path (no help tab). So T8 swaps the folder with the browser open, switches on Developer mode and clicks the card's Reload button on `chrome://extensions`, the steps `help.html` gives. Measured on Playwright's Chromium only; the release notes' evidence says so, and that a restart instead of Reload can leave the old worker running until the next restart | T8 (T2 for the worker's event routing) | `test_real_zip_same_folder_upgrade`; `test_the_worker_migrates_pins_on_install_update_and_startup` | test | T2, T7 |
 | R50 | The attention section's own count sits beside `#recordCount`, and the records counter never includes attention items | T5 | `test_attention_section_is_always_reachable` (the counter rows) | ships | T4 |
 | R51 | R26's popup measurement times the v2 path from storage read to first render, including `feedFormat` on the full feed | T6 | `test_popup_renders_the_fixture_feed_within_the_budget` | ships (marks) + test | — |
 | R52 | `lib/legacy.js` still builds cards with `innerHTML` and `escHtml`, and opens feed links as they are. 5b-2 Task 9 removes both | T3 | `test_legacy_opens_only_safe_links`, `test_legacy_text_is_inserted_as_text` | ships | — |
@@ -567,7 +570,7 @@ the named test passing and its mutation killed.
 | P144, S5-T10, S5-T11, R50 | Decision, spec acceptance, requirement | As in Spec corrections | T5 `test_attention_items_are_listed`, `test_attention_section_is_always_reachable`, `test_attention_rendering_is_bounded`, `test_attention_links_are_safe`, `test_attention_text_is_inserted_as_text`, **(rev 2)** `test_a_search_over_cut_items_says_what_it_searched` | planned |
 | P146, S5-T19, S5-T21 (large collections), R59, R51, R26 | Decision, spec acceptance, requirements | As in Spec corrections | T6 `test_keyboard_and_aria_semantics`, **(rev 2)** `test_focus_survives_a_redraw`, `test_layout_in_a_narrow_or_short_popup`, `test_large_collections_render_bounded`, `test_popup_renders_the_fixture_feed_within_the_budget` | planned |
 | P148, S5-T20, R54 | Decision, spec acceptance, requirement | As in Spec corrections | T7 `test_the_zip_is_built_from_the_explicit_list`, `test_the_zip_is_reproducible`, `test_zip_checks_refuse`, `test_every_extension_file_is_listed`, `test_help_explains_v2`, `test_release_notes_cover_the_update`, `test_the_manifest_is_2_0_0` | planned |
-| S5-T16, RT-06, R49 | Spec acceptance, requirement | Relaunch on the same profile | T8 `test_real_zip_same_folder_upgrade` | planned |
+| S5-T16, RT-06, R49 | Spec acceptance, requirement | Chrome's Reload on `chrome://extensions`, Developer mode on (amended 2026-10-30) | T8 `test_real_zip_same_folder_upgrade` | planned |
 | Tooling preservation | Review correction | Out-of-repo copy, confirmed 2026-10-28, refreshed after every task that adds or changes a table | Step 0, then every task | planned |
 | I2 (Plan 3 final review) | A ruling for the user's veto | Unchanged; no 5b-2 dependency | — | open (the user's) |
 | R37 | Parked by the user | Unchanged | — | open (parked) |
@@ -1891,13 +1894,21 @@ markup from strings).
 
 ### Task 8: The real-ZIP same-folder upgrade (S5-T16, RT-06, R49)
 
+**(amended 2026-10-30, after Task 8's probe; the user's ruling: "Chrome's Reload" and "Release
+notes only".)** The first version of this task relaunched the browser after the swap; that
+relaunch runs v1.0.2's cached worker (R49), so the test now drives Chrome's own Reload, the
+steps `help.html` gives.
+
 **Files:**
 - Test: `tests/extension/test_upgrade.py`
+- Modify: `docs/extension/v2.0.0-release-notes.md` (the evidence limits),
+  `tests/extension/test_release_files.py` (one pinned phrase)
 
 **Interfaces:**
 - Consumes: `build_extension_zip.build`; `extension_copy(dest, legacy=True)` (the v1.0.2
-  fixture); `launch(playwright, profile, folder, settle_install_check=...)`, following
-  `Ext.relaunch`'s pattern; `artifact_pair`, `v1_feed`.
+  fixture); `launch(playwright, profile, folder)`; `Ext.wait_for_install_check`;
+  `artifact_pair`, `v1_feed`; `chrome://extensions` (`#devMode`, the card's
+  `#dev-reload-button`).
 - Produces: nothing new.
 
 - [ ] **Step 1: Write the test `test_real_zip_same_folder_upgrade`** (`tmp_path`; about 15 s):
@@ -1907,20 +1918,24 @@ markup from strings).
   3. Seed `pinned_countries` `["Cabo Verde", "Moldova", "Scotland (part of the United Kingdom)",
      "Atlantis"]` and `selected_countries` `["Brazil"]`.
   4. Record the extension id and the three v1 values.
-  5. Close the browser. Delete `X`'s contents (keep `X`), and extract `build()`'s ZIP into it.
-  6. Relaunch on `P` and `X` with `settle_install_check=True`, then route the artifact pair and
-     force a check.
+  5. With the browser still open: switch on Developer mode on `chrome://extensions`, as every
+     Load-unpacked user has it. Delete `X`'s contents (keep `X`), and extract `build()`'s ZIP
+     into it. Route the artifact pair.
+  6. Click the extension card's Reload button, and wait for the update's check.
   7. Assert:
      - the same id;
      - `chrome.runtime.getManifest().version` "2.0.0";
      - the three v1 values deep-equal to before;
      - `pins_migrated_v2` true, `pinned_places_v2` `["iso:CV", "iso:MD", "iso:GB-SCT"]` and
        `unresolved_pins_v2` `["Atlantis"]`;
+     - no help tab opened (an update, D7);
      - the popup on November shows only Cape Verde's and Moldova's cards, with "Pinned view · 3
        countries";
      - the options page lists the three pins first, and "Atlantis" under the unresolved heading.
-
-     Do not assert the install reason (R49).
+  8. The release notes' evidence limits say that Reload is driven on Playwright's Chromium only,
+     and that restarting Chrome instead of clicking Reload can leave the old version's worker
+     running until the next restart; the second phrase is pinned in
+     `test_release_notes_cover_the_update`.
 
 - [ ] **Step 2: Run it.** It should pass on Tasks 1–7's code; a failure is a bug in those tasks,
   fixed in this task's commit with its own test row.
