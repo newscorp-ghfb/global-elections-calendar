@@ -374,10 +374,10 @@ def test_a_lost_pin_reply_is_reconciled(ext: Ext, pair: tuple[bytes, bytes]) -> 
     # a later good read clears the read-failure text and shows the pins from outside the page
     wrap_pin_reads(page, "ok")
     ext.seed(_pins(["iso:LS", "iso:CV", "iso:MD"]))
-    page.wait_for_function(IDLE)
-    page.wait_for_function("() => document.querySelector('#pinStatus').textContent === ''")
-    assert _status(page) == ""
+    # the draw and the clearing run in one synchronous step: once MD is pressed the status is final
     expect(_button(page, "iso:MD")).to_have_attribute("aria-pressed", "true")
+    page.wait_for_function(IDLE)
+    assert _status(page) == ""
     page.reload()
     page.wait_for_function(IDLE)
     expect(_button(page, "iso:CV")).to_have_attribute("aria-pressed", "true")

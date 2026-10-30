@@ -303,9 +303,10 @@ def test_a_collapsed_view_counts_without_rows(lab: Page, doc: dict[str, Any]) ->
     for query in ("", matched, "no such text anywhere", "zorb", "QUUX"):
         got = lab.evaluate(_VIEW_JS, [edited, query])
         assert got["bare"]["rows"] is None, query
-        assert got["full"]["rows"] >= 0
         assert got["bare"]["title"] == got["full"]["title"], query
         assert got["bare"]["note"] == got["full"]["note"], query
+    some = lab.evaluate(_VIEW_JS, [edited, matched])["full"]["rows"]
+    assert 0 < some < len(edited["attention_items"])  # the query matches some items, not all
     assert lab.evaluate(_VIEW_JS, [edited, "zorb"])["full"]["rows"] == 1
     assert lab.evaluate(_VIEW_JS, [edited, "no such text anywhere"])["full"]["rows"] == 0
     assert lab.evaluate(_VIEW_JS, [edited, ""])["full"]["rows"] == len(edited["attention_items"])
