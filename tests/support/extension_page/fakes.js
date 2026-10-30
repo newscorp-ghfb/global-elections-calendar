@@ -96,8 +96,7 @@ const MIGRATE_VALUE = { ok: true, migrated: true, marker: 2 };
 // message the handler rejected with, or null.
 // Each fake logs `name:start` when called and `name:end` when it settles. A handler that does not
 // wait for a call shows that call's `:start` followed by the next call's `:start`, whatever the
-// delays. `editPin` logs `editPin:start` and
-// `editPin:end` and returns {ok: true, edited: <the edit>}.
+// delays. `editPin` logs `editPin:start` and `editPin:end` and returns {ok: true, edited: <the edit>}.
 export async function runHandlers(spec) {
   const log = [];
   const later = (name, ms, value, rejects = false) => async () => {
