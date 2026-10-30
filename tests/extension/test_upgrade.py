@@ -15,7 +15,7 @@ from typing import Any, Final
 from playwright.sync_api import Playwright
 
 from scripts.build_extension_zip import build
-from tests.support.extension import PAGE_FILES, V1_EXTENSION, artifact_pair, launch, v1_feed
+from tests.support.extension import PAGE_FILES, artifact_pair, extension_copy, launch, v1_feed
 
 V1_KEYS: Final = ("elections_cache", "pinned_countries", "selected_countries")
 V2_ABSENT: Final = (
@@ -41,8 +41,7 @@ def _empty(folder: Path) -> None:
 
 def test_real_zip_same_folder_upgrade(playwright: Playwright, tmp_path: Path) -> None:
     profile, folder = tmp_path / "profile", tmp_path / "X"
-    shutil.copytree(V1_EXTENSION, folder)
-    shutil.copytree(PAGE_FILES, folder / "test")
+    extension_copy(folder, legacy=True)
     ext = launch(playwright, profile, folder)
     try:
         ext.served.set("elections.json", v1_feed())
@@ -83,17 +82,26 @@ def test_real_zip_same_folder_upgrade(playwright: Playwright, tmp_path: Path) ->
         started_ms = int(time.time() * 1000)
         with lab.expect_event("close"):
             reload_button.click()
+        # Chrome reports the reloaded extension enabled at 2.0.0 before the settle opens a page of it
+        extensions.wait_for_function(
+            "() => chrome.developerPrivate.getExtensionsInfo()"
+            ".then(xs => xs.some(x => x.state === 'ENABLED' && x.version === '2.0.0'))"
+        )
+        listed_now = extensions.evaluate(
+            "() => chrome.developerPrivate.getExtensionsInfo({ includeDisabled: true, includeTerminated: true })"
+            ".then(xs => xs.map(x => [x.id, x.version, x.state]))"
+        )
+        assert listed_now == [[first_id, "2.0.0", "ENABLED"]]
         ext.wait_for_install_check(started_ms)
 
         # storage first: the options page migrates by itself (PINS), which would hide a missing
         # update-time migration
-        assert ext.lab().evaluate("() => chrome.runtime.id") == first_id
         assert ext.lab().evaluate("() => chrome.runtime.getManifest().version") == "2.0.0"
         after = ext.storage()
         assert {key: after[key] for key in V1_KEYS} == v1_before
-        assert after["pins_migrated_v2"] is True
-        assert after["pinned_places_v2"] == PLACES_V2
-        assert after["unresolved_pins_v2"] == ["Atlantis"]
+        assert after.get("pins_migrated_v2") is True
+        assert after.get("pinned_places_v2") == PLACES_V2
+        assert after.get("unresolved_pins_v2") == ["Atlantis"]
         assert after["check_state_v2"]["ok_at"] >= started_ms
         assert after["check_state_v2"]["error"] is None
         assert [p.url for p in ext.context.pages if p.url.endswith("/help.html")] == []  # D7
