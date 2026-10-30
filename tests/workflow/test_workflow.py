@@ -25,6 +25,10 @@ WORKFLOW = ROOT / ".github" / "workflows" / "update-elections.yml"
 TEXT = WORKFLOW.read_text(encoding="utf-8")
 
 SETUP_ALLOWANCE_S = 300  # checkout, Python, pip install; measured on the first branch run in 5c
+# A provisional budget (P150), not proof of the runtime: B1 measures each step on GitHub.
+CHROMIUM_ALLOWANCE_S = 180  # playwright install --with-deps chromium
+SUITE_ALLOWANCE_S = 1200  # the full suite: 1,196 s in six chunks on the dev machine at c8e39f4
+CHECKS_ALLOWANCE_S = 120  # mypy, ruff, lint-imports, scripts.prove_gates
 PARSE_ALLOWANCE_S = 60  # about 1 s on the fixtures
 UPLOAD_ALLOWANCE_S = 60  # the artifact: 4.6 MB, plus at most 50 MiB of rejected/pages/
 DOWNLOAD_ALLOWANCE_S = 60
@@ -312,7 +316,6 @@ def test_publish_job_fits_its_timeout() -> None:
     )
     assert total <= 25 * 60
     assert jobs()["publish"]["timeout-minutes"] == 25
-    assert jobs()["gates"]["timeout-minutes"] == 15
     assert jobs()["verdict"]["timeout-minutes"] == 5
     assert Git(Path(".")).timeout_s <= publishing.PUBLISH_STAGE_S
     assert publishing.SERVED_FETCH_S <= publishing.SERVED_POLL_S
@@ -323,3 +326,20 @@ def test_served_check_reads_the_extension_url() -> None:
     found = re.search(r'const DATA_URL\s*=\s*"([^"]*)"', background)
     assert found
     assert found[1] == publishing.RAW_URL
+
+
+def test_gates_job_fits_its_timeout() -> None:
+    total = SETUP_ALLOWANCE_S + CHROMIUM_ALLOWANCE_S + SUITE_ALLOWANCE_S + CHECKS_ALLOWANCE_S
+    assert total <= 30 * 60
+    assert jobs()["gates"]["timeout-minutes"] == 30
+
+
+def test_installs_are_wheel_only_and_hashed() -> None:
+    installs = {
+        job: [s["run"] for s in steps(job) if "pip install" in s.get("run", "")]
+        for job in ("gates", "scrape", "publish")
+    }
+    for job, runs in installs.items():
+        assert len(runs) == 1, job
+        assert "--require-hashes" in runs[0] and "--only-binary :all:" in runs[0], job
+    assert installs["scrape"] == installs["publish"]

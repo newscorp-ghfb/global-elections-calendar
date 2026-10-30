@@ -17,7 +17,7 @@ permissions: {}
 jobs:
   gates:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -30,7 +30,7 @@ jobs:
       - name: Install
         run: |
           python -m venv .venv
-          .venv/bin/python -m pip install --require-hashes -r requirements-dev.txt
+          .venv/bin/python -m pip install --require-hashes --only-binary :all: -r requirements-dev.txt
       - name: Install Chromium
         run: .venv/bin/python -m playwright install --with-deps chromium
       - name: pytest
@@ -70,7 +70,7 @@ jobs:
         if: steps.switches.outputs.paused != 'true'
         run: |
           python -m venv .venv
-          .venv/bin/python -m pip install --require-hashes -r requirements.txt
+          .venv/bin/python -m pip install --require-hashes --only-binary :all: -r requirements.txt
       - name: Scrape
         if: steps.switches.outputs.paused != 'true'
         run: |
@@ -118,7 +118,7 @@ jobs:
       - name: Install
         run: |
           python -m venv .venv
-          .venv/bin/python -m pip install --require-hashes -r requirements.txt
+          .venv/bin/python -m pip install --require-hashes --only-binary :all: -r requirements.txt
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           name: generation

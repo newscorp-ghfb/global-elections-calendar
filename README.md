@@ -87,6 +87,8 @@ on GitHub in Plan 5c; until then its structure is proven offline by `tests/workf
 
 - `gates` (read-only): installs the dev lock and Chromium, then runs pytest (with `CI=true`, so a
   skipped test fails the session), mypy, ruff, import-linter and `scripts.prove_gates`.
+  The job has a 30-minute limit, budgeted in `test_gates_job_fits_its_timeout`; a gates run over
+  20 minutes is a review trigger.
 - `scrape` (read-only): reads the switch files, then (unless paused) runs
   `scraper.py --live --out out` inside `::stop-commands::<random token>` so that page text in a log
   cannot run a workflow command, writes the step summary, and uploads `out/` as the artifact
@@ -99,7 +101,8 @@ on GitHub in Plan 5c; until then its structure is proven offline by `tests/workf
   with `publish failed`. It re-checks the
   artifact (nothing outside the allowlist is written) and commits only `elections.json`,
   `status.json`, `HEALTH.md` and `data/sources/**`, pushes, and polls the raw URL for up to 10
-  minutes to see the new digest served.
+  minutes to see the new digest served. CI installs wheels only, so no source build runs while
+  the publish job holds its token; the publish step's own dependency code still runs with it.
 - `verdict` (read-only, always runs): installs nothing; reads the other jobs' results and outputs
   and the artifact's `verdict.json`, and fails the run unless the day is green.
 
@@ -146,6 +149,9 @@ Then check that Linux CI can install every pin:
 ```powershell
 .venv\Scripts\python.exe -m pip download --require-hashes --only-binary=:all: --implementation cp --python-version 3.14 --platform manylinux_2_39_x86_64 --platform manylinux_2_34_x86_64 --platform manylinux_2_28_x86_64 --platform manylinux_2_27_x86_64 --platform manylinux_2_17_x86_64 --platform manylinux2014_x86_64 --platform linux_x86_64 --platform any -r requirements-dev.txt -d .scratch/linux-wheels
 ```
+
+CI installs wheels only (`--only-binary :all:`), so this Linux wheel check must pass before a
+lock change is pushed.
 
 ## Reference data
 
