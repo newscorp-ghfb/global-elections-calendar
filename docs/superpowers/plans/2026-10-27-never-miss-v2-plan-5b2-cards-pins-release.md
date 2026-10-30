@@ -1963,8 +1963,12 @@ steps `help.html` gives.
 | ID | Requirement | Owner | Acceptance test | Stage |
 |---|---|---|---|---|
 | R53 | (unchanged) The gates job's measured time (R41) includes `playwright install --with-deps chromium` and the extension suite | Plan 5c | the branch run's step times, in the ledger | 5c |
-| R62 | The `RELEASES.md` row for v2.0.0 (P148): the code SHA, `requirements*.txt` SHA-256s, the ZIP's SHA-256 and file count from `build_extension_zip`, the destination, the date and the user's approval | Plan 5c | the row, checked against a rebuild at the release commit | 5c release |
+| R62 | The `RELEASES.md` row for v2.0.0 (P148): the code SHA, `requirements*.txt` SHA-256s, the ZIP's SHA-256 and file count from `build_extension_zip`, the destination, the date and the user's approval | Plan 5c | the row, checked against a rebuild at the release commit. (Whole-branch review rec. 4: the ZIP's bytes are reproducible for one Python minor version and one zlib build only, `build_extension_zip.py:14-15`, so a rebuild on another machine compares the files' contents, not the ZIP's hash) | 5c release |
 | R63 | The real action popup at 200 % zoom (P146's Known limit): one manual check on the user's Chrome, recorded in the ledger. (Task 6 note: the real popup can be driven headless, `chrome.action.openPopup()` from the worker and CDP, see `Ext.real_popup`; its width is now tested at 100 % zoom, but not at 200 %) | Plan 5c | the user's note | 5c rollout |
+| R64 | (Whole-branch review M8, user 2026-10-30: "Defer to Plan 5c") With no cached feed, the options page draws the pins before the `CHECK` and refreshes the feed's places once it returns; today the pins wait for the whole check (up to the 25 s request limits) although they do not depend on the feed (`options.js` `start()`) | Plan 5c | an options test with no cached feed and a held `CHECK`: the pin rows are listed and editable before the reply | 5c |
+| R65 | (Whole-branch review rec. 1) `build_extension_zip` refuses a dirty working tree, or a HEAD other than the SHA the `RELEASES.md` row records (R62); today it builds from the working tree as it stands | Plan 5c | a test: a dirty tree and a mismatched SHA each fail with a message | 5c release |
+| R66 | (Whole-branch review rec. 2) A real Reload on the user's own Chrome in the release check: the v1.0.2 folder replaced by the v2.0.0 ZIP's files, Developer mode on, Reload on the card; the pins and settings kept. Task 8's evidence is Playwright's Chromium only (R49) | Plan 5c | the user's note in the ledger | 5c rollout |
+| R67 | (Whole-branch review rec. 3, weight) The popup skips its second render when the check is skipped or replies `changed: false` (5b-1 behaviour) | Plan 5c | a popup test counting renders for a fresh cache | 5c |
 
 ## After Plan 5b-2
 
@@ -1983,4 +1987,8 @@ steps `help.html` gives.
 
   `build_extension_zip` gives a checked, reproducible ZIP that upgrades a v1.0.2 folder in place.
 - **The mutation tooling** has a preserved copy outside `.scratch/` (Step 0).
-- **Next:** a whole-branch review of Plan 5b-2, then Plan 5c (rollout).
+- **The whole-branch review** (2026-10-30; SDD ledger "Whole-branch review (Plan 5b-2)"): Ready, 0 Critical /
+  0 Important / 8 Minor. M1-M7 are fixed in `042500d`, and the scoped re-review's four test-side Minors in
+  `cee7ca9`. M8 is deferred to Plan 5c as R64 (the user's ruling), and the reviewer's 5c recommendations are R62's
+  note and R65-R67.
+- **Next:** Plan 5c (rollout).
