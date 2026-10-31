@@ -94,6 +94,7 @@ from elections_calendar.snapshots import (
     baseline_to_dict,
     build_snapshot,
     decide,
+    known_unit_reasons,
     load_baseline,
     registry_version,
     snapshot_to_dict,
@@ -529,7 +530,9 @@ def _worst(*levels: Severity) -> Severity:
 def _verdict_rows(
     sources: Sequence[SourceResult], run_reasons: Sequence[Reason]
 ) -> list[dict[str, Any]]:
-    def row(source: str | None, reason: Reason, *, acknowledged: bool) -> dict[str, Any]:
+    def row(
+        source: str | None, reason: Reason, *, acknowledged: bool, known: bool = False
+    ) -> dict[str, Any]:
         shown = reason_dict(reason)
         return {
             "source": source,
@@ -537,13 +540,14 @@ def _verdict_rows(
             "level": shown["level"],
             "text": shown["text"],
             "acknowledged": acknowledged,
+            "known": known,
         }
 
     rows: list[dict[str, Any]] = []
     for s in sorted(sources, key=lambda s: SOURCE_ORDER.index(s.source)):
         open_reasons = unacknowledged(s.reasons, s.acknowledged)
         rows += [
-            row(s.source, r, acknowledged=r not in open_reasons)
+            row(s.source, r, acknowledged=r not in open_reasons, known=r in s.known)
             for r in s.reasons
             if REASON_LEVEL[r.code] != "info"
         ]
@@ -644,6 +648,9 @@ def run(config: RunConfig) -> RunResult:
                 reasons=reasons,
                 acknowledged=acknowledge(p.spec.source, reasons, items, issues, p.state, now),
                 severity=severity_of(reasons),
+                known=known_unit_reasons(
+                    reasons, decision.served, None if p.baseline is None else p.baseline.snapshot
+                ),
             )
         )
 
@@ -713,7 +720,12 @@ def run(config: RunConfig) -> RunResult:
     run_severity = _worst(parts.severity, severity_of(reasons_now))
 
     # The verdict.
-    open_reasons = [r for s in results for r in unacknowledged(s.reasons, s.acknowledged)]
+    open_reasons = [
+        r
+        for s in results
+        for r in unacknowledged(s.reasons, s.acknowledged)
+        if r not in s.known
+    ]
     over_budget = feed is not None and len(feed) > FEED_BUDGET_BYTES  # P114: soft, red not blocked
     verdict: Verdict = "red" if over_budget else verdict_of([*open_reasons, *reasons_now])
     verdict_doc = {

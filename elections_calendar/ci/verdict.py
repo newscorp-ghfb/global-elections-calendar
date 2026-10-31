@@ -181,7 +181,7 @@ def _late(state: RunState) -> FinalVerdict:
         return _red("validation failed (not published)")
     if data["verdict"] == "red":
         return _red("not published: open warnings or errors")
-    return _green("not published: healthy")
+    return _green("not published: no new unacknowledged issues")
 
 
 def final_verdict(state: RunState) -> FinalVerdict:
