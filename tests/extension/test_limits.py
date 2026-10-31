@@ -14,6 +14,7 @@ from tests.support.extension import (
     Ext,
     artifact_pair,
     feed_record,
+    fresh_v1_feed,
     js,
     status_record,
     synthetic_feed,
@@ -245,6 +246,38 @@ def test_the_real_popup_keeps_its_width(ext: Ext, pair: tuple[bytes, bytes]) -> 
     assert width == "380px", width
     # 16d2f40 measured 410; a rule without max-width exceeded it (443 at 9d2b55f, 800 at 2ca492b)
     assert inner <= 410, inner
+
+
+def test_the_popup_asks_chrome_for_its_full_width(ext: Ext, pair: tuple[bytes, bytes]) -> None:
+    # Chrome sizes the real popup from a frame a few pixels wide to the page's min-content width.
+    # The real-popup test above only catches that when the race goes wrong, so this one reads the
+    # same measure in a 25 px tab.
+    pins = ["Bangladesh", "Peru"]
+    v1 = feed_record(fresh_v1_feed(), fmt="legacy")
+    v2 = {FEED: feed_record(pair[0]), STATUS: status_record(pair[1])}
+    states: dict[str, dict[str, Any]] = {
+        "v1 feed, pins": {FEED: v1, "pinned_countries": pins},
+        "v1 feed, no pins": {FEED: v1},
+        "v2 data, pins": {**v2, "pinned_countries": pins},
+        "v2 data, no pins": v2,
+    }
+    widths: dict[str, float] = {}
+    for label, state in states.items():
+        ext.clear()
+        ext.seed({**state, CHECK: _fresh_check()})
+        page = ext.open("popup.html")
+        page.set_viewport_size({"width": 25, "height": 600})
+        page.wait_for_function(
+            "() => document.body.dataset.state === 'ready' && document.body.dataset.checking === 'false'"
+        )
+        widths[label] = page.evaluate(
+            """() => { document.documentElement.style.width = 'min-content';
+              const w = document.body.getBoundingClientRect().width;
+              document.documentElement.style.width = ''; return w; }"""
+        )
+        page.close()
+    assert all(abs(w - 380) <= 0.5 for w in widths.values()), widths
+    assert ext.page_errors == []
 
 
 def test_a_long_unbroken_word_wraps_at_320px(ext: Ext, pair: tuple[bytes, bytes]) -> None:
