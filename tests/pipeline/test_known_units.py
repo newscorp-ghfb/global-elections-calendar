@@ -14,6 +14,7 @@ from elections_calendar.model import FetchOutcome
 from elections_calendar.pipeline import run
 from elections_calendar.runner import AdapterSpec
 from tests.support.fixtures import FIXTURES
+from tests.support.known_issues import entry, ts
 from tests.support.repo import NOW, commit, config, offline_dir
 
 AWEB = AdapterSpec("aweb", "elections_calendar.sources.aweb:Aweb")
@@ -127,7 +128,34 @@ def test_a_fallback_day_keeps_its_own_reasons_red(tmp_path: Path) -> None:
     rows = unit_rows(out)
     assert [r["code"] for r in rows] == list(UNIT_CODES)
     assert all(r["known"] is True for r in rows)
-    others = [r for r in doc["reasons"] if r["level"] in ("error", "warning") and r not in rows]
-    assert others
-    assert all(r["known"] is False for r in others)
-    assert any(r["code"] == "timeout" for r in others)
+    shown = [r for r in doc["reasons"] if r["level"] in ("error", "warning")]
+    assert [r["code"] for r in shown if not r["known"]] == ["timeout"]
+    assert {r["code"] for r in shown if r["known"]} == set(UNIT_CODES)
+
+
+def test_an_acknowledged_known_reason_shows_its_acknowledgement(tmp_path: Path) -> None:
+    repo = Repo(tmp_path)
+    first = repo.day(0)
+    full = json.loads((first / "attention_full.json").read_text(encoding="utf-8"))
+    texts = [
+        i["unit_text"] for i in full["items"] if i["kind"] == "unparsed_unit" and i["source"] == "aweb"
+    ]
+    assert len(texts) == 1
+    acknowledgement = entry(
+        source="aweb",
+        reason="unparsed_relevant",
+        scope=None,
+        unit_text=json.dumps(texts[0]),
+        acknowledged_at=ts(NOW + DAY - timedelta(hours=1)),
+        expires_at=ts(NOW + 5 * DAY),
+    )
+    (tmp_path / "repo/known_issues.yml").write_text(acknowledgement + "\n", encoding="utf-8")
+    out = repo.day(1)
+    assert verdict(out)["verdict"] == "green"
+    lines = (out / "HEALTH.md").read_text(encoding="utf-8").splitlines()
+    unparsed = next(ln for ln in lines if "unparsed\\_relevant" in ln)
+    partial = next(ln for ln in lines if "partial\\_relevant" in ln)
+    assert " — acknowledged until " in unparsed
+    assert "known:" not in unparsed
+    assert partial.endswith(KNOWN_TEXT)
+    assert next(ln for ln in lines if ln.startswith(ROW)).endswith("| 0 (+1 known) |")
