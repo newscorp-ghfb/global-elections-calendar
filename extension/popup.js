@@ -76,6 +76,7 @@ function drawHealth(record, statusRecord, check, now) {
 
 // Render the cached feed, if the stored record is valid. True when something was drawn.
 let firstRender = true; // the performance marks are made on the first render only
+let drawn = false;      // a render has drawn a feed
 
 async function render() {
   const mark = firstRender;
@@ -106,6 +107,8 @@ async function render() {
     performance.measure("popup:first-render", "popup:read", "popup:drawn");
   }
   document.body.dataset.state = "ready";
+  performance.mark("popup:render"); // one per render that draws (P153)
+  drawn = true;
   return true;
 }
 
@@ -121,6 +124,8 @@ async function check(force) {
     } catch (err) {
       failure = err instanceof Error ? err.message : String(err);
     }
+    // Only a skipped reply (no request made) leaves the first render standing (P153).
+    if (drawn && reply && reply.ok === true && reply.changed === false && reply.skipped === true) return;
     if (await render()) return;
     if (failure !== null) showError(failure);
     else if (reply && reply.ok === false) showError(reply.error);

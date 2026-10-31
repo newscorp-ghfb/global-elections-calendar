@@ -425,3 +425,42 @@ def test_the_options_page_respects_the_check_throttle(ext: Ext, pair: tuple[byte
     assert page.locator("#noData").text_content() == NO_DATA
     assert ext.served.log == []
     assert ext.page_errors == []
+
+
+def test_the_pins_are_listed_before_a_slow_check(ext: Ext, pair: tuple[bytes, bytes]) -> None:
+    # R64, P152: no cached feed, and the check's request is held; the pins do not wait for it
+    feed, status = pair
+    ext.seed(_pins(["iso:LS", "iso:BR"]))
+    ext.served.set("elections.json", "hold")
+    ext.served.set("status.json", status)
+    page = ext.open("options.html")  # not waited for: the page stays busy while the request is held
+    expect(_button(page, "iso:LS")).to_be_enabled(timeout=3000)
+    expect(_button(page, "iso:BR")).to_be_enabled(timeout=3000)
+    _shows(page, ["iso:LS", "iso:BR"], [], timeout=3000)
+    assert set(_ids(page)) == {"iso:LS", "iso:BR"}
+    assert "elections.json" in ext.served.log
+    _button(page, "iso:LS").click()
+    _wait_places(page, ["iso:BR"])
+    assert _stored_places(ext) == ["iso:BR"]
+    ext.served.release("elections.json", feed)
+    page.wait_for_function(IDLE)
+    assert len(_ids(page)) == 73
+    assert page.locator("#noData").is_hidden()
+    _shows(page, ["iso:BR"], ["iso:LS"])
+    assert ext.page_errors == []
+
+
+def test_a_failed_check_leaves_the_pins_editable(ext: Ext) -> None:
+    # Review Focus 3: the check fails; the pins stay listed and editable, "no data" is shown
+    ext.seed(_pins(["iso:LS", "iso:BR"]))
+    ext.served.set("elections.json", 500)
+    ext.served.set("status.json", 500)
+    page = _open(ext)
+    assert set(_ids(page)) == {"iso:LS", "iso:BR"}
+    expect(_button(page, "iso:LS")).to_be_enabled()
+    assert page.locator("#noData").text_content() == NO_DATA
+    assert page.locator("#noData").is_visible()
+    _button(page, "iso:LS").click()
+    page.wait_for_function(IDLE)
+    assert _stored_places(ext) == ["iso:BR"]
+    assert ext.page_errors == []
