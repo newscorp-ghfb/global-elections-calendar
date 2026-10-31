@@ -9,11 +9,12 @@ what was. Release notes:
 
 ## How it works
 
-1. **Sources.** The daily job fetches the nine pages listed under Sources and parses each into
+1. **Sources.** The daily job fetches the pages of the nine sources listed under Sources and parses each into
    election records.
 2. **Merge.** The records are merged into one feed, `elections.json`, with one card per election.
-3. **Health.** Each source and the run get a verdict, `green` or `red`, written to `status.json`
-   and `HEALTH.md`. A source that fails keeps its last good baseline, and the feed says so.
+3. **Health.** Each source and the run get a severity (`ok`, `warning` or `error`) in `status.json`
+   and `HEALTH.md`; the run's verdict, `green` or `red`, is in `HEALTH.md` and the artifact's
+   `verdict.json`. A source that fails keeps its last good baseline, and the feed says so.
 4. **Publish.** The publish job validates the artifact and commits the feed and the health files
    to `main`.
 5. **Extension.** The Chrome extension reads the published feed and the status, and shows each
@@ -291,7 +292,8 @@ Without `--release-sha` the build is a development build, and the row keeps `<co
   under `extension/`. Add a new extension file to `FILES`.
 - The bytes are reproducible for one Python minor version and one zlib version.
 - It prints the ZIP's SHA-256 and the `RELEASES.md` row, naming both versions. It does not write
-  the row: the release's code SHA, destination, date and approval are recorded by hand.
+  the row: the release's destination, date and approval are recorded by hand; the code SHA comes only from
+  a guarded build (`--release-sha`).
 - `--release-sha` makes it a guarded release build. It refuses when the SHA is not the full 40
   lowercase hex, when `git status --porcelain --untracked-files=all` lists anything, or when `HEAD`
   is another commit (a detached `HEAD` at that commit is fine). Only then does it fill the row's
@@ -344,7 +346,7 @@ The first baselines are not written by a publish job. The user approves one arti
 
 To go back to the pre-v2 code (spec 15 step 7; P122, P123), run these steps from a checkout of
 `main`. Every write to `main` needs the user's go-ahead at the time; 5c's runbook holds the
-`MERGE_APPROVED` steps. `scripts/republish.py` writes files and never commits.
+`MERGE_APPROVED` steps. `scripts/republish.py` writes files and never commits; with `--check` it writes nothing.
 
 1. **Commit `PAUSE_PUBLISHING`.** v2's workflow reads it, so v2's scheduled and dispatched runs
    stop scraping and publishing. A v2 run already in flight is `superseded` at its next push.
@@ -357,9 +359,8 @@ To go back to the pre-v2 code (spec 15 step 7; P122, P123), run these steps from
 
    `--check` runs every check and builds both files, writes nothing, and prints
    `recovery pair ok: <commit> (<digest>, recorded in <RELEASES.md|status.json>); its feed can be republished`.
-   Run the second command only when it passes.
-
-   It prints `republished <commit> (<original sha256>) as <new sha256>`. Review
+   Run the second command only when it passes. The second command writes the files and prints
+   `republished <commit> (<original sha256>) as <new sha256>`. Review
    `elections.json` and `status.json`, then commit and push them (spec 15 step 7.2).
 3. **Restore the pre-v2 tree and commit it:**
 

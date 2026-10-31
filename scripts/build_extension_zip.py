@@ -356,6 +356,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             for line in refused:
                 print(line, file=sys.stderr)
             return 1
+    try:  # read before building, so a missing file leaves no ZIP behind
+        for name in ("requirements.txt", "requirements-dev.txt"):
+            (repo / name).read_bytes()
+    except OSError as err:
+        print(f"cannot read {err.filename or err}: {err.strerror or err}", file=sys.stderr)
+        return 1
     try:
         path, digest = build(repo / "extension", repo / "dist")
     except ZipCheckError as err:

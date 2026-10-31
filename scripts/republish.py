@@ -3,7 +3,7 @@
 Run from the repository root as ``python -m scripts.republish --from-commit <40-hex SHA>``
 (spec §15 step 7.2; Plan 5a P122). The commit must be in ``main``'s history and have a recovery pair
 in ``RELEASES.md`` or in its own ``status.json``. Review the two files, then commit and push them
-by hand.
+by hand. With ``--check`` it runs every check and builds both files, but writes nothing (P155).
 """
 
 import argparse
@@ -32,7 +32,10 @@ def _moment(text: str) -> datetime:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m scripts.republish",
-        description="Write a republished elections.json and status.json; commits nothing.",
+        description=(
+            "Write a republished elections.json and status.json; commits nothing. "
+            "With --check, run every check and build both files but write nothing."
+        ),
     )
     parser.add_argument("--from-commit", required=True, metavar="SHA", help="full 40-character SHA")
     parser.add_argument("--repo", type=Path, default=Path("."), help="the repository (default .)")

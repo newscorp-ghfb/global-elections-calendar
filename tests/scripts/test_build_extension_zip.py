@@ -310,7 +310,7 @@ RELEASE_CASES: list[tuple[str, Callable[[Path], None], str | None, int, str]] = 
         _untracked_dir,
         None,
         1,
-        "(1 changed or untracked, first: new/x.txt)",
+        "the working tree is not clean (1 changed or untracked, first: new/x.txt)",
     ),
     (
         "modified",
@@ -321,6 +321,7 @@ RELEASE_CASES: list[tuple[str, Callable[[Path], None], str | None, int, str]] = 
     ),
     ("other_commit", _nothing, "0" * 40, 1, "HEAD is {head}, not the release commit " + "0" * 40),
     ("short", _nothing, "abc1234", 1, "--release-sha must be the full 40-character commit SHA"),
+    ("upper", _nothing, "UPPER", 1, "--release-sha must be the full 40-character commit SHA"),
 ]
 
 
@@ -338,7 +339,8 @@ def test_a_release_build_needs_a_clean_tree_at_the_release_commit(
 ) -> None:
     repo, head = _release_repo(tmp_path)
     change(repo)
-    code = main(["--release-sha", release_sha or head, "--repo", str(repo)])
+    given = head.upper() if release_sha == "UPPER" else release_sha or head
+    code = main(["--release-sha", given, "--repo", str(repo)])
     captured = capsys.readouterr()
     assert code == exit_code
     zips = list((repo / "dist").glob("*.zip"))
@@ -346,7 +348,7 @@ def test_a_release_build_needs_a_clean_tree_at_the_release_commit(
         assert len(zips) == 1
         assert captured.err == ""
     else:
-        assert message.format(head=head) in captured.err
+        assert captured.err.splitlines() == [message.format(head=head)]
         assert zips == []
         assert "| 2.0.0 |" not in captured.out
 
@@ -391,6 +393,38 @@ def test_a_release_build_outside_a_repository_is_an_exit_1_not_a_traceback(
     code = main(["--release-sha", "a" * 40, "--repo", str(plain)])
     captured = capsys.readouterr()
     assert code == 1
-    assert captured.err.strip()
+    assert captured.err.startswith("git status failed:")
     assert "Traceback" not in captured.err
     assert captured.out == ""
+
+
+def test_a_build_without_requirements_files_writes_no_zip(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo, _ = _release_repo(tmp_path)
+    (repo / "requirements-dev.txt").unlink()
+    code = main(["--repo", str(repo)])
+    captured = capsys.readouterr()
+    assert code == 1
+    assert "requirements-dev.txt" in captured.err
+    assert "Traceback" not in captured.err
+    assert not list((repo / "dist").glob("*.zip"))
+    assert captured.out == ""
+
+
+def test_the_release_row_uses_the_requirements_of_the_built_repository(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo, _ = _release_repo(tmp_path)
+    (repo / "requirements.txt").write_bytes(b"one\n")
+    (repo / "requirements-dev.txt").write_bytes(b"two\n")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-q", "-m", "other requirements")
+    head = git(repo, "rev-parse", "HEAD")
+    assert main(["--release-sha", head, "--repo", str(repo)]) == 0
+    row = next(
+        line for line in capsys.readouterr().out.splitlines() if line.startswith(f"| {VERSION} |")
+    )
+    cells = [c.strip() for c in row.strip("|").split("|")]
+    assert cells[2] == hashlib.sha256(b"one\n").hexdigest()
+    assert cells[3] == hashlib.sha256(b"two\n").hexdigest()
