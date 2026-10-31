@@ -221,8 +221,9 @@ def test_large_collections_render_bounded(fresh_ext: Ext, pair: tuple[bytes, byt
 
 
 def test_the_real_popup_keeps_its_width(ext: Ext, pair: tuple[bytes, bytes]) -> None:
-    # Chrome sizes an action popup from a small starting viewport: a viewport-relative body width
-    # shrank it to 196 px. The tab tests above cannot see that, so this opens the real popup.
+    # Chrome sizes an action popup from a small starting frame: a viewport-relative body width
+    # shrank it to 196 px. The 25 x 25 tab test below reads Chrome's measure; this one checks
+    # the size the real popup settles at.
     ext.seed({FEED: feed_record(pair[0]), STATUS: status_record(pair[1]), CHECK: _fresh_check()})
     anchor = ext.open("test/test.html", now=None)
     with ext.real_popup(anchor) as evaluate:
@@ -232,7 +233,8 @@ def test_the_real_popup_keeps_its_width(ext: Ext, pair: tuple[bytes, bytes]) -> 
             anchor.wait_for_timeout(100)
         else:
             raise AssertionError("the real popup never became ready")
-        # the popup starts near 182 px and grows: read when two readings 200 ms apart agree
+        # the popup grows in steps (headless: 380 x 446, then 410 x 510): read when two readings
+        # 200 ms apart agree
         reading: list[Any] = []
         for _ in range(25):
             now = evaluate("[innerWidth, getComputedStyle(document.body).width]")
@@ -244,14 +246,14 @@ def test_the_real_popup_keeps_its_width(ext: Ext, pair: tuple[bytes, bytes]) -> 
             raise AssertionError(f"the real popup's size never settled: {reading}")
     inner, width = reading
     assert width == "380px", width
-    # 16d2f40 measured 410; a rule without max-width exceeded it (443 at 9d2b55f, 800 at 2ca492b)
+    # 16d2f40 measured 410; width rules with no cap exceeded it (443 at 9d2b55f, 800 at 2ca492b)
     assert inner <= 410, inner
 
 
 def test_the_popup_asks_chrome_for_its_full_width(ext: Ext, pair: tuple[bytes, bytes]) -> None:
-    # Chrome sizes the real popup from a frame a few pixels wide to the page's min-content width.
+    # Chrome sizes the real popup from its 25 x 25 starting frame to the page's min-content width.
     # The real-popup test above only catches that when the race goes wrong, so this one reads the
-    # same measure in a 25 px tab.
+    # same measure in a 25 x 25 tab, where the short-popup rules match too.
     pins = ["Bangladesh", "Peru"]
     v1 = feed_record(fresh_v1_feed(), fmt="legacy")
     v2 = {FEED: feed_record(pair[0]), STATUS: status_record(pair[1])}
@@ -266,7 +268,7 @@ def test_the_popup_asks_chrome_for_its_full_width(ext: Ext, pair: tuple[bytes, b
         ext.clear()
         ext.seed({**state, CHECK: _fresh_check()})
         page = ext.open("popup.html")
-        page.set_viewport_size({"width": 25, "height": 600})
+        page.set_viewport_size({"width": 25, "height": 25})
         page.wait_for_function(
             "() => document.body.dataset.state === 'ready' && document.body.dataset.checking === 'false'"
         )
