@@ -1,9 +1,40 @@
 # Global Elections Calendar
 
 A daily GitHub Actions job scrapes election calendars and publishes
-`elections.json`; a Chrome extension shows it. Version 2 is being built on
-`feat/never-miss-v2`. Design:
+`elections.json`; a Chrome extension shows it. Version 2 (`v2.0.0`) is released: nine sources are
+merged, checked and published daily, and the extension shows what could not be checked as well as
+what was. Release notes:
+[`docs/extension/v2.0.0-release-notes.md`](docs/extension/v2.0.0-release-notes.md). Design:
 [`docs/superpowers/specs/2026-10-16-never-miss-v2-design.md`](docs/superpowers/specs/2026-10-16-never-miss-v2-design.md).
+
+## How it works
+
+1. **Sources.** The daily job fetches the nine pages listed under Sources and parses each into
+   election records.
+2. **Merge.** The records are merged into one feed, `elections.json`, with one card per election.
+3. **Health.** Each source and the run get a verdict, `green` or `red`, written to `status.json`
+   and `HEALTH.md`. A source that fails keeps its last good baseline, and the feed says so.
+4. **Publish.** The publish job validates the artifact and commits the feed and the health files
+   to `main`.
+5. **Extension.** The Chrome extension reads the published feed and the status, and shows each
+   election with a warning when its source could not be checked.
+
+The design is in
+[the spec](docs/superpowers/specs/2026-10-16-never-miss-v2-design.md).
+
+## Sources
+
+| Source | Page |
+|---|---|
+| ElectionGuide | `https://www.electionguide.org/elections/type/{view}/` |
+| OSCE/ODIHR | `https://odihr.osce.org/odihr/elections` |
+| Wikipedia | `https://en.wikipedia.org/wiki/{year}_{kind}_electoral_calendar` |
+| NDI | `https://www.ndi.org/elections-calendar` |
+| A-WEB | `https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052&option=all` |
+| EISA | `https://www.eisa.org/election-calendar/` |
+| IPU | `https://data.ipu.org/elections/` |
+| Carter Center | `https://www.cartercenter.org/programs/democracy/elections-observed/` |
+| EEAS | `https://www.eeas.europa.eu/eeas/eu-election-observation-missions-1_en` |
 
 ## Development setup
 
@@ -248,8 +279,10 @@ acknowledged. The feed is still published.
 ## Building the extension ZIP
 
 ```powershell
-.venv\Scripts\python.exe -m scripts.build_extension_zip
+.venv\Scripts\python.exe -m scripts.build_extension_zip --release-sha <40-hex SHA> [--repo DIR]
 ```
+
+Without `--release-sha` the build is a development build, and the row keeps `<code SHA>`.
 
 - It builds `dist/Global_Elections_Calendar_v2.0.0.zip` (`dist/` is git-ignored) from the
   explicit file list `FILES` in `scripts/build_extension_zip.py`, and refuses to write anything
@@ -259,7 +292,30 @@ acknowledged. The feed is still published.
 - The bytes are reproducible for one Python minor version and one zlib version.
 - It prints the ZIP's SHA-256 and the `RELEASES.md` row, naming both versions. It does not write
   the row: the release's code SHA, destination, date and approval are recorded by hand.
+- `--release-sha` makes it a guarded release build. It refuses when the SHA is not the full 40
+  lowercase hex, when `git status --porcelain --untracked-files=all` lists anything, or when `HEAD`
+  is another commit (a detached `HEAD` at that commit is fine). Only then does it fill the row's
+  code SHA. `--repo DIR` (default: this repository) names the repository whose `extension/` is
+  built into `<DIR>/dist`.
 - The release notes are `docs/extension/v2.0.0-release-notes.md`.
+
+## Updating the extension
+
+### Loaded unpacked ("Load unpacked")
+
+1. In `chrome://extensions`, note the folder the extension was loaded from.
+2. Delete the folder's contents (keep the folder).
+3. Extract the v2.0.0 ZIP into it.
+4. Turn on Developer mode (top right) if it is off, then click Reload on the extension's card.
+
+Do not remove the extension: removing it deletes your pins and settings. The extension ID depends
+on the folder path, and the manifest carries no `key`.
+
+### Chrome Web Store
+
+Upload the same ZIP. Users update automatically, with the same ID and the same storage.
+**No permission prompt is expected**, because the permissions are v1.0.2's. That is an expectation:
+it is confirmed only once a Store update lands (open item O4).
 
 ## `ci adopt`: the first baselines
 
@@ -292,11 +348,16 @@ To go back to the pre-v2 code (spec 15 step 7; P122, P123), run these steps from
 
 1. **Commit `PAUSE_PUBLISHING`.** v2's workflow reads it, so v2's scheduled and dispatched runs
    stop scraping and publishing. A v2 run already in flight is `superseded` at its next push.
-2. **Republish a recorded feed:**
+2. **Check, then republish a recorded feed:**
 
    ```powershell
+   .venv\Scripts\python.exe -m scripts.republish --from-commit <40-hex SHA> --check
    .venv\Scripts\python.exe -m scripts.republish --from-commit <40-hex SHA>
    ```
+
+   `--check` runs every check and builds both files, writes nothing, and prints
+   `recovery pair ok: <commit> (<digest>, recorded in <RELEASES.md|status.json>); its feed can be republished`.
+   Run the second command only when it passes.
 
    It prints `republished <commit> (<original sha256>) as <new sha256>`. Review
    `elections.json` and `status.json`, then commit and push them (spec 15 step 7.2).

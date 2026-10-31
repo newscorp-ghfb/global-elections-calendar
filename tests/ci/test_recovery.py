@@ -997,3 +997,50 @@ def test_an_unreadable_releases_md_is_an_exit_1_not_a_traceback(
     code, out, err = run_script(repos.clone, repos.head, capsys)
     assert (code, out) == (1, "")
     assert err.strip() and "Traceback" not in err
+
+
+# --- republish --check (Plan 5c Task 4; P155, R43) ----------------------------------------------
+
+
+@pytest.mark.parametrize("recorded_in", ["RELEASES.md", "status.json"])
+def test_republish_check_writes_nothing(
+    recorded_in: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    p = published(tmp_path)
+    clone = p.repos.clone
+    if recorded_in == "RELEASES.md":
+        (clone / "RELEASES.md").write_text(
+            releases(pair_row(p.commit, sha(p.feed))), encoding="utf-8", newline=""
+        )
+        commit_all(clone, "record the pair in RELEASES.md")
+    before = state(clone)
+    releases_before = (clone / "RELEASES.md").read_bytes() if (clone / "RELEASES.md").exists() else None
+    assert git(clone, "status", "--porcelain") == ""
+    code, out, err = run_script(clone, p.commit, capsys, "--check")
+    assert (code, err) == (0, "")
+    assert out.splitlines() == [
+        f"recovery pair ok: {p.commit} ({sha(p.feed)}, recorded in {recorded_in}); "
+        "its feed can be republished",
+        "nothing was written (--check)",
+    ]
+    assert state(clone) == before
+    after = (clone / "RELEASES.md").read_bytes() if (clone / "RELEASES.md").exists() else None
+    assert after == releases_before
+    assert git(clone, "status", "--porcelain") == ""
+
+
+def test_republish_check_refuses_a_bad_pair(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    p = published(tmp_path)
+    clone = p.repos.clone
+    commit_sha, text, message = case_altered_row(p)
+    (clone / "RELEASES.md").write_text(text, encoding="utf-8", newline="")
+    commit_all(clone, "an altered row")
+    before = state(clone)
+    code, out, err = run_script(clone, commit_sha, capsys, "--check")
+    assert (code, out) == (1, "")
+    assert message in err
+    assert "Traceback" not in err
+    assert state(clone) == before
+    assert git(clone, "status", "--porcelain") == ""
