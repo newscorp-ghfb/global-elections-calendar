@@ -20,7 +20,7 @@ const unresolvedList = $("unresolvedList");
 const iconTemplate = $("pinIcon");
 
 let table = null;       // the place table
-let feedPlaces = [];    // [{id, name}] from the stored feed, read once on load
+let feedPlaces = [];    // [{id, name}] from the stored feed; read on load, and again after a check with no cache
 let generation = 0;     // the number of the latest reconcile() started
 let working = 0;        // edits, reads and the load in flight; the page is idle at 0
 const pending = new Set(); // keys of the buttons whose edit has no reply yet
@@ -246,6 +246,13 @@ async function start() {
     }
     const read = async () => storedFeed((await chrome.storage.local.get([KEYS.feed]))[KEYS.feed], schemas);
     let record = await read();
+    feedPlaces = optionPlaces(record, table);
+    searchEl.addEventListener("input", applySearch);
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === "local" && Object.values(PIN_KEYS).some((key) => key in changes)) reconcile();
+    });
+    // The pins are listed and editable before any check; they do not depend on the feed.
+    await reconcile();
     if (record === null) {
       try {
         await chrome.runtime.sendMessage({ type: "CHECK" });
@@ -253,14 +260,10 @@ async function start() {
         // no data stays no data; the pins are still listed
       }
       record = await read();
+      feedPlaces = optionPlaces(record, table);
+      noDataEl.hidden = record !== null;
+      await reconcile();
     }
-    noDataEl.hidden = record !== null;
-    feedPlaces = optionPlaces(record, table);
-    searchEl.addEventListener("input", applySearch);
-    chrome.storage.onChanged.addListener((changes, area) => {
-      if (area === "local" && Object.values(PIN_KEYS).some((key) => key in changes)) reconcile();
-    });
-    await reconcile();
   } catch (err) {
     pinsFailed(message(err));
   } finally {

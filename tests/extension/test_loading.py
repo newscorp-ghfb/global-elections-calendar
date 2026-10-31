@@ -1075,3 +1075,162 @@ def test_a_deeply_nested_unknown_value_is_stored_safely(
     assert _cards(page) == 30
     assert _send_check(lab) == {"ok": True, "changed": False}
     assert ext.page_errors == []
+
+
+RENDERS: Final = "() => performance.getEntriesByName('popup:render').length"
+MIN_MS: Final = 60_000
+
+
+def _renders(page: Page) -> int:
+    count: int = page.evaluate(RENDERS)
+    return count
+
+
+def _fresh(pair: tuple[bytes, bytes], age_ms: int = 20 * MIN_MS) -> dict[str, Any]:
+    """The pair cached, the last good check ``age_ms`` ago in real time: the worker's check is not due."""
+    feed, status = pair
+    ok_at = int(time.time() * 1000) - age_ms
+    return {
+        FEED: feed_record(feed),
+        STATUS: status_record(status),
+        CHECK: {"ok_at": ok_at, "failed_at": None, "error": None},
+    }
+
+
+def test_a_fresh_cache_does_not_render_again(fresh_ext: Ext, pair: tuple[bytes, bytes]) -> None:
+    # R67's acceptance (P153): a skipped opening check leaves the first render standing
+    feed, status = pair
+    seeded = _fresh(pair)
+    fresh_ext.seed(seeded)
+    fresh_ext.served.set("elections.json", feed)
+    fresh_ext.served.set("status.json", status)
+    before = len(fresh_ext.served.log)
+    page = fresh_ext.popup(now=None)  # a fixed clock would hide the marks: these tests have a launch of their own
+    assert _renders(page) == 1
+    assert "elections.json" not in fresh_ext.served.log[before:]
+    # a skipped check claims no new download
+    assert page.locator("#footerChecked").text_content() == f"Checked {_stamp(seeded[CHECK]['ok_at'])}"
+    assert fresh_ext.storage()[CHECK]["ok_at"] == seeded[CHECK]["ok_at"]
+    assert fresh_ext.page_errors == []
+
+
+def _stamp(ms: int) -> str:
+    t = datetime.fromtimestamp(ms / 1000, UTC)
+    return f"{t.day} {t:%b %Y, %H:%M}"
+
+
+def test_a_same_bytes_refresh_renders_again(fresh_ext: Ext, pair: tuple[bytes, bytes]) -> None:
+    feed, status = pair
+    seeded = _fresh(pair)
+    fresh_ext.seed(seeded)
+    fresh_ext.served.set("elections.json", feed)
+    fresh_ext.served.set("status.json", status)
+    page = fresh_ext.popup(now=None)  # a fixed clock would hide the marks: these tests have a launch of their own
+    assert _renders(page) == 1
+    first = page.locator("#footerChecked").text_content()
+    page.click("#refreshBtn")
+    _settled(page)
+    assert _renders(page) == 2
+    assert fresh_ext.storage()[CHECK]["ok_at"] > seeded[CHECK]["ok_at"]
+    second = page.locator("#footerChecked").text_content()
+    assert second != first and (second or "").startswith("Checked ")
+    newer = published_at(feed, T3)
+    fresh_ext.served.set("elections.json", newer)
+    fresh_ext.served.set("status.json", linking(newer, status))
+    page.click("#refreshBtn")
+    _settled(page)
+    assert _renders(page) == 3
+    assert fresh_ext.storage()[FEED]["sha256"] == _sha(newer)
+    assert fresh_ext.page_errors == []
+
+
+def test_a_failed_refresh_renders_again(fresh_ext: Ext, pair: tuple[bytes, bytes]) -> None:
+    feed, status = pair
+    fresh_ext.seed(_fresh(pair))
+    fresh_ext.served.set("elections.json", feed)
+    fresh_ext.served.set("status.json", status)
+    page = fresh_ext.popup(now=None)  # a fixed clock would hide the marks: these tests have a launch of their own
+    assert _renders(page) == 1
+    fresh_ext.served.set("elections.json", 500)
+    fresh_ext.served.set("status.json", 500)
+    page.click("#refreshBtn")
+    _settled(page)
+    assert _renders(page) == 2
+    assert "couldn't check" in (page.locator("#footerChecked").text_content() or "")
+    assert fresh_ext.page_errors == []
+
+
+SNAPSHOT: Final = """group => {
+  const text = (sel) => [...document.querySelectorAll(sel)].map((e) => e.textContent);
+  const card = document.querySelector(`li.election-item[data-group-id="${group}"]`);
+  return {
+    level: document.getElementById('banner').dataset.level,
+    banner: document.getElementById('bannerText').textContent,
+    panel: text('#healthList > li'),
+    label: card === null ? null : card.querySelector('.card-label').textContent,
+    notes: card === null ? null : [...card.querySelectorAll('.card-notes > li')].map((e) => e.textContent),
+  };
+}"""
+SLOVAKIA: Final = "iso:SK"  # the card dated 2026-10-24 (Plan 5c Task 3 pre-flight)
+ISRAEL: Final = "iso:IL"  # the card dated 2026-10-27
+FALLBACK_AT: Final = "2026-10-19T10:00:00Z"
+
+
+def _card(doc: dict[str, Any], place: str, date: str) -> dict[str, Any]:
+    cards = [c for month in doc["months"].values() for c in month]
+    (found,) = [c for c in cards if c["place_id"] == place and c["date"] == date]
+    assert found["date_precision"] == "day" and len(found["children"]) == 1 and found["end_date"] == date
+    got: dict[str, Any] = found
+    return got
+
+
+def _with_fallback(feed: bytes) -> bytes:
+    """Israel's 27 Oct child held only by a fallback source fetched at FALLBACK_AT."""
+    doc = json.loads(feed)
+    for src in _card(doc, ISRAEL, "2026-10-27")["children"][0]["sources"]:
+        if src["selected"]:
+            src["fallback"] = True
+            src["fetched_at"] = FALLBACK_AT
+    return _dump(doc)
+
+
+def _ms_of(iso: str) -> int:
+    return int(datetime.fromisoformat(iso.replace("Z", "+00:00")).timestamp() * 1000)
+
+
+@pytest.mark.parametrize("row", ["midnight", "week"])
+def test_a_same_bytes_refresh_updates_the_time_labels(ext: Ext, pair: tuple[bytes, bytes], row: str) -> None:
+    # Review Focus 4 (P153): a Refresh with the same bytes after a time boundary shows what a fresh popup shows
+    feed, status = pair
+    if row == "midnight":
+        place, date = SLOVAKIA, "2026-10-24"
+        opened, later = "2026-10-24T23:58:00Z", "2026-10-25T00:02:00Z"
+        before, after = "Scheduled voting period: today (approx.)", "Past"
+        notes_before = notes_after = []
+    else:
+        place, date = ISRAEL, "2026-10-27"
+        feed = _with_fallback(feed)
+        f = _ms_of(FALLBACK_AT)
+        opened = datetime.fromtimestamp((f + 7 * 86_400_000 - 2 * MIN_MS) / 1000, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        later = datetime.fromtimestamp((f + 7 * 86_400_000 + 2 * MIN_MS) / 1000, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        before, after = "Scheduled", "Scheduled"
+        notes_before = ["Using source data from 19 Oct 2026"]
+        notes_after = ["Unverified since 19 Oct 2026"]
+    status = linking(feed, status)
+    group = _card(json.loads(feed), place, date)["group_id"]
+    seeded = _fresh((feed, status))
+    ext.seed(seeded)
+    ext.served.set("elections.json", feed)
+    ext.served.set("status.json", status)
+    page = ext.popup(now=opened)
+    shown = page.evaluate(SNAPSHOT, group)
+    assert (shown["label"], shown["notes"]) == (before, notes_before)
+    ext.context.clock.set_fixed_time(later)
+    assert page.evaluate(SNAPSHOT, group) == shown  # nothing moves until a render
+    page.click("#refreshBtn")
+    _settled(page)
+    refreshed = page.evaluate(SNAPSHOT, group)
+    assert (refreshed["label"], refreshed["notes"]) == (after, notes_after)
+    fresh = ext.popup(now=later)
+    assert fresh.evaluate(SNAPSHOT, group) == refreshed
+    assert ext.page_errors == []
