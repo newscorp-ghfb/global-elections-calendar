@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from elections_calendar.ci.git import Git, GitError
-from elections_calendar.ci.recovery import RecoveryError, republish
+from elections_calendar.ci.recovery import RecoveryError, recorded_pair, republish
 from elections_calendar.publish import write_atomic
 
 
@@ -36,6 +36,11 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--from-commit", required=True, metavar="SHA", help="full 40-character SHA")
     parser.add_argument("--repo", type=Path, default=Path("."), help="the repository (default .)")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="run every check and build both files, but write nothing (P155)",
+    )
     parser.add_argument("--now", type=_moment, default=None, help="ISO time with offset (tests)")
     return parser
 
@@ -51,6 +56,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         releases = repo / "RELEASES.md"
         text = releases.read_text(encoding="utf-8") if releases.exists() else ""
         git = Git(repo)
+        pair = recorded_pair(git, args.from_commit, text)
         feed, status = republish(
             git,
             args.from_commit,
@@ -61,6 +67,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     except (RecoveryError, GitError, UnicodeDecodeError, OSError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
+    if args.check:
+        print(
+            f"recovery pair ok: {pair.commit} ({pair.sha256}, recorded in {pair.recorded_in}); "
+            "its feed can be republished"
+        )
+        print("nothing was written (--check)")
+        return 0
     replaced: list[str] = []
     for name, data in (("elections.json", feed), ("status.json", status)):
         try:

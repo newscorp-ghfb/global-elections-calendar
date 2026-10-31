@@ -15,12 +15,17 @@ The bytes are reproducible for one Python minor version and one zlib version: en
 order, dated 1980-01-01, mode 0644, ``create_system`` 3, deflate level 9, no directory entries.
 Another toolchain carries no identical-byte promise, so the printed row names both versions.
 
-The script prints the ``RELEASES.md`` row and does not write it (5c does, with the release's code
-SHA, date and approval).
+The script prints the ``RELEASES.md`` row and does not write it (5c does, with the release's date
+and approval). The row carries a code SHA only from a guarded build (R65, P154):
 
-    .venv\\Scripts\\python.exe -m scripts.build_extension_zip
+    .venv\\Scripts\\python.exe -m scripts.build_extension_zip --release-sha <40-hex SHA>
+
+This refuses a SHA that is not 40 lowercase hex, a working tree with anything changed or untracked,
+and a HEAD that is another commit (a detached HEAD at that commit is fine). Without
+``--release-sha`` the build is a development build and the row keeps ``<code SHA>``.
 """
 
+import argparse
 import hashlib
 import json
 import os
@@ -31,8 +36,11 @@ import sys
 import tempfile
 import zipfile
 import zlib
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Final
+
+from elections_calendar.ci.git import Git, GitError
 
 ROOT: Final = Path(__file__).resolve().parent.parent
 EXTENSION: Final = ROOT / "extension"
@@ -94,6 +102,7 @@ V1_PERMISSIONS: Final[dict[str, Any]] = {
     "host_permissions": ["https://raw.githubusercontent.com/*"],
 }
 
+_FULL_SHA: Final = re.compile(r"[0-9a-f]{40}")
 _ENTRY_TIME: Final = (1980, 1, 1, 0, 0, 0)
 _ENTRY_MODE: Final = 0o100644 << 16
 _SCHEME: Final = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
@@ -267,14 +276,20 @@ def build(folder: Path = EXTENSION, out_dir: Path = DIST) -> tuple[Path, str]:
     return target, hashlib.sha256(target.read_bytes()).hexdigest()
 
 
-def release_row(sha256: str, count: int) -> str:
-    """The ``RELEASES.md`` row for this build; 5c fills the placeholders (R62)."""
-    requirements = hashlib.sha256((ROOT / "requirements.txt").read_bytes()).hexdigest()
-    dev = hashlib.sha256((ROOT / "requirements-dev.txt").read_bytes()).hexdigest()
+def release_row(
+    sha256: str, count: int, *, root: Path = ROOT, code_sha: str | None = None
+) -> str:
+    """The ``RELEASES.md`` row for this build; 5c fills the placeholders (R62).
+
+    ``code_sha`` is set only by a guarded build (``--release-sha``, R65); without it the cell keeps
+    ``<code SHA>``. The requirements digests are read from ``root``.
+    """
+    requirements = hashlib.sha256((root / "requirements.txt").read_bytes()).hexdigest()
+    dev = hashlib.sha256((root / "requirements-dev.txt").read_bytes()).hexdigest()
     zip_cell = f"{sha256} (Python {platform.python_version()}, zlib {zlib.ZLIB_RUNTIME_VERSION})"
     cells = [
         VERSION,
-        "<code SHA>",
+        code_sha or "<code SHA>",
         requirements,
         dev,
         zip_cell,
@@ -286,9 +301,63 @@ def release_row(sha256: str, count: int) -> str:
     return "| " + " | ".join(cells) + " |"
 
 
-def main() -> int:
+def release_problems(repo: Path, release_sha: str) -> list[str]:
+    """Why ``repo`` may not be released as ``release_sha`` (R65, P154); empty when it may.
+
+    A bad SHA format is reported alone. Otherwise the working tree must hold nothing changed or
+    untracked (``dist/`` is git-ignored), and ``HEAD`` must be ``release_sha``; a detached HEAD
+    is fine. Raises ``GitError`` when ``repo`` cannot be read by git.
+    """
+    if not _FULL_SHA.fullmatch(release_sha):
+        return ["--release-sha must be the full 40-character commit SHA"]
+    git = Git(repo)
+    found: list[str] = []
+    # ``Git.run`` strips its output, so the first line may have lost its leading space
+    # (" M path" arrives as "M path"): take each path after the status word, not at a column.
+    changed = git.run("status", "--porcelain", "--untracked-files=all").splitlines()
+    if changed:
+        first = changed[0].lstrip().split(None, 1)[1]
+        found.append(
+            f"the working tree is not clean ({len(changed)} changed or untracked, first: {first})"
+        )
+    head = git.run("rev-parse", "HEAD")
+    if head != release_sha:
+        found.append(f"HEAD is {head}, not the release commit {release_sha}")
+    return found
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="python -m scripts.build_extension_zip",
+        description=f"Build dist/{ZIP_NAME} from <repo>/extension and print its RELEASES.md row.",
+    )
+    parser.add_argument(
+        "--release-sha",
+        metavar="HEX",
+        help="the full release commit SHA: a guarded release build, which fills the row's code SHA",
+    )
+    parser.add_argument("--repo", type=Path, default=ROOT, help="the repository (default: this)")
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
     try:
-        path, digest = build()
+        args = _parser().parse_args(argv)
+    except SystemExit as exit_:
+        return exit_.code if isinstance(exit_.code, int) else 2
+    repo: Path = args.repo
+    release_sha: str | None = args.release_sha
+    if release_sha is not None:
+        try:
+            refused = release_problems(repo, release_sha)
+        except GitError as err:
+            refused = [str(err)]
+        if refused:
+            for line in refused:
+                print(line, file=sys.stderr)
+            return 1
+    try:
+        path, digest = build(repo / "extension", repo / "dist")
     except ZipCheckError as err:
         for line in str(err).splitlines():
             print(line, file=sys.stderr)
@@ -301,7 +370,9 @@ def main() -> int:
         f"the version is {VERSION}; the permissions equal v1.0.2's; FILES equals the folder."
     )
     print("RELEASES.md row (not written; fill the placeholders at release):")
-    print(release_row(digest, len(FILES)))
+    print(release_row(digest, len(FILES), root=repo, code_sha=release_sha))
+    if release_sha is None:
+        print("Development build: the RELEASES.md row needs --release-sha")
     return 0
 
 

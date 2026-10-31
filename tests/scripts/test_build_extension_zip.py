@@ -25,10 +25,12 @@ from scripts.build_extension_zip import (
     ZIP_NAME,
     ZipCheckError,
     build,
+    main,
     problems,
     release_row,
 )
 from tests.support.extension import ROOT, V1_EXTENSION
+from tests.support.git_repos import git
 
 
 def _copy(tmp_path: Path, name: str = "ext") -> Path:
@@ -257,3 +259,138 @@ def test_an_unreadable_file_is_a_problem_not_a_crash(tmp_path: Path) -> None:
     assert found[0].startswith("lib/a11y.js could not be read as UTF-8 text: ")
     with pytest.raises(ZipCheckError, match="lib/a11y.js could not be read"):
         build(folder, tmp_path / "dist")
+
+
+# --- the guarded release build (Plan 5c Task 4; P154, R65, R62) -----------------------------------
+
+
+def _release_repo(tmp_path: Path) -> tuple[Path, str]:
+    """A temporary repository holding ``extension/`` and the requirements; its HEAD SHA."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    shutil.copytree(EXTENSION, repo / "extension")
+    for name in ("requirements.txt", "requirements-dev.txt"):
+        shutil.copy(ROOT / name, repo / name)
+    (repo / ".gitignore").write_text("dist/\n", encoding="utf-8", newline="")
+    git(repo, "init", "-q", "-b", "main")
+    git(repo, "add", "--all")
+    git(repo, "commit", "-q", "-m", "release candidate")
+    return repo, git(repo, "rev-parse", "HEAD")
+
+
+def _untracked(repo: Path) -> None:
+    (repo / "x.txt").write_text("x\n", encoding="utf-8", newline="")
+
+
+def _untracked_dir(repo: Path) -> None:
+    (repo / "new").mkdir()
+    (repo / "new" / "x.txt").write_text("x\n", encoding="utf-8", newline="")
+
+
+def _modified(repo: Path) -> None:
+    with (repo / "extension" / "popup.js").open("a", encoding="utf-8", newline="") as handle:
+        handle.write("// edited\n")
+
+
+def _nothing(repo: Path) -> None:
+    return None
+
+
+RELEASE_CASES: list[tuple[str, Callable[[Path], None], str | None, int, str]] = [
+    ("ok", _nothing, None, 0, ""),
+    (
+        "untracked",
+        _untracked,
+        None,
+        1,
+        "the working tree is not clean (1 changed or untracked, first: x.txt)",
+    ),
+    (
+        "untracked_dir",
+        _untracked_dir,
+        None,
+        1,
+        "(1 changed or untracked, first: new/x.txt)",
+    ),
+    (
+        "modified",
+        _modified,
+        None,
+        1,
+        "the working tree is not clean (1 changed or untracked, first: extension/popup.js)",
+    ),
+    ("other_commit", _nothing, "0" * 40, 1, "HEAD is {head}, not the release commit " + "0" * 40),
+    ("short", _nothing, "abc1234", 1, "--release-sha must be the full 40-character commit SHA"),
+]
+
+
+@pytest.mark.parametrize(
+    ("change", "release_sha", "exit_code", "message"),
+    [pytest.param(c, r, e, m, id=i) for i, c, r, e, m in RELEASE_CASES],
+)
+def test_a_release_build_needs_a_clean_tree_at_the_release_commit(
+    change: Callable[[Path], None],
+    release_sha: str | None,
+    exit_code: int,
+    message: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    repo, head = _release_repo(tmp_path)
+    change(repo)
+    code = main(["--release-sha", release_sha or head, "--repo", str(repo)])
+    captured = capsys.readouterr()
+    assert code == exit_code
+    zips = list((repo / "dist").glob("*.zip"))
+    if exit_code == 0:
+        assert len(zips) == 1
+        assert captured.err == ""
+    else:
+        assert message.format(head=head) in captured.err
+        assert zips == []
+        assert "| 2.0.0 |" not in captured.out
+
+
+def test_a_release_build_works_from_a_detached_head(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo, head = _release_repo(tmp_path)
+    git(repo, "checkout", "-q", "--detach", "HEAD")
+    assert main(["--release-sha", head, "--repo", str(repo)]) == 0
+    assert f"| {VERSION} | {head} |" in capsys.readouterr().out
+
+
+def test_the_release_row_carries_the_code_sha(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo, head = _release_repo(tmp_path)
+    assert main(["--release-sha", head, "--repo", str(repo)]) == 0
+    out = capsys.readouterr().out
+    assert f"| {VERSION} | {head} |" in out
+    assert "<code SHA>" not in out
+    assert "Development build" not in out
+    assert main(["--repo", str(repo)]) == 0
+    out = capsys.readouterr().out
+    assert f"| {VERSION} | <code SHA> |" in out
+    assert "Development build: the RELEASES.md row needs --release-sha" in out
+
+
+def test_the_release_row_reads_the_requirements_of_the_given_repo(tmp_path: Path) -> None:
+    (tmp_path / "requirements.txt").write_bytes(b"a\n")
+    (tmp_path / "requirements-dev.txt").write_bytes(b"b\n")
+    cells = release_row("ab" * 32, 31, root=tmp_path).strip().strip("|").split("|")
+    assert cells[2].strip() == hashlib.sha256(b"a\n").hexdigest()
+    assert cells[3].strip() == hashlib.sha256(b"b\n").hexdigest()
+
+
+def test_a_release_build_outside_a_repository_is_an_exit_1_not_a_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    code = main(["--release-sha", "a" * 40, "--repo", str(plain)])
+    captured = capsys.readouterr()
+    assert code == 1
+    assert captured.err.strip()
+    assert "Traceback" not in captured.err
+    assert captured.out == ""
