@@ -1264,7 +1264,12 @@ _UNIT_OUTCOME: Final = {"unparsed_relevant": "unparsed", "partial_relevant": "pa
 
 
 def _unit_keys(snapshot: Snapshot, outcome: str) -> Counter[tuple[str | None, str, str]]:
-    """How often each unit key (page scope, outcome, text) occurs among the relevant units."""
+    """How often each unit key (page scope, outcome, text) occurs among the relevant units.
+
+    Only the units of ``outcome`` count, chosen by ``_relevant_units`` (not before the window).
+    The text has its whitespace collapsed; the page is found by ``_page_of`` and a unit with no
+    page has scope ``None``. The page's year and the unit's position are not in the key.
+    """
     keys: Counter[tuple[str | None, str, str]] = Counter()
     for unit in _relevant_units(snapshot):
         if unit.outcome == outcome:
@@ -1280,8 +1285,9 @@ def known_unit_reasons(
 
     One source's two snapshots. A unit's key is its page's scope, its outcome and its text with
     whitespace collapsed; the page's year and the row's position are not in it. A reason is
-    known when each key of the served snapshot occurs in the baseline at least as often. Any
-    other reason is never known.
+    known when it has served units and each of their keys occurs in the baseline at least as
+    often. ``()`` when nothing is served, when there is no baseline, or when the baseline is of
+    another source. Any reason that is not a unit reason is never known.
     """
     if served is None or baseline is None or baseline.source != served.source:
         return ()
@@ -1290,9 +1296,9 @@ def known_unit_reasons(
         outcome = _UNIT_OUTCOME.get(reason.code)
         if outcome is None:
             continue
-        now = _unit_keys(served, outcome)
+        served_keys = _unit_keys(served, outcome)
         before = _unit_keys(baseline, outcome)
-        if now and all(before[k] >= n for k, n in now.items()):
+        if served_keys and all(before[k] >= n for k, n in served_keys.items()):
             known.append(reason)
     return tuple(known)
 
