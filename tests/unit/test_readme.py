@@ -10,7 +10,7 @@ README = Path(__file__).resolve().parents[2] / "README.md"
 def test_readme_covers_the_release() -> None:
     text = README.read_text(encoding="utf-8")
     for source in SOURCE_ORDER:
-        assert SOURCE_NAMES[source] in text
+        assert f"| {SOURCE_NAMES[source]} | " in text
     for phrase in (
         "](docs/extension/v2.0.0-release-notes.md)",  # a link, not only a mention
         "--release-sha",
