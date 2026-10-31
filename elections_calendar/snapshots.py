@@ -10,6 +10,7 @@ baseline, and served claims keep the time their page was fetched (R19).
 import dataclasses
 import hashlib
 import json
+from collections import Counter
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
@@ -1250,6 +1251,52 @@ def _unit_item(
     )
 
 
+def _relevant_units(snapshot: Snapshot) -> tuple[InputUnit, ...]:
+    """The partial and unparsed units that count: the ones not before the window."""
+    return tuple(
+        u
+        for u in snapshot.units
+        if u.outcome in ("partial", "unparsed") and u.relevance != "before_window"
+    )
+
+
+_UNIT_OUTCOME: Final = {"unparsed_relevant": "unparsed", "partial_relevant": "partial"}
+
+
+def _unit_keys(snapshot: Snapshot, outcome: str) -> Counter[tuple[str | None, str, str]]:
+    """How often each unit key (page scope, outcome, text) occurs among the relevant units."""
+    keys: Counter[tuple[str | None, str, str]] = Counter()
+    for unit in _relevant_units(snapshot):
+        if unit.outcome == outcome:
+            page = _page_of(snapshot, unit.unit_id)
+            keys[(None if page is None else page.scope, unit.outcome, collapse_ws(unit.text))] += 1
+    return keys
+
+
+def known_unit_reasons(
+    reasons: Sequence[Reason], served: Snapshot | None, baseline: Snapshot | None
+) -> tuple[Reason, ...]:
+    """The unit reasons whose every unit the baseline already had (P149), in the given order.
+
+    One source's two snapshots. A unit's key is its page's scope, its outcome and its text with
+    whitespace collapsed; the page's year and the row's position are not in it. A reason is
+    known when each key of the served snapshot occurs in the baseline at least as often. Any
+    other reason is never known.
+    """
+    if served is None or baseline is None or baseline.source != served.source:
+        return ()
+    known: list[Reason] = []
+    for reason in reasons:
+        outcome = _UNIT_OUTCOME.get(reason.code)
+        if outcome is None:
+            continue
+        now = _unit_keys(served, outcome)
+        before = _unit_keys(baseline, outcome)
+        if now and all(before[k] >= n for k, n in now.items()):
+            known.append(reason)
+    return tuple(known)
+
+
 def unit_items(decision: Decision) -> tuple[AttentionItem, ...]:
     """The attention items about single units (P88); sorted by ``item_id``.
 
@@ -1261,10 +1308,9 @@ def unit_items(decision: Decision) -> tuple[AttentionItem, ...]:
     if served is None:
         return ()
     items: list[AttentionItem] = []
-    for unit in served.units:
-        if unit.outcome in ("partial", "unparsed") and unit.relevance != "before_window":
-            kind: AttentionKind = "partial_unit" if unit.outcome == "partial" else "unparsed_unit"
-            items.append(_unit_item(kind, served, unit, decision.source, ""))
+    for unit in _relevant_units(served):
+        kind: AttentionKind = "partial_unit" if unit.outcome == "partial" else "unparsed_unit"
+        items.append(_unit_item(kind, served, unit, decision.source, ""))
     cand = decision.candidate
     for unit in decision.provisional_units:
         items.append(

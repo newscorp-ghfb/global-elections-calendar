@@ -107,7 +107,7 @@ on GitHub in Plan 5c; until then its structure is proven offline by `tests/workf
   and the artifact's `verdict.json`, and fails the run unless the day is green.
 
 **Verdict headlines** (green unless marked red): `gates only`, `paused`,
-`published` (served `ok`, data green), `not published: healthy`; red: `gates failed`,
+`published` (served `ok`, data green), `not published: no new unacknowledged issues`; red: `gates failed`,
 `scrape failed`, `artifact incomplete`, `dry-run artifact`, `verdict.json is malformed`,
 `validation failed`, `validation failed (not published)`, `superseded`, `served_mismatch`,
 `git failed`, `artifact refused`, `publish refused its context`, `publish failed`, `publish ran while paused`,
@@ -432,6 +432,11 @@ Rules that hold for every entry:
   `validation_failed` and every info reason.
 - A file that is not valid YAML, or an entry that breaks a rule, gives `ack_invalid` and has no
   effect.
+
+A unit reason whose every unit was already in the last served data is *known*: it is shown, but
+it does not make the run red (P149). A unit is the same when its page's scope, its outcome and
+its text match, and a second row with the same text is a new unit. A unit acknowledgement then
+only turns it grey. Every other reason is red on each run while it lasts.
 
 ## Registry changes
 

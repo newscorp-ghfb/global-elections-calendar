@@ -158,7 +158,7 @@ ROWS = [
         },
         "green",
         True,
-        "not published: healthy",
+        "not published: no new unacknowledged issues",
     ),
     (
         "r21-branch-dispatch-red",
@@ -177,7 +177,7 @@ ROWS = [
         {"GITHUB_EVENT_NAME": "workflow_dispatch", "INPUT_PUBLISH": "false", **NOT_PUBLISHED},
         "green",
         True,
-        "not published: healthy",
+        "not published: no new unacknowledged issues",
     ),
     (
         "r23-main-dispatch-published",
@@ -191,7 +191,7 @@ ROWS = [
         {"GITHUB_EVENT_NAME": "workflow_dispatch", "INPUT_PUBLISH": "yes", **NOT_PUBLISHED},
         "green",
         True,
-        "not published: healthy",
+        "not published: no new unacknowledged issues",
     ),
     (
         "r25-publish-outside-context",

@@ -92,6 +92,7 @@ class SourceResult:
     reasons: tuple[Reason, ...]  # source_reasons(...)
     acknowledged: tuple[Acknowledgement, ...]
     severity: Severity
+    known: tuple[Reason, ...] = ()  # unit reasons whose units the last served data had (P149)
 
 
 def reason_dict(reason: Reason) -> dict[str, Any]:
@@ -530,6 +531,9 @@ _STAMP: Final = re.compile(
 _TIMESTAMP: Final = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z")
 _DIGEST: Final = re.compile(r"[0-9a-f]{64}")
 _UNIT_HINT: Final = "acknowledge each unit by its full text (unit_text in attention_full.json)"
+_KNOWN_HINT: Final = (
+    "known: all of these units were in the last served data, so the run is not red for it"
+)
 _DROP_HINT: Final = "to accept the drop: accept_drop with this scope and the candidate's counts"
 
 
@@ -692,11 +696,15 @@ def _yes(flag: object) -> str:
     return "yes" if flag else "no"
 
 
-def _reason_hint(reason: Reason, stage: str, ack: Acknowledgement | None) -> str:
+def _reason_hint(
+    reason: Reason, stage: str, ack: Acknowledgement | None, *, known: bool = False
+) -> str:
     if REASON_LEVEL[reason.code] == "info":
         return ""
     if ack is not None:
         return f" — acknowledged until {_stamp_text(_utc_iso(ack.until))}"
+    if known:
+        return f" — {_KNOWN_HINT}"
     if reason.code in NEVER_ACKNOWLEDGEABLE:
         return " — cannot be acknowledged"
     if reason.code in UNIT_REASONS:
@@ -709,10 +717,12 @@ def _reason_hint(reason: Reason, stage: str, ack: Acknowledgement | None) -> str
     return hint
 
 
-def _reason_line(reason: Reason, ack: Acknowledgement | None, *, hint: bool = True) -> str:
+def _reason_line(
+    reason: Reason, ack: Acknowledgement | None, *, hint: bool = True, known: bool = False
+) -> str:
     shown = reason_dict(reason)
     line = f"- **{shown['level']}** {md_text(shown['code'])}: {md_text(shown['text'])}"
-    return line + (_reason_hint(reason, shown["stage"], ack) if hint else "")
+    return line + (_reason_hint(reason, shown["stage"], ack, known=known) if hint else "")
 
 
 def _source_section(entry: dict[str, Any], result: SourceResult) -> list[str]:
@@ -764,7 +774,7 @@ def _source_section(entry: dict[str, Any], result: SourceResult) -> list[str]:
         ack = None
         if reason not in open_reasons:
             ack = next((a for a in result.acknowledged if not unacknowledged([reason], [a])), None)
-        lines.append(_reason_line(reason, ack))
+        lines.append(_reason_line(reason, ack, known=reason in result.known))
     lists = (
         ("### Unparsed samples", [md_text(t) for t in parse["unparsed_samples"]]),
         (
@@ -841,7 +851,9 @@ def health_md(
     ]
     for s in ordered:
         entry = entries[s.source]
-        opened = len(unacknowledged(s.reasons, s.acknowledged))
+        open_now = unacknowledged(s.reasons, s.acknowledged)
+        known = sum(1 for r in open_now if r in s.known)
+        opened = f"{len(open_now) - known} (+{known} known)" if known else str(len(open_now))
         lines.append(
             f"| {md_text(entry['name'])} | {entry['severity']} "
             f"| {md_text(entry['snapshot']['acceptance'])} "
