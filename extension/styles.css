@@ -56,12 +56,12 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--border) var(--bg);
 }
-/* Chrome opens an action popup in a frame a few pixels wide, then sizes it to the page's
-   min-content width. A fixed width is what that measure takes (a percentage max-width is left
-   out of it), so the popup opens at 380 px; max-width: 100% lets the body shrink when the popup
-   really is narrower (high zoom). A width that follows the viewport shrinks the popup itself:
-   min(380px, 100vw) gave 196 px, and a (max-width: 379px) rule, which matches on the starting
-   frame, gave 287 px. */
+/* Chrome opens an action popup in a 25 x 25 px frame, then sizes it to the page's min-content
+   width. A fixed width is what that measure takes (a percentage max-width is left out of it), so
+   the body opens at 380 px and Chrome adds room for a scrollbar; max-width: 100% lets the body
+   shrink when the popup really is narrower (high zoom). A width that follows the viewport shrinks
+   the popup itself: min(380px, 100vw) gave 196 px, and a (max-width: 379px) rule, which matches on
+   the starting frame, gave 287 px. */
 
 /* ── Top App Bar ────────────────────────────────────────────── */
 .topbar {
