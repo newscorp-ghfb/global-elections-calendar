@@ -75,7 +75,7 @@ function drawHealth(record, statusRecord, check, now) {
 }
 
 // Render the cached feed, if the stored record is valid. True when something was drawn.
-let firstRender = true; // the performance marks are made on the first render only
+let firstRender = true; // popup:read, popup:drawn and popup:first-render: first render only (popup:render: every draw)
 let drawn = false;      // a render has drawn a feed
 
 async function render() {

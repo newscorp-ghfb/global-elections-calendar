@@ -1133,7 +1133,8 @@ def test_a_same_bytes_refresh_renders_again(fresh_ext: Ext, pair: tuple[bytes, b
     assert _renders(page) == 2
     assert fresh_ext.storage()[CHECK]["ok_at"] > seeded[CHECK]["ok_at"]
     second = page.locator("#footerChecked").text_content()
-    assert second != first and (second or "").startswith("Checked ")
+    new_ok_at = fresh_ext.storage()[CHECK]["ok_at"]
+    assert second == f"Checked {_stamp(new_ok_at)}" and second != first
     newer = published_at(feed, T3)
     fresh_ext.served.set("elections.json", newer)
     fresh_ext.served.set("status.json", linking(newer, status))

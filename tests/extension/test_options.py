@@ -438,7 +438,14 @@ def test_the_pins_are_listed_before_a_slow_check(ext: Ext, pair: tuple[bytes, by
     expect(_button(page, "iso:BR")).to_be_enabled(timeout=3000)
     _shows(page, ["iso:LS", "iso:BR"], [], timeout=3000)
     assert set(_ids(page)) == {"iso:LS", "iso:BR"}
-    assert "elections.json" in ext.served.log
+    for _ in range(100):  # the worker's fetch may trail the pins: wait for it, bounded
+        if "elections.json" in ext.served.log:
+            break
+        page.wait_for_timeout(50)
+    else:
+        raise AssertionError("the check never asked for elections.json")
+    _button(page, "iso:BR").wait_for()  # the request is still held: the pins are listed and editable
+    expect(_button(page, "iso:LS")).to_be_enabled()
     _button(page, "iso:LS").click()
     _wait_places(page, ["iso:BR"])
     assert _stored_places(ext) == ["iso:BR"]

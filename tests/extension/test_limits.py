@@ -167,9 +167,19 @@ def test_popup_renders_the_fixture_feed_within_the_budget(
     record_property("popup_first_render_ms", round(ms, 1))
     print(f"\npopup:first-render {ms:.1f} ms")
     assert 0 < ms < 1000
-    # the marks are made on the first render only (a check's reply renders again)
-    assert page.evaluate("performance.getEntriesByName('popup:read').length") == 1
-    assert page.evaluate("performance.getEntriesByName('popup:drawn').length") == 1
+    # the cache is fresh, so the opening check was skipped and the popup drew once
+    assert page.evaluate("performance.getEntriesByName('popup:render').length") == 1
+    # a Refresh draws again: popup:render counts it, the first-render marks and measure do not
+    fresh_ext.served.set("elections.json", feed)
+    fresh_ext.served.set("status.json", status)
+    page.click("#refreshBtn")
+    page.wait_for_function(
+        "() => document.body.dataset.state === 'ready' && document.body.dataset.checking === 'false'"
+    )
+    assert page.evaluate("performance.getEntriesByName('popup:render').length") == 2
+    for name in ("popup:read", "popup:drawn"):
+        assert page.evaluate(f"performance.getEntriesByName('{name}').length") == 1
+    assert page.evaluate("performance.getEntriesByName('popup:first-render').length") == 1
     assert fresh_ext.page_errors == []
 
 
