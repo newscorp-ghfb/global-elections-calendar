@@ -103,8 +103,8 @@ it proves the committed tree, and the CI gates job runs it as its last step).
 
 `.github/workflows/update-elections.yml`. The workflow holds no logic: every decision is a
 function in `elections_calendar.ci` with a test, and the YAML only checks out, installs, moves
-the artifact and calls `python -m elections_calendar.ci <command>` or `scraper.py`. It first runs
-on GitHub in Plan 5c; until then its structure is proven offline by `tests/workflow/`.
+the artifact and calls `python -m elections_calendar.ci <command>` or `scraper.py`. Its structure
+is proven offline by `tests/workflow/`, and the workflow has run on GitHub since Plan 5c's B1.
 
 **Triggers (spec 11.1):**
 
@@ -274,8 +274,10 @@ Exit codes:
 
 A run prints one line, for example `published, verdict red, 377390 feed bytes`: the outcome
 (`published` or `validation_failed`), the verdict (`green` or `red`) and the length of
-`elections.json`. `red` means a source or the run has an open warning or error that nobody has
-acknowledged. The feed is still published.
+`elections.json`. `red` means a source or the run has a new warning or error: one that nobody
+has acknowledged and that is not already known from the last served data (P149; see
+"`known_issues.yml`"), or that `elections.json` is over its byte budget (P114). The feed is
+still published.
 
 ## Building the extension ZIP
 
@@ -380,10 +382,13 @@ To go back to the pre-v2 code (spec 15 step 7; P122, P123), run these steps from
 
    Check that the served digest still equals the republished one before 00:00 UTC.
 4. **Only if v1 must be held back too:** before step 3, disable the workflow on GitHub
-   (`gh workflow disable update-elections.yml`), and enable it again to resume. That state is
-   outside the repository, so no commit changes it. Disabling stops new runs only: a run already
-   in progress goes on, and its publish job is `superseded` because step 1's commit moved `main`.
-   `gh run cancel <id>` stops it sooner. The drill on GitHub is 5c's.
+   (`gh workflow disable update-elections.yml -R newscorp-ghfb/global-elections-calendar`), and
+   enable it again to resume
+   (`gh workflow enable update-elections.yml -R newscorp-ghfb/global-elections-calendar`). That
+   state is outside the repository, so no commit changes it. Disabling stops new runs only: a run
+   already in progress goes on, and its publish job is `superseded` because step 1's commit moved
+   `main`. `gh run cancel <id> -R newscorp-ghfb/global-elections-calendar` stops it sooner. The
+   drill on GitHub is 5c's.
 
 **Recovery pairs.** A pair is a `main` commit and the SHA-256 of its `elections.json` blob
 (`git show <commit>:elections.json`). `republish.py` restores only a commit that is in `main`'s

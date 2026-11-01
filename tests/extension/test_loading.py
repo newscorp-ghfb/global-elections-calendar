@@ -1161,6 +1161,42 @@ def test_a_failed_refresh_renders_again(fresh_ext: Ext, pair: tuple[bytes, bytes
     assert fresh_ext.page_errors == []
 
 
+SETTLED: Final = "() => document.body.dataset.state !== 'loading' && document.body.dataset.checking === 'false'"
+SETTLE_MS: Final = 10_000  # launch()'s default, stated here: a popup stuck on `loading` fails in it
+
+
+def test_a_skipped_check_with_nothing_drawn_shows_an_error(fresh_ext: Ext) -> None:
+    # D2 (Task 3 M5): the `drawn &&` guard. A fresh check state with no cache skips the opening
+    # check, and as nothing was drawn the popup must still leave `loading`. A launch of its own: the
+    # shared browser's hourly alarm or an earlier test's check could make a request here.
+    fresh_ext.served.set("elections.json", 404)
+    fresh_ext.served.set("status.json", 404)
+    fresh_ext.clear()
+    fresh_ext.seed({CHECK: {"ok_at": int(time.time() * 1000) - 20 * MIN_MS, "failed_at": None, "error": None}})
+    before = len(fresh_ext.served.log)
+    page = fresh_ext.open("popup.html", now=None)  # the worker's due() reads the real clock
+    page.wait_for_function(SETTLED, timeout=SETTLE_MS)
+    assert page.locator("body").get_attribute("data-state") == "error"
+    assert page.locator("#errorMsg").text_content() == "Could not load data: no data yet"
+    assert fresh_ext.served.log[before:] == []  # the check was skipped: no request was made
+    page.close()
+    assert fresh_ext.page_errors == []
+
+
+def test_a_thrown_check_with_nothing_drawn_shows_its_message(ext: Ext) -> None:
+    # D2 (Task 3 M5): a rejected sendMessage (a worker that is restarting) with nothing cached
+    ext.clear()
+    page = ext.open(
+        "popup.html",
+        init_script="chrome.runtime.sendMessage = () => Promise.reject(new Error('down'));",
+    )
+    page.wait_for_function(SETTLED, timeout=SETTLE_MS)
+    assert page.locator("body").get_attribute("data-state") == "error"
+    assert page.locator("#errorMsg").text_content() == "Could not load data: down"
+    page.close()
+    assert ext.page_errors == []
+
+
 SNAPSHOT: Final = """group => {
   const text = (sel) => [...document.querySelectorAll(sel)].map((e) => e.textContent);
   const card = document.querySelector(`li.election-item[data-group-id="${group}"]`);
