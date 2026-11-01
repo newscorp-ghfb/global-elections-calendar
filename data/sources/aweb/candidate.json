@@ -1,7 +1,7 @@
 {
  "source": "aweb",
- "snapshot_id": "a389d0e934cabe054c8ef85045e0dbc6a1df43b14a33a6da31638cc86e2d3aa8",
- "fetched_at": "2026-10-31T19:59:18.101695Z",
+ "snapshot_id": "963995b212c8568f6baa1448f8e81f342514b689ac201399438c4a06d9bd9dec",
+ "fetched_at": "2026-11-01T17:53:31.516952Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,7 +21,7 @@
     "units_seen": 32,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-10-31T19:59:18.101695Z",
+    "fetched_at": "2026-11-01T17:53:31.516952Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -29,7 +29,7 @@
      "final_url": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052&option=all",
      "content_type": "text/html;charset=utf-8",
      "bytes": 48062,
-     "elapsed_ms": 1015,
+     "elapsed_ms": 967,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -265,7 +265,7 @@
    "text": "Russia | 2026 Legislative Election | 20 Sep 2026",
    "outcome": "parsed",
    "reason": null,
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": null
   },

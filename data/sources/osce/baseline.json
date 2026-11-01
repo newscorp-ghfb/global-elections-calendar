@@ -1,7 +1,7 @@
 {
  "source": "osce",
- "snapshot_id": "a0730db35c345d938752bb8059ef09ada732337b6c4c726a08634fa319bedfc0",
- "fetched_at": "2026-10-31T19:59:18.301360Z",
+ "snapshot_id": "b0af75436dc7dd5c455b02e887b9304b58b0df546cb4a5a5682f48b5ac20ff33",
+ "fetched_at": "2026-11-01T17:53:31.976924Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,15 +21,15 @@
     "units_seen": 634,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-10-31T19:59:18.301360Z",
+    "fetched_at": "2026-11-01T17:53:31.976924Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
      "http_status": 200,
      "final_url": "https://odihr.osce.org/odihr/elections",
      "content_type": "text/html; charset=utf-8",
-     "bytes": 754194,
-     "elapsed_ms": 2144,
+     "bytes": 754465,
+     "elapsed_ms": 2215,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -365,7 +365,7 @@
    "text": "20 Sep 2026 Past | Russian Federation | Parliamentary Elections | -",
    "outcome": "parsed",
    "reason": null,
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": null
   },
@@ -375,7 +375,7 @@
    "text": "13 Sep 2026 Past | Sweden | Parliamentary Elections | Needs assessment mission",
    "outcome": "parsed",
    "reason": null,
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": null
   },
@@ -12327,6 +12327,12 @@
   {
    "scope": "elections",
    "fetched_at": "2026-10-31T19:59:18.301360Z",
+   "units_seen": 634,
+   "claims": 180
+  },
+  {
+   "scope": "elections",
+   "fetched_at": "2026-11-01T17:53:31.976924Z",
    "units_seen": 634,
    "claims": 180
   }

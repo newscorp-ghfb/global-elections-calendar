@@ -1,0 +1,144 @@
+{
+ "schema_version": 1,
+ "attempt_id": "20261101T175329Z-41332905019",
+ "attempt_at": "2026-11-01T17:53:29.169038Z",
+ "trigger": "workflow_dispatch",
+ "code_sha": "cb349f798f6f9bc36555306052610ceb049ca5ca",
+ "outcome": "published",
+ "severity": "warning",
+ "reasons": [
+  {
+   "source": "wikipedia",
+   "code": "unparsed_relevant",
+   "level": "warning",
+   "text": "relevant units unparsed: 52",
+   "page": null,
+   "year": null,
+   "acknowledged": false
+  },
+  {
+   "source": "wikipedia",
+   "code": "partial_relevant",
+   "level": "warning",
+   "text": "relevant units partly parsed: 66",
+   "page": null,
+   "year": null,
+   "acknowledged": false
+  },
+  {
+   "source": "ndi",
+   "code": "partial_relevant",
+   "level": "warning",
+   "text": "relevant units partly parsed: 1",
+   "page": null,
+   "year": null,
+   "acknowledged": false
+  },
+  {
+   "source": "aweb",
+   "code": "unparsed_relevant",
+   "level": "warning",
+   "text": "relevant units unparsed: 1",
+   "page": null,
+   "year": null,
+   "acknowledged": false
+  },
+  {
+   "source": "aweb",
+   "code": "partial_relevant",
+   "level": "warning",
+   "text": "relevant units partly parsed: 2",
+   "page": null,
+   "year": null,
+   "acknowledged": false
+  },
+  {
+   "source": "eisa",
+   "code": "unparsed_relevant",
+   "level": "warning",
+   "text": "relevant units unparsed: 2",
+   "page": null,
+   "year": null,
+   "acknowledged": false
+  },
+  {
+   "source": "ipu",
+   "code": "unparsed_relevant",
+   "level": "warning",
+   "text": "relevant units unparsed: 4",
+   "page": null,
+   "year": null,
+   "acknowledged": false
+  }
+ ],
+ "serving_feed_sha256": "0a6f78653691b2c5c1bc4a46342c5681a1ddcc86c9e6c59dc7dc3178334dbf29",
+ "serving_published_at": "2026-11-01T17:53:29.169038Z",
+ "serving_generated_at": "2026-11-01T17:53:29.169038Z",
+ "serving_content_id": "63c4164e9519ecddb0815deedca476025812c8843743c076c0cdb028e5930420",
+ "sources": [
+  {
+   "source": "electionguide",
+   "name": "ElectionGuide",
+   "severity": "ok",
+   "using_fallback": false,
+   "served_fetched_at": "2026-11-01T17:53:30.518809Z"
+  },
+  {
+   "source": "osce",
+   "name": "OSCE/ODIHR",
+   "severity": "ok",
+   "using_fallback": false,
+   "served_fetched_at": "2026-11-01T17:53:31.976924Z"
+  },
+  {
+   "source": "wikipedia",
+   "name": "Wikipedia",
+   "severity": "warning",
+   "using_fallback": false,
+   "served_fetched_at": "2026-11-01T17:53:29.959933Z"
+  },
+  {
+   "source": "ndi",
+   "name": "NDI",
+   "severity": "warning",
+   "using_fallback": false,
+   "served_fetched_at": "2026-11-01T17:53:30.162091Z"
+  },
+  {
+   "source": "aweb",
+   "name": "A-WEB",
+   "severity": "warning",
+   "using_fallback": false,
+   "served_fetched_at": "2026-11-01T17:53:31.516952Z"
+  },
+  {
+   "source": "eisa",
+   "name": "EISA",
+   "severity": "warning",
+   "using_fallback": false,
+   "served_fetched_at": "2026-11-01T17:53:34.237550Z"
+  },
+  {
+   "source": "ipu",
+   "name": "IPU",
+   "severity": "warning",
+   "using_fallback": false,
+   "served_fetched_at": "2026-11-01T17:53:32.925218Z"
+  },
+  {
+   "source": "carter",
+   "name": "Carter Center",
+   "severity": "ok",
+   "using_fallback": false,
+   "served_fetched_at": "2026-11-01T17:53:32.967290Z"
+  },
+  {
+   "source": "eeas",
+   "name": "EEAS",
+   "severity": "ok",
+   "using_fallback": false,
+   "served_fetched_at": "2026-11-01T17:53:33.295173Z"
+  }
+ ],
+ "acknowledged": []
+}

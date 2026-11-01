@@ -1,7 +1,7 @@
 {
  "source": "electionguide",
- "snapshot_id": "8c4cbe98a4a6309945a98aa42e20bb2f9bb58864dc895a14f1c58b6bb423da94",
- "fetched_at": "2026-10-31T19:59:16.784061Z",
+ "snapshot_id": "3d831ee9de344df83624fdcff60486f7420e3c4496382f0ffc8f104189439ebc",
+ "fetched_at": "2026-11-01T17:53:30.518809Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,7 +21,7 @@
     "units_seen": 42,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-10-31T19:59:16.784061Z",
+    "fetched_at": "2026-11-01T17:53:30.518809Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -29,7 +29,7 @@
      "final_url": "https://www.electionguide.org/elections/type/upcoming/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 122423,
-     "elapsed_ms": 607,
+     "elapsed_ms": 723,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -47,7 +47,7 @@
     "units_seen": 200,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-10-31T19:59:18.152511Z",
+    "fetched_at": "2026-11-01T17:53:32.040176Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -55,7 +55,7 @@
      "final_url": "https://www.electionguide.org/elections/type/past/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 602308,
-     "elapsed_ms": 1368,
+     "elapsed_ms": 1520,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -73,7 +73,7 @@
     "units_seen": 106,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-10-31T19:59:18.571326Z",
+    "fetched_at": "2026-11-01T17:53:32.568166Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -81,7 +81,7 @@
      "final_url": "https://www.electionguide.org/elections/type/anticipated/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 239575,
-     "elapsed_ms": 418,
+     "elapsed_ms": 527,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -647,7 +647,7 @@
    "text": "Switzerland | Referendum | 2026-09-27 (d) | 2026-09-27 (d) | 5,620,065",
    "outcome": "parsed",
    "reason": null,
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": null
   },
@@ -657,7 +657,7 @@
    "text": "Sao Tome and Principe | Sao Tomean National Assembly | 2026-09-27 (d) | 2026-09-27 (d) | 142,191",
    "outcome": "parsed",
    "reason": null,
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": null
   },
@@ -667,7 +667,7 @@
    "text": "Morocco | Moroccan Chamber of Representatives | 2026-09-23 (d) | 2026-09-23 (d) | 15,801,162",
    "outcome": "parsed",
    "reason": null,
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": null
   },
@@ -677,7 +677,7 @@
    "text": "Russian Federation | Russian State Duma | 2026-09-18 (d) | 2026-09-20 (d) | 111,037,047",
    "outcome": "parsed",
    "reason": null,
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": null
   },
@@ -687,7 +687,7 @@
    "text": "Sweden | Swedish Parliament | 2026-09-13 (d) | 2026-09-13 (d) | 8,051,355 | 6,767,429 | 84.89 %",
    "outcome": "parsed",
    "reason": null,
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": null
   },
@@ -2927,7 +2927,7 @@
    "text": "Switzerland | Referendum | 2026-09-27 (d) | 2026-09-27 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": "electionguide:past/r14"
   },
@@ -2937,7 +2937,7 @@
    "text": "Sao Tome and Principe | Sao Tomean National Assembly | 2026-09-27 (d) | 2026-09-27 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": "electionguide:past/r15"
   },
@@ -2947,7 +2947,7 @@
    "text": "Morocco | Moroccan Chamber of Representatives | 2026-09-23 (d) | 2026-09-23 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": "electionguide:past/r16"
   },
@@ -2957,7 +2957,7 @@
    "text": "Russian Federation | Russian State Duma | 2026-09-18 (d) | 2026-09-20 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": "electionguide:past/r17"
   },
@@ -2967,7 +2967,7 @@
    "text": "Sweden | Swedish Parliament | 2026-09-13 (d) | 2026-09-13 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": "electionguide:past/r18"
   },
@@ -11503,14 +11503,32 @@
    "claims": 0
   },
   {
+   "scope": "anticipated",
+   "fetched_at": "2026-11-01T17:53:30.518809Z",
+   "units_seen": 106,
+   "claims": 0
+  },
+  {
    "scope": "past",
    "fetched_at": "2026-10-31T19:59:16.784061Z",
    "units_seen": 200,
    "claims": 198
   },
   {
+   "scope": "past",
+   "fetched_at": "2026-11-01T17:53:30.518809Z",
+   "units_seen": 200,
+   "claims": 198
+  },
+  {
    "scope": "upcoming",
    "fetched_at": "2026-10-31T19:59:16.784061Z",
+   "units_seen": 42,
+   "claims": 42
+  },
+  {
+   "scope": "upcoming",
+   "fetched_at": "2026-11-01T17:53:30.518809Z",
    "units_seen": 42,
    "claims": 42
   }

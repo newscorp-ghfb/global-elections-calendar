@@ -1,7 +1,7 @@
 {
  "source": "ndi",
- "snapshot_id": "027efe145ed6190f5ccf28803767d4eef9655ee8e2890ea2b452b35ea0d6c3fb",
- "fetched_at": "2026-10-31T19:59:17.064273Z",
+ "snapshot_id": "93926cac43f52b55cc8601804807ad0cedbae79041ef50e6b9d8be64aa98d235",
+ "fetched_at": "2026-11-01T17:53:30.162091Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,15 +21,15 @@
     "units_seen": 20,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-10-31T19:59:17.064273Z",
+    "fetched_at": "2026-11-01T17:53:30.162091Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
      "http_status": 200,
      "final_url": "https://www.ndi.org/elections-calendar?page=0",
      "content_type": "text/html; charset=utf-8",
-     "bytes": 176939,
-     "elapsed_ms": 888,
+     "bytes": 176940,
+     "elapsed_ms": 362,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -47,7 +47,7 @@
     "units_seen": 16,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-10-31T19:59:17.236745Z",
+    "fetched_at": "2026-11-01T17:53:30.305203Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -55,7 +55,7 @@
      "final_url": "https://www.ndi.org/elections-calendar?page=1",
      "content_type": "text/html; charset=utf-8",
      "bytes": 170141,
-     "elapsed_ms": 117,
+     "elapsed_ms": 111,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -221,7 +221,7 @@
    "text": "2026 São Tomé and Príncipe Legislative Election | September 27, 2026 (ALL DAY) | Legislative",
    "outcome": "parsed",
    "reason": null,
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": null
   },
@@ -231,7 +231,7 @@
    "text": "2026 Morocco Parliamentary Election | September 23, 2026 (ALL DAY) | Parliamentary | Morocco",
    "outcome": "parsed",
    "reason": null,
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": null
   },
@@ -241,7 +241,7 @@
    "text": "2026 Philippines (BARMM) Parliamentary Elections | September 14, 2026 (ALL DAY) | Parliamentary",
    "outcome": "partial",
    "reason": "level_unresolved",
-   "relevance": "in_or_after_window",
+   "relevance": "unknown",
    "leftover": "",
    "duplicate_of": null
   },
