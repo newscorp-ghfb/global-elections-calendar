@@ -1,8 +1,10 @@
 """Recovery pairs, ``scripts/republish.py`` and the rollback (Plan 5a Task 8; P122, P123; R31).
 
 Every repository here is built under ``tmp_path``; every git command is ``git -C <tmp path>``
-(``tests/ci/conftest.py`` also makes git refuse any other transport). ``pre-v2`` and ``v2.0.0``
-exist only in the temporary repository of ``test_rollback_hands_publishing_to_v1``.
+(``tests/ci/conftest.py`` also makes git refuse any other transport). No test here touches the
+real repository's ``pre-v2`` or ``v2.0.0`` tags: the tags used are those of the temporary
+repository of ``test_rollback_hands_publishing_to_v1``. The real ``RELEASES.md`` is read only as
+``REAL_RELEASES``, whose recorded rows ``without_rows`` takes out.
 """
 
 import hashlib
@@ -45,7 +47,30 @@ from tests.support.repo import NOW, commit, osce_offline
 LATER = datetime(2026, 10, 20, 8, 30, 15, tzinfo=UTC)
 LATER_ISO = "2026-10-20T08:30:15Z"
 CODE = "a" * 40
-TEMPLATE = (ROOT / "RELEASES.md").read_text(encoding="utf-8")
+REAL_RELEASES = (ROOT / "RELEASES.md").read_text(encoding="utf-8")
+
+
+def without_rows(text: str) -> str:
+    """``text`` with every recorded row taken out of its tables.
+
+    Headings, prose, header rows and separator rows stay. The release runbook records real rows
+    in ``RELEASES.md`` (Plan 5c B6's pre-v2 pair, B11's release), so the tests that need empty
+    tables build on this, not on the file itself.
+    """
+    kept: list[str] = []
+    in_rows = False  # after a table's separator row, until the table ends
+    for line in text.splitlines(keepends=True):
+        if not line.startswith("|"):
+            in_rows = False
+        elif in_rows:
+            continue  # a recorded row
+        elif "-" in line and set(line.strip()) <= set("|-: "):
+            in_rows = True  # the separator row: the recorded rows follow it
+        kept.append(line)
+    return "".join(kept)
+
+
+TEMPLATE = without_rows(REAL_RELEASES)
 V1_WORKFLOW = ROOT / "tests" / "fixtures" / "v1" / "update-elections.yml"
 V1_WORKFLOW_SHA = "a89ac40882d76a9414f67d7f6469b975639835396cc8413cddb7bd43a0667906"
 V1_DOC: dict[str, Any] = json.loads(V1_FEED.read_bytes())
@@ -170,6 +195,22 @@ def test_releases_table() -> None:
     for label, row in MALFORMED:
         check_malformed(label, row)
     check_repeated_commit()
+
+
+def test_the_real_releases_md_parses_and_the_template_has_no_rows() -> None:
+    # Plan 5c B8: B6's real pre-v2 row broke the tests that read RELEASES.md as an empty template
+    releases_pairs(REAL_RELEASES)  # every recorded pair is well-formed, or this raises
+    assert releases_pairs(TEMPLATE) == {}
+    lines = REAL_RELEASES.splitlines(keepends=True)
+    template_lines = TEMPLATE.splitlines(keepends=True)
+    removed = [line for line in lines if line not in template_lines]
+    assert all(line.startswith("| ") for line in removed)  # only table rows are taken out
+    assert [line for line in lines if line not in removed] == template_lines  # the rest, in order
+    for header in ("| Version | Code SHA |", "| Name | Commit | `elections.json` SHA-256 | Checked |"):
+        assert header in TEMPLATE
+    # both tables lose their rows, not just the first or the last
+    two_tables = "# T\n\n| a | b |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |\n\ntext\n\n| c |\n|:-:|\n| 5 |\n"
+    assert without_rows(two_tables) == "# T\n\n| a | b |\n|---|---|\n\ntext\n\n| c |\n|:-:|\n"
 
 
 MALFORMED = [
