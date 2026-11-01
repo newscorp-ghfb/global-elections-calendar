@@ -1,7 +1,7 @@
 """The workflow's structure (Plan 5a Task 7): permissions, pins, conditions, wiring, budgets.
 
-The workflow is proven offline here: GitHub's own evaluation of ``if:`` expressions and
-outputs first runs in Plan 5c's branch run.
+The workflow's structure is proven offline here. The workflow itself, with GitHub's own
+evaluation of ``if:`` expressions and outputs, has run on GitHub since Plan 5c's B1.
 """
 
 import inspect
@@ -343,3 +343,15 @@ def test_installs_are_wheel_only_and_hashed() -> None:
         assert len(runs) == 1, job
         assert "--require-hashes" in runs[0] and "--only-binary :all:" in runs[0], job
     assert installs["scrape"] == installs["publish"]
+
+
+def test_each_job_installs_its_own_lock() -> None:
+    # D1: the gates need the dev toolchain; the publisher, which holds the write token, does not
+    expected = {
+        "gates": ["requirements-dev.txt"],
+        "scrape": ["requirements.txt"],
+        "publish": ["requirements.txt"],
+    }
+    for job, locks in expected.items():
+        (run,) = [s["run"] for s in steps(job) if "pip install" in s.get("run", "")]
+        assert re.findall(r"(?<!\S)-r (\S+)", run) == locks, job
