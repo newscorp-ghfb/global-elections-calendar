@@ -1,11 +1,11 @@
 # Elections calendar health
 
-- Generated: 2026-11-01T18:37:36.178123Z
+- Generated: 2026-11-02T00:14:30.133682Z
 - Outcome: published
-- Verdict: green
+- Verdict: red
 - Severity: warning
-- Data as of: 2026-11-01T18:37:36.959570Z
-- Feed: 370739 bytes of a 524288 byte budget
+- Data as of: 2026-11-02T00:14:31.412399Z
+- Feed: 371141 bytes of a 524288 byte budget
 
 ## Run
 
@@ -15,23 +15,23 @@ No run reasons.
 
 | Source | Severity | Acceptance | Served data fetched | Open reasons |
 | --- | --- | --- | --- | --- |
-| ElectionGuide | ok | promoted | 2026-11-01T18:37:37.244743Z | 0 |
-| OSCE\/ODIHR | ok | promoted | 2026-11-01T18:37:39.010789Z | 0 |
-| Wikipedia | warning | promoted | 2026-11-01T18:37:36.959570Z | 0 (+2 known) |
-| NDI | warning | promoted | 2026-11-01T18:37:37.115277Z | 0 (+1 known) |
-| A\-WEB | warning | promoted | 2026-11-01T18:37:38.502999Z | 0 (+2 known) |
-| EISA | warning | promoted | 2026-11-01T18:37:40.999616Z | 0 (+1 known) |
-| IPU | warning | promoted | 2026-11-01T18:37:39.102694Z | 0 (+1 known) |
-| Carter Center | ok | promoted | 2026-11-01T18:37:39.413198Z | 0 |
-| EEAS | ok | promoted | 2026-11-01T18:37:39.921842Z | 0 |
+| ElectionGuide | ok | promoted | 2026-11-02T00:14:31.579449Z | 0 |
+| OSCE\/ODIHR | ok | promoted | 2026-11-02T00:14:32.829257Z | 0 |
+| Wikipedia | warning | promoted | 2026-11-02T00:14:31.412399Z | 1 (+1 known) |
+| NDI | warning | promoted | 2026-11-02T00:14:31.998954Z | 0 (+1 known) |
+| A\-WEB | warning | promoted | 2026-11-02T00:14:33.226150Z | 0 (+2 known) |
+| EISA | warning | promoted | 2026-11-02T00:14:36.217866Z | 0 (+1 known) |
+| IPU | warning | promoted | 2026-11-02T00:14:35.336871Z | 0 (+1 known) |
+| Carter Center | ok | promoted | 2026-11-02T00:14:34.052360Z | 0 |
+| EEAS | ok | promoted | 2026-11-02T00:14:34.292584Z | 0 |
 
 ## ElectionGuide
 
-- Download: ok; HTTP 200; 964306 bytes, 3 attempts, 2595 ms; pages 3 of 3 ok, 0 failed, stop complete; url https\:\/\/www\.electionguide\.org\/elections\/type\/upcoming\/
-- Parse: parser 2\.0; 348 units (240 parsed, 0 partial, 2 unparsed, 106 ignored); 240 claims; relevance 0 in or after the window, 0 unknown, 2 before it; 205 ms
+- Download: ok; HTTP 200; 964306 bytes, 3 attempts, 2383 ms; pages 3 of 3 ok, 0 failed, stop complete; url https\:\/\/www\.electionguide\.org\/elections\/type\/upcoming\/
+- Parse: parser 2\.0; 348 units (240 parsed, 0 partial, 2 unparsed, 106 ignored); 240 claims; relevance 0 in or after the window, 0 unknown, 2 before it; 414 ms
 - Ignored: duplicate 106
 - Coverage: all: 3 pages, 348 units, ok
-- Snapshot: promoted; fallback no; served 3d831ee9de344df83624fdcff60486f7420e3c4496382f0ffc8f104189439ebc, fetched 2026-11-01T18:37:37.244743Z; baseline units 348; comparable yes
+- Snapshot: promoted; fallback no; served 3d831ee9de344df83624fdcff60486f7420e3c4496382f0ffc8f104189439ebc, fetched 2026-11-02T00:14:31.579449Z; baseline units 348; comparable yes
 - Match: 32 of 42 eligible matched, 10 unmatched, 8 fresh peers, informative yes
 
 ### Reasons
@@ -40,11 +40,11 @@ No reasons.
 
 ## OSCE\/ODIHR
 
-- Download: ok; HTTP 200; 754465 bytes, 1 attempts, 2288 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/odihr\.osce\.org\/odihr\/elections
-- Parse: parser 2\.0; 634 units (173 parsed, 7 partial, 454 unparsed, 0 ignored); 180 claims; relevance 0 in or after the window, 0 unknown, 461 before it; 198 ms
+- Download: ok; HTTP 200; 754195 bytes, 1 attempts, 1680 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/odihr\.osce\.org\/odihr\/elections
+- Parse: parser 2\.0; 634 units (173 parsed, 7 partial, 454 unparsed, 0 ignored); 180 claims; relevance 0 in or after the window, 0 unknown, 461 before it; 404 ms
 - Ignored: none
 - Coverage: all: 1 pages, 634 units, ok
-- Snapshot: promoted; fallback no; served b0af75436dc7dd5c455b02e887b9304b58b0df546cb4a5a5682f48b5ac20ff33, fetched 2026-11-01T18:37:39.010789Z; baseline units 634; comparable yes
+- Snapshot: promoted; fallback no; served 2aff45d811a30b7b3834547b4eb22b4d1e97a91a5d4ca9beb1971df1c9ae778a, fetched 2026-11-02T00:14:32.829257Z; baseline units 634; comparable yes
 - Match: 5 of 5 eligible matched, 0 unmatched, 5 fresh peers, informative yes
 
 ### Reasons
@@ -53,16 +53,16 @@ No reasons.
 
 ## Wikipedia
 
-- Download: ok; HTTP 200; 567293 bytes, 4 attempts, 529 ms; pages 4 of 4 ok, 0 failed, stop complete; url https\:\/\/en\.wikipedia\.org\/w\/api\.php\?action\=parse\&page\=2026\_national\_electoral\_calendar\&prop\=text\%7Crevid\&format\=json\&formatversion\=2\&maxlag\=5
-- Parse: parser 2\.0; 698 units (465 parsed, 66 partial, 52 unparsed, 115 ignored); 573 claims; relevance 85 in or after the window, 33 unknown, 0 before it; 233 ms
+- Download: ok; HTTP 200; 568182 bytes, 4 attempts, 718 ms; pages 4 of 4 ok, 0 failed, stop complete; url https\:\/\/en\.wikipedia\.org\/w\/api\.php\?action\=parse\&page\=2026\_national\_electoral\_calendar\&prop\=text\%7Crevid\&format\=json\&formatversion\=2\&maxlag\=5
+- Parse: parser 2\.0; 699 units (465 parsed, 66 partial, 53 unparsed, 115 ignored); 573 claims; relevance 86 in or after the window, 33 unknown, 0 before it; 460 ms
 - Ignored: container\_item 115
-- Coverage: 2026: 2 pages, 597 units, ok; 2027: 2 pages, 101 units, ok
-- Snapshot: promoted; fallback no; served d885d4bea4999f8fd43e11e930b25c1570b9a661af65dcdfb07070cf1bbb21f8, fetched 2026-11-01T18:37:36.959570Z; baseline units 698; comparable yes
+- Coverage: 2026: 2 pages, 597 units, ok; 2027: 2 pages, 102 units, ok
+- Snapshot: promoted; fallback no; served e9930723280ab55844b1bcf4d128d66b4031ce11ecdc2cf9f0ab729df2da761e, fetched 2026-11-02T00:14:31.412399Z; baseline units 698; comparable yes
 - Match: 33 of 46 eligible matched, 13 unmatched, 8 fresh peers, informative yes
 
 ### Reasons
 
-- **warning** unparsed\_relevant: relevant units unparsed\: 52 — known: all of these units were in the last served data, so the run is not red for it
+- **warning** unparsed\_relevant: relevant units unparsed\: 53 — acknowledge each unit by its full text (unit_text in attention_full.json)
 - **warning** partial\_relevant: relevant units partly parsed\: 66 — known: all of these units were in the last served data, so the run is not red for it
 
 ### Unparsed samples
@@ -75,11 +75,11 @@ No reasons.
 
 ## NDI
 
-- Download: ok; HTTP 200; 347081 bytes, 2 attempts, 465 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.ndi\.org\/elections\-calendar\?page\=0
-- Parse: parser 2\.0; 36 units (35 parsed, 1 partial, 0 unparsed, 0 ignored); 36 claims; relevance 0 in or after the window, 1 unknown, 0 before it; 118 ms
+- Download: ok; HTTP 200; 347084 bytes, 2 attempts, 921 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.ndi\.org\/elections\-calendar\?page\=0
+- Parse: parser 2\.0; 36 units (35 parsed, 1 partial, 0 unparsed, 0 ignored); 36 claims; relevance 0 in or after the window, 1 unknown, 0 before it; 232 ms
 - Ignored: none
 - Coverage: all: 2 pages, 36 units, ok
-- Snapshot: promoted; fallback no; served 93926cac43f52b55cc8601804807ad0cedbae79041ef50e6b9d8be64aa98d235, fetched 2026-11-01T18:37:37.115277Z; baseline units 36; comparable yes
+- Snapshot: promoted; fallback no; served 93926cac43f52b55cc8601804807ad0cedbae79041ef50e6b9d8be64aa98d235, fetched 2026-11-02T00:14:31.998954Z; baseline units 36; comparable yes
 - Match: 3 of 5 eligible matched, 2 unmatched, 7 fresh peers, informative yes
 
 ### Reasons
@@ -88,11 +88,11 @@ No reasons.
 
 ## A\-WEB
 
-- Download: ok; HTTP 200; 48062 bytes, 1 attempts, 1027 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.aweb\.org\/eng\/bbs\/B0000007\/list\.do\?menuNo\=300052\&option\=all
-- Parse: parser 2\.0; 32 units (29 parsed, 2 partial, 1 unparsed, 0 ignored); 31 claims; relevance 1 in or after the window, 2 unknown, 0 before it; 14 ms
+- Download: ok; HTTP 200; 48062 bytes, 1 attempts, 980 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.aweb\.org\/eng\/bbs\/B0000007\/list\.do\?menuNo\=300052\&option\=all
+- Parse: parser 2\.0; 32 units (29 parsed, 2 partial, 1 unparsed, 0 ignored); 31 claims; relevance 1 in or after the window, 2 unknown, 0 before it; 28 ms
 - Ignored: none
 - Coverage: 2026: 1 pages, 32 units, ok
-- Snapshot: promoted; fallback no; served 963995b212c8568f6baa1448f8e81f342514b689ac201399438c4a06d9bd9dec, fetched 2026-11-01T18:37:38.502999Z; baseline units 32; comparable yes
+- Snapshot: promoted; fallback no; served 963995b212c8568f6baa1448f8e81f342514b689ac201399438c4a06d9bd9dec, fetched 2026-11-02T00:14:33.226150Z; baseline units 32; comparable yes
 - Match: 2 of 2 eligible matched, 0 unmatched, 7 fresh peers, informative no
 
 ### Reasons
@@ -106,11 +106,11 @@ No reasons.
 
 ## EISA
 
-- Download: not\_published\_yet; HTTP 200; 532590 bytes, 2 attempts, 4700 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.eisa\.org\/election\-calendar\/
-- Parse: parser 2\.0; 22 units (20 parsed, 0 partial, 2 unparsed, 0 ignored); 25 claims; relevance 0 in or after the window, 2 unknown, 0 before it; 53 ms
+- Download: not\_published\_yet; HTTP 200; 532595 bytes, 2 attempts, 4672 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.eisa\.org\/election\-calendar\/
+- Parse: parser 2\.0; 22 units (20 parsed, 0 partial, 2 unparsed, 0 ignored); 25 claims; relevance 0 in or after the window, 2 unknown, 0 before it; 106 ms
 - Ignored: none
 - Coverage: 2026: 1 pages, 22 units, ok; all: 1 pages, 0 units, ok
-- Snapshot: promoted; fallback no; served 4c3f95221e42e021ff808adbd10558e9a25add855550d43427b4337f4a3ba29d, fetched 2026-11-01T18:37:40.999616Z; baseline units 22; comparable yes
+- Snapshot: promoted; fallback no; served 4c3f95221e42e021ff808adbd10558e9a25add855550d43427b4337f4a3ba29d, fetched 2026-11-02T00:14:36.217866Z; baseline units 22; comparable yes
 - Match: 4 of 5 eligible matched, 1 unmatched, 6 fresh peers, informative yes
 
 ### Reasons
@@ -125,11 +125,11 @@ No reasons.
 
 ## IPU
 
-- Download: ok; HTTP 200; 393197 bytes, 1 attempts, 384 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/data\.ipu\.org\/elections\/
-- Parse: parser 2\.0; 281 units (234 parsed, 0 partial, 4 unparsed, 43 ignored); 234 claims; relevance 4 in or after the window, 0 unknown, 0 before it; 106 ms
+- Download: ok; HTTP 200; 393197 bytes, 1 attempts, 2150 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/data\.ipu\.org\/elections\/
+- Parse: parser 2\.0; 281 units (234 parsed, 0 partial, 4 unparsed, 43 ignored); 234 claims; relevance 4 in or after the window, 0 unknown, 0 before it; 221 ms
 - Ignored: appointed\_chamber 28, inactive\_chamber 10, no\_expected\_date 5
 - Coverage: all: 1 pages, 281 units, ok
-- Snapshot: promoted; fallback no; served 03fa0c621c681d71a51360db59da221b476050df331f8d6292ca0885dd956642, fetched 2026-11-01T18:37:39.102694Z; baseline units 281; comparable yes
+- Snapshot: promoted; fallback no; served 03fa0c621c681d71a51360db59da221b476050df331f8d6292ca0885dd956642, fetched 2026-11-02T00:14:35.336871Z; baseline units 281; comparable yes
 - Match: 10 of 13 eligible matched, 3 unmatched, 6 fresh peers, informative yes
 
 ### Reasons
@@ -145,11 +145,11 @@ No reasons.
 
 ## Carter Center
 
-- Download: ok; HTTP 200; 146804 bytes, 1 attempts, 183 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.cartercenter\.org\/programs\/democracy\/elections\-observed\/
-- Parse: parser 2\.0; 61 units (14 parsed, 0 partial, 46 unparsed, 1 ignored); 18 claims; relevance 0 in or after the window, 0 unknown, 46 before it; 19 ms
+- Download: ok; HTTP 200; 146804 bytes, 1 attempts, 466 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.cartercenter\.org\/programs\/democracy\/elections\-observed\/
+- Parse: parser 2\.0; 61 units (14 parsed, 0 partial, 46 unparsed, 1 ignored); 18 claims; relevance 0 in or after the window, 0 unknown, 46 before it; 40 ms
 - Ignored: footnote 1
 - Coverage: all: 1 pages, 61 units, ok
-- Snapshot: promoted; fallback no; served 5ef60e154de68ad8456509a4cdf002f221d86ee65a04438c90e88ee8aa24f02a, fetched 2026-11-01T18:37:39.413198Z; baseline units 61; comparable yes
+- Snapshot: promoted; fallback no; served 5ef60e154de68ad8456509a4cdf002f221d86ee65a04438c90e88ee8aa24f02a, fetched 2026-11-02T00:14:34.052360Z; baseline units 61; comparable yes
 - Match: 0 of 0 eligible matched, 0 unmatched, 0 fresh peers, informative no
 
 ### Reasons
@@ -158,11 +158,11 @@ No reasons.
 
 ## EEAS
 
-- Download: ok; HTTP 200; 184490 bytes, 1 attempts, 599 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.eeas\.europa\.eu\/eeas\/eu\-election\-observation\-missions\-1\_en
-- Parse: parser 2\.0; 34 units (24 parsed, 0 partial, 0 unparsed, 10 ignored); 24 claims; relevance 0 in or after the window, 0 unknown, 0 before it; 26 ms
+- Download: ok; HTTP 200; 184490 bytes, 1 attempts, 366 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.eeas\.europa\.eu\/eeas\/eu\-election\-observation\-missions\-1\_en
+- Parse: parser 2\.0; 34 units (24 parsed, 0 partial, 0 unparsed, 10 ignored); 24 claims; relevance 0 in or after the window, 0 unknown, 0 before it; 53 ms
 - Ignored: empty\_cell 6, year\_heading 4
 - Coverage: all: 1 pages, 34 units, ok
-- Snapshot: promoted; fallback no; served 9cf7f6a2113cc37c40efac39aaabee87128fb0fc1c3bf523034cf651184a807a, fetched 2026-11-01T18:37:39.921842Z; baseline units 34; comparable yes
+- Snapshot: promoted; fallback no; served 9cf7f6a2113cc37c40efac39aaabee87128fb0fc1c3bf523034cf651184a807a, fetched 2026-11-02T00:14:34.292584Z; baseline units 34; comparable yes
 - Match: 1 of 1 eligible matched, 0 unmatched, 6 fresh peers, informative no
 
 ### Reasons
@@ -210,96 +210,97 @@ No reasons.
 | partial\_unit | Wikipedia | 2026-12-07 | 7 December\: Elections in Canada \> Scarborough North\: federal by\-election |
 | partial\_unit | Wikipedia | 2027-06-06 | 6 June\: Mexico\, state elections |
 | partial\_unit | Wikipedia | 2027-11-02 | 2 November\: United States\, off\-year elections |
-| unparsed\_unit | Wikipedia |  | 7 May\: 2027 United Kingdom local elections \> 2027 Northern Ireland Assembly election |
-| unparsed\_unit | Wikipedia |  | 7 May\: 2027 United Kingdom local elections \> 2027 Scottish local elections |
+| unparsed\_unit | Wikipedia |  | 2027 Uttarakhand Legislative Assembly election |
 | undated\_listing | Wikipedia |  | Cameroon\: Parliament \(2027\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 2027 Gujarat Legislative Assembly election |
+| unparsed\_unit | Wikipedia |  | 18 April\: \> 2027 Saarland state election |
 | undated\_listing | Wikipedia |  | Poland\: Sejm \(2027\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Balearic regional election |
+| unparsed\_unit | Wikipedia |  | 7 May\: 2027 United Kingdom local elections \> 2027 Northern Ireland local elections |
 | undated\_listing | Wikipedia |  | Malaysia\: State Legislative Assembly \(2026\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 17 March\: 2027 Dutch provincial elections |
-| unparsed\_unit | Wikipedia |  | 30 May\: 2027 Bremen state election |
 | unparsed\_unit | Wikipedia |  | 7 May\: 2027 United Kingdom local elections \> 2027 Welsh local elections |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Castilian\-Manchegan regional election |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Madrilenian regional election |
 | undated\_listing | OSCE\/ODIHR |  | Montenegro\: Parliamentary Elections \(2027\)\, date not given |
 | undated\_listing | Wikipedia |  | India\: Council of States \(2027\)\, date not given |
+| unparsed\_unit | Wikipedia |  | 5 October\: 2027 Manitoba general election |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Balearic regional election |
+| unparsed\_unit | Wikipedia |  | 13 March\: 2027 New South Wales state election |
 | undated\_listing | OSCE\/ODIHR |  | Greece\: Parliamentary Elections \(2027\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 2027 Himachal Pradesh Legislative Assembly election |
-| unparsed\_unit | Wikipedia |  | 2027 Alberta general election |
 | unparsed\_unit | IPU |  | United Arab Emirates \| Federal National Council \| Unicameral \| Other \| 07 Oct 2023 \| 06 Nov 2023 \| 31 Oct 2027 |
 | undated\_listing | Wikipedia |  | Bahrain\: Parliament \(2027\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 3 November\: United States\, midterm elections \> Indiana\, Secretary of State |
+| unparsed\_unit | Wikipedia |  | 2027 Gujarat Legislative Assembly election |
 | undated\_listing | NDI |  | Haiti\: 2026 Haiti General Election \(Phase 1\) \(Date TBD\) \(2026\)\, date not given |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections \> 2027 Madrid municipal election |
 | undated\_listing | Wikipedia |  | Equatorial Guinea\: Parliament \(2027\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 18 April\: \> 2027 Schleswig\-Holstein state election |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Riojan regional election |
 | undated\_listing | Wikipedia |  | United Arab Emirates\: Parliament \(2027\)\, date not given |
+| unparsed\_unit | Wikipedia |  | 2027 Upper Austrian state election |
 | unresolved\_evidence | EEAS |  | Peru\: EU election observation mission \(2026\) |
-| unparsed\_unit | Wikipedia |  | 25 April\: 2027 North Rhine\-Westphalia state election |
-| unparsed\_unit | Wikipedia |  | 2027 Tyrolean state election |
 | undated\_listing | OSCE\/ODIHR |  | Tajikistan\: Presidential Election \(2027\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 7 March\: 2027 Lithuanian municipal elections |
+| unparsed\_unit | Wikipedia |  | 2027 Punjab Legislative Assembly election |
 | unparsed\_unit | IPU |  | Lesotho \| Senate \| Bicameral \| Upper chamber \| Other \| 02 Nov 2022 \| 03 Nov 2022 \| 30 Nov 2027 |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections \> 2027 Seville municipal election |
+| unparsed\_unit | Wikipedia |  | 2027 Goa Legislative Assembly election |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Cantabrian regional election |
 | undated\_listing | Wikipedia |  | Lesotho\: Parliament \(2027\)\, date not given |
+| unparsed\_unit | Wikipedia |  | 2027 Uttar Pradesh Legislative Assembly election |
 | undated\_listing | Wikipedia |  | Republic of the Congo\: Parliament \(2027\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections \> 2027 Zaragoza municipal election |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Navarrese regional election |
-| unparsed\_unit | Wikipedia |  | 2027 Uttar Pradesh Legislative Assembly election |
-| unparsed\_unit | Wikipedia |  | 2027 Upper Austrian state election |
-| unparsed\_unit | Wikipedia |  | 13 March\: 2027 New South Wales state election |
+| unparsed\_unit | Wikipedia |  | 17 October\: 2027 Ålandic legislative election |
+| unparsed\_unit | Wikipedia |  | 2027 Alberta general election |
+| unparsed\_unit | Wikipedia |  | 7 May\: 2027 United Kingdom local elections \> 2027 Northern Ireland Assembly election |
 | unresolved\_evidence | EEAS |  | Sao Tome and Principe\: EU election observation mission \(2026\) |
-| unparsed\_unit | Wikipedia |  | 2027 Uttarakhand Legislative Assembly election |
-| unparsed\_unit | Wikipedia |  | 2027 Prince Edward Island general election |
 | undated\_listing | EISA |  | Western Sahara\: Sahrawi legislative election \(2026\)\, date not given |
 | undated\_listing | Wikipedia |  | Saint Kitts and Nevis\: Parliament \(2027\)\, date not given |
 | undated\_listing | OSCE\/ODIHR |  | Italy\: Parliamentary Elections \(2027\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Riojan regional election |
-| unparsed\_unit | Wikipedia |  | 7 May\: 2027 United Kingdom local elections \> 2027 Northern Ireland local elections |
 | undated\_listing | OSCE\/ODIHR |  | Poland\: Parliamentary Elections \(2027\)\, date not given |
 | undated\_listing | Wikipedia |  | Libya\: President \(2027\)\, date not given |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Navarrese regional election |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections \> 2027 Barcelona municipal election |
+| unparsed\_unit | Wikipedia |  | 17 March\: 2027 Dutch provincial elections |
 | undated\_listing | EISA |  | Somaliland\: House of Elders \(Guitr\) \(2028\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 2027 Manipur Legislative Assembly election |
-| unparsed\_unit | Wikipedia |  | 5 October\: 2027 Manitoba general election |
+| unparsed\_unit | Wikipedia |  | 7 March\: 2027 Lithuanian municipal elections |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections |
 | undated\_listing | Wikipedia |  | Italy\: Chamber of Deputies \(2027\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 2027 Sicilian regional election |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Castilian\-Manchegan regional election |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Madrilenian regional election |
+| unparsed\_unit | Wikipedia |  | 26 September\: 2027 Lower Saxony state election |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Valencian regional election |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections \> 2027 Seville municipal election |
 | undated\_listing | Wikipedia |  | East Timor\: President \(2027\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 6 December Northern Cyprus\, Assembly of the Republic |
 | undated\_listing | EISA |  | Somaliland\: House of Representatives \(2028\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections \> 2027 Valencia municipal election |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Murcian regional election |
 | undated\_listing | OSCE\/ODIHR |  | Slovenia\: Presidential Election \(2027\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 2027 Punjab Legislative Assembly election |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections \> 2027 Barcelona municipal election |
+| unparsed\_unit | Wikipedia |  | 2027 Italian local elections |
+| unparsed\_unit | Wikipedia |  | 7 May\: 2027 United Kingdom local elections |
+| unparsed\_unit | Wikipedia |  | 2027 Manipur Legislative Assembly election |
+| unparsed\_unit | Wikipedia |  | 18 April\: \> 2027 Schleswig\-Holstein state election |
 | unparsed\_unit | Wikipedia |  | 3 November\: United States\, midterm elections \> Minnesota \> Hennepin County\, County Attorney |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections |
-| unparsed\_unit | Wikipedia |  | 18 April\: \> 2027 Saarland state election |
-| unparsed\_unit | Wikipedia |  | 2027 Goa Legislative Assembly election |
+| unparsed\_unit | Wikipedia |  | 7 May\: 2027 United Kingdom local elections \> 2027 Scottish local elections |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Canarian regional election |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Asturian regional election |
 | undated\_listing | Wikipedia |  | Libya\: Parliament \(2027\)\, date not given |
 | unparsed\_unit | IPU |  | Burkina Faso \| People’s Legislative Assembly \| Unicameral \| Other \| 27 Mar 2026 \| 27 Mar 2026 \| 31 Jul 2029 |
 | undated\_listing | Wikipedia |  | Papua New Guinea\: Parliament \(2027\)\, date not given |
 | unresolved\_evidence | EEAS |  | Zambia\: EU election observation mission \(2026\) |
+| unparsed\_unit | Wikipedia |  | 30 May\: 2027 Bremen state election |
 | undated\_listing | Wikipedia |  | India\: Municipal Corporation \(2026\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Valencian regional election |
+| unparsed\_unit | Wikipedia |  | 2027 Sicilian regional election |
+| unparsed\_unit | Wikipedia |  | 2027 Prince Edward Island general election |
 | undated\_listing | OSCE\/ODIHR |  | Bulgaria\: Local Elections \(2027\)\, date not given |
+| unparsed\_unit | Wikipedia |  | 2027 Tyrolean state election |
 | unresolved\_evidence | EEAS |  | Bangladesh\: EU election observation mission \(2026\) |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections \> 2027 Madrid municipal election |
-| unparsed\_unit | Wikipedia |  | 7 May\: 2027 United Kingdom local elections |
-| unparsed\_unit | Wikipedia |  | 17 October\: 2027 Ålandic legislative election |
 | undated\_listing | Wikipedia |  | Poland\: Senate \(2027\)\, date not given |
 | undated\_listing | Wikipedia |  | Italy\: Senate \(2027\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 2027 Italian local elections |
+| unparsed\_unit | Wikipedia |  | 2027 Himachal Pradesh Legislative Assembly election |
 | unparsed\_unit | Wikipedia |  | 5 October\: 2027 Northwest Territories general election |
-| unparsed\_unit | Wikipedia |  | 26 September\: 2027 Lower Saxony state election |
 | undated\_listing | Wikipedia |  | Madagascar\: President \(2027\)\, date not given |
 | undated\_listing | Wikipedia |  | Dominica\: Parliament \(2027\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Asturian regional election |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Murcian regional election |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Cantabrian regional election |
+| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections \> 2027 Valencia municipal election |
 | unresolved\_evidence | EEAS |  | Colombia\: EU election observation mission \(2026\) |
 | unparsed\_unit | IPU |  | Benin \| Senate \| Bicameral \| Upper chamber \| Other \| 30 Jul 2026 \| 30 Jul 2026 \| 30 Jul 2031 |
+| unparsed\_unit | Wikipedia |  | 2027 Argentine provincial elections |
+| unparsed\_unit | Wikipedia |  | 25 April\: 2027 North Rhine\-Westphalia state election |
 | undated\_listing | Wikipedia |  | Tunisia\: Parliament \(2027\)\, date not given |
-| unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections |
 | partial\_unit | A\-WEB | 2026-01-24 | Pakistan \| 2026 Gilgit Baltistan Assembly Election \| 24 Jan 2026 |
 | partial\_unit | Wikipedia | 2026-02-23 | 23 February\: Canada\, Quebec\, Chicoutimi\, by\-election |
 | partial\_unit | Wikipedia | 2026-03-03 | 3–8 March\: Iran\, Supreme Leader |
