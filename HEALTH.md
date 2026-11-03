@@ -1,11 +1,11 @@
 # Elections calendar health
 
-- Generated: 2026-11-03T00:14:22.696902Z
+- Generated: 2026-11-03T10:00:33.887128Z
 - Outcome: published
 - Verdict: green
 - Severity: warning
-- Data as of: 2026-11-03T00:14:23.825525Z
-- Feed: 373592 bytes of a 524288 byte budget
+- Data as of: 2026-11-03T10:00:35.326318Z
+- Feed: 373595 bytes of a 524288 byte budget
 
 ## Run
 
@@ -15,23 +15,23 @@ No run reasons.
 
 | Source | Severity | Acceptance | Served data fetched | Open reasons |
 | --- | --- | --- | --- | --- |
-| ElectionGuide | ok | promoted | 2026-11-03T00:14:24.079092Z | 0 |
-| OSCE\/ODIHR | ok | promoted | 2026-11-03T00:14:25.487394Z | 0 |
-| Wikipedia | warning | promoted | 2026-11-03T00:14:23.825525Z | 0 (+2 known) |
-| NDI | warning | promoted | 2026-11-03T00:14:24.103389Z | 0 (+1 known) |
-| A\-WEB | warning | promoted | 2026-11-03T00:14:25.372543Z | 0 (+2 known) |
-| EISA | warning | promoted | 2026-11-03T00:14:28.244320Z | 0 (+1 known) |
-| IPU | warning | promoted | 2026-11-03T00:14:27.992487Z | 0 (+1 known) |
-| Carter Center | ok | promoted | 2026-11-03T00:14:26.141874Z | 0 |
-| EEAS | ok | promoted | 2026-11-03T00:14:26.492697Z | 0 |
+| ElectionGuide | ok | promoted | 2026-11-03T10:00:35.652803Z | 0 |
+| OSCE\/ODIHR | ok | promoted | 2026-11-03T10:00:36.748600Z | 0 |
+| Wikipedia | warning | promoted | 2026-11-03T10:00:35.326318Z | 0 (+2 known) |
+| NDI | warning | promoted | 2026-11-03T10:00:35.738398Z | 0 (+1 known) |
+| A\-WEB | warning | promoted | 2026-11-03T10:00:37.359419Z | 0 (+2 known) |
+| EISA | warning | promoted | 2026-11-03T10:00:40.313683Z | 0 (+1 known) |
+| IPU | warning | promoted | 2026-11-03T10:00:37.577685Z | 0 (+1 known) |
+| Carter Center | ok | promoted | 2026-11-03T10:00:38.000284Z | 0 |
+| EEAS | ok | promoted | 2026-11-03T10:00:39.407512Z | 0 |
 
 ## ElectionGuide
 
-- Download: ok; HTTP 200; 952082 bytes, 3 attempts, 2054 ms; pages 3 of 3 ok, 0 failed, stop complete; url https\:\/\/www\.electionguide\.org\/elections\/type\/upcoming\/
-- Parse: parser 2\.0; 343 units (237 parsed, 0 partial, 2 unparsed, 104 ignored); 237 claims; relevance 0 in or after the window, 0 unknown, 2 before it; 333 ms
+- Download: ok; HTTP 200; 952082 bytes, 3 attempts, 2833 ms; pages 3 of 3 ok, 0 failed, stop complete; url https\:\/\/www\.electionguide\.org\/elections\/type\/upcoming\/
+- Parse: parser 2\.0; 343 units (237 parsed, 0 partial, 2 unparsed, 104 ignored); 237 claims; relevance 0 in or after the window, 0 unknown, 2 before it; 406 ms
 - Ignored: duplicate 104
 - Coverage: all: 3 pages, 343 units, ok
-- Snapshot: promoted; fallback no; served 6b65d46e4f6d8cbcdc14814a6a5fd799a93120c627e682717bea764d1b3d074e, fetched 2026-11-03T00:14:24.079092Z; baseline units 348; comparable yes
+- Snapshot: promoted; fallback no; served 6b65d46e4f6d8cbcdc14814a6a5fd799a93120c627e682717bea764d1b3d074e, fetched 2026-11-03T10:00:35.652803Z; baseline units 343; comparable yes
 - Match: 32 of 40 eligible matched, 8 unmatched, 8 fresh peers, informative yes
 
 ### Reasons
@@ -45,11 +45,11 @@ No run reasons.
 
 ## OSCE\/ODIHR
 
-- Download: ok; HTTP 200; 754195 bytes, 1 attempts, 1840 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/odihr\.osce\.org\/odihr\/elections
-- Parse: parser 2\.0; 634 units (173 parsed, 7 partial, 454 unparsed, 0 ignored); 180 claims; relevance 0 in or after the window, 0 unknown, 461 before it; 321 ms
+- Download: ok; HTTP 200; 754225 bytes, 1 attempts, 1859 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/odihr\.osce\.org\/odihr\/elections
+- Parse: parser 2\.0; 634 units (173 parsed, 7 partial, 454 unparsed, 0 ignored); 180 claims; relevance 0 in or after the window, 0 unknown, 461 before it; 406 ms
 - Ignored: none
 - Coverage: all: 1 pages, 634 units, ok
-- Snapshot: promoted; fallback no; served 248d3b6a50d7ebb4fde87eb94be3007931f8a2c229d299e8cc568af7e55cefd6, fetched 2026-11-03T00:14:25.487394Z; baseline units 634; comparable yes
+- Snapshot: promoted; fallback no; served 84272054da74831e0fdb5d890d4c322dc86e1a0efb9418d66a4ac41bbf367780, fetched 2026-11-03T10:00:36.748600Z; baseline units 634; comparable yes
 - Match: 5 of 5 eligible matched, 0 unmatched, 5 fresh peers, informative yes
 
 ### Reasons
@@ -58,11 +58,11 @@ No reasons.
 
 ## Wikipedia
 
-- Download: ok; HTTP 200; 569672 bytes, 4 attempts, 492 ms; pages 4 of 4 ok, 0 failed, stop complete; url https\:\/\/en\.wikipedia\.org\/w\/api\.php\?action\=parse\&page\=2026\_national\_electoral\_calendar\&prop\=text\%7Crevid\&format\=json\&formatversion\=2\&maxlag\=5
-- Parse: parser 2\.0; 702 units (468 parsed, 66 partial, 53 unparsed, 115 ignored); 580 claims; relevance 86 in or after the window, 33 unknown, 0 before it; 401 ms
+- Download: ok; HTTP 200; 569672 bytes, 4 attempts, 1275 ms; pages 4 of 4 ok, 0 failed, stop complete; url https\:\/\/en\.wikipedia\.org\/w\/api\.php\?action\=parse\&page\=2026\_national\_electoral\_calendar\&prop\=text\%7Crevid\&format\=json\&formatversion\=2\&maxlag\=5
+- Parse: parser 2\.0; 702 units (468 parsed, 66 partial, 53 unparsed, 115 ignored); 580 claims; relevance 86 in or after the window, 33 unknown, 0 before it; 467 ms
 - Ignored: container\_item 115
 - Coverage: 2026: 2 pages, 601 units, ok; 2027: 2 pages, 101 units, ok
-- Snapshot: promoted; fallback no; served 59271d2327222fe987628cb48650358ed8aac357f1d1ae25354d4f7c8e03b268, fetched 2026-11-03T00:14:23.825525Z; baseline units 699; comparable yes
+- Snapshot: promoted; fallback no; served 59271d2327222fe987628cb48650358ed8aac357f1d1ae25354d4f7c8e03b268, fetched 2026-11-03T10:00:35.326318Z; baseline units 702; comparable yes
 - Match: 33 of 45 eligible matched, 12 unmatched, 8 fresh peers, informative yes
 
 ### Reasons
@@ -80,11 +80,11 @@ No reasons.
 
 ## NDI
 
-- Download: ok; HTTP 200; 345011 bytes, 2 attempts, 546 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.ndi\.org\/elections\-calendar\?page\=0
-- Parse: parser 2\.0; 35 units (34 parsed, 1 partial, 0 unparsed, 0 ignored); 35 claims; relevance 0 in or after the window, 1 unknown, 0 before it; 193 ms
+- Download: ok; HTTP 200; 345010 bytes, 2 attempts, 1058 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.ndi\.org\/elections\-calendar\?page\=0
+- Parse: parser 2\.0; 35 units (34 parsed, 1 partial, 0 unparsed, 0 ignored); 35 claims; relevance 0 in or after the window, 1 unknown, 0 before it; 239 ms
 - Ignored: none
 - Coverage: all: 2 pages, 35 units, ok
-- Snapshot: promoted; fallback no; served 9fc11c221ec90c24a6c42e77dde00837fdcdc05a0f07d80b914ce82d334c54e0, fetched 2026-11-03T00:14:24.103389Z; baseline units 36; comparable yes
+- Snapshot: promoted; fallback no; served 9fc11c221ec90c24a6c42e77dde00837fdcdc05a0f07d80b914ce82d334c54e0, fetched 2026-11-03T10:00:35.738398Z; baseline units 35; comparable yes
 - Match: 3 of 5 eligible matched, 2 unmatched, 7 fresh peers, informative yes
 
 ### Reasons
@@ -93,11 +93,11 @@ No reasons.
 
 ## A\-WEB
 
-- Download: ok; HTTP 200; 48737 bytes, 1 attempts, 898 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.aweb\.org\/eng\/bbs\/B0000007\/list\.do\?menuNo\=300052\&option\=all
-- Parse: parser 2\.0; 31 units (29 parsed, 1 partial, 1 unparsed, 0 ignored); 30 claims; relevance 0 in or after the window, 2 unknown, 0 before it; 23 ms
+- Download: ok; HTTP 200; 48737 bytes, 1 attempts, 885 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.aweb\.org\/eng\/bbs\/B0000007\/list\.do\?menuNo\=300052\&option\=all
+- Parse: parser 2\.0; 31 units (29 parsed, 1 partial, 1 unparsed, 0 ignored); 30 claims; relevance 0 in or after the window, 2 unknown, 0 before it; 28 ms
 - Ignored: none
 - Coverage: 2026: 1 pages, 31 units, ok
-- Snapshot: promoted; fallback no; served 2ebc4d6e9a585607324e6cc3a2234a002a716dac33cb7ae00e9413f093431840, fetched 2026-11-03T00:14:25.372543Z; baseline units 32; comparable yes
+- Snapshot: promoted; fallback no; served 2ebc4d6e9a585607324e6cc3a2234a002a716dac33cb7ae00e9413f093431840, fetched 2026-11-03T10:00:37.359419Z; baseline units 31; comparable yes
 - Match: 2 of 2 eligible matched, 0 unmatched, 7 fresh peers, informative no
 
 ### Reasons
@@ -111,11 +111,11 @@ No reasons.
 
 ## EISA
 
-- Download: not\_published\_yet; HTTP 200; 532611 bytes, 2 attempts, 4668 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.eisa\.org\/election\-calendar\/
-- Parse: parser 2\.0; 22 units (20 parsed, 0 partial, 2 unparsed, 0 ignored); 25 claims; relevance 0 in or after the window, 2 unknown, 0 before it; 82 ms
+- Download: not\_published\_yet; HTTP 200; 532563 bytes, 2 attempts, 4958 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.eisa\.org\/election\-calendar\/
+- Parse: parser 2\.0; 22 units (20 parsed, 0 partial, 2 unparsed, 0 ignored); 25 claims; relevance 0 in or after the window, 2 unknown, 0 before it; 100 ms
 - Ignored: none
 - Coverage: 2026: 1 pages, 22 units, ok; all: 1 pages, 0 units, ok
-- Snapshot: promoted; fallback no; served 4c3f95221e42e021ff808adbd10558e9a25add855550d43427b4337f4a3ba29d, fetched 2026-11-03T00:14:28.244320Z; baseline units 22; comparable yes
+- Snapshot: promoted; fallback no; served 4c3f95221e42e021ff808adbd10558e9a25add855550d43427b4337f4a3ba29d, fetched 2026-11-03T10:00:40.313683Z; baseline units 22; comparable yes
 - Match: 4 of 5 eligible matched, 1 unmatched, 6 fresh peers, informative yes
 
 ### Reasons
@@ -130,11 +130,11 @@ No reasons.
 
 ## IPU
 
-- Download: ok; HTTP 200; 393197 bytes, 1 attempts, 2162 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/data\.ipu\.org\/elections\/
-- Parse: parser 2\.0; 281 units (234 parsed, 0 partial, 4 unparsed, 43 ignored); 234 claims; relevance 4 in or after the window, 0 unknown, 0 before it; 201 ms
+- Download: ok; HTTP 200; 393197 bytes, 1 attempts, 483 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/data\.ipu\.org\/elections\/
+- Parse: parser 2\.0; 281 units (234 parsed, 0 partial, 4 unparsed, 43 ignored); 234 claims; relevance 4 in or after the window, 0 unknown, 0 before it; 224 ms
 - Ignored: appointed\_chamber 28, inactive\_chamber 10, no\_expected\_date 5
 - Coverage: all: 1 pages, 281 units, ok
-- Snapshot: promoted; fallback no; served 03fa0c621c681d71a51360db59da221b476050df331f8d6292ca0885dd956642, fetched 2026-11-03T00:14:27.992487Z; baseline units 281; comparable yes
+- Snapshot: promoted; fallback no; served 03fa0c621c681d71a51360db59da221b476050df331f8d6292ca0885dd956642, fetched 2026-11-03T10:00:37.577685Z; baseline units 281; comparable yes
 - Match: 10 of 13 eligible matched, 3 unmatched, 6 fresh peers, informative yes
 
 ### Reasons
@@ -150,11 +150,11 @@ No reasons.
 
 ## Carter Center
 
-- Download: ok; HTTP 200; 146804 bytes, 1 attempts, 263 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.cartercenter\.org\/programs\/democracy\/elections\-observed\/
-- Parse: parser 2\.0; 61 units (14 parsed, 0 partial, 46 unparsed, 1 ignored); 18 claims; relevance 0 in or after the window, 0 unknown, 46 before it; 31 ms
+- Download: ok; HTTP 200; 146804 bytes, 1 attempts, 291 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.cartercenter\.org\/programs\/democracy\/elections\-observed\/
+- Parse: parser 2\.0; 61 units (14 parsed, 0 partial, 46 unparsed, 1 ignored); 18 claims; relevance 0 in or after the window, 0 unknown, 46 before it; 38 ms
 - Ignored: footnote 1
 - Coverage: all: 1 pages, 61 units, ok
-- Snapshot: promoted; fallback no; served 5ef60e154de68ad8456509a4cdf002f221d86ee65a04438c90e88ee8aa24f02a, fetched 2026-11-03T00:14:26.141874Z; baseline units 61; comparable yes
+- Snapshot: promoted; fallback no; served 5ef60e154de68ad8456509a4cdf002f221d86ee65a04438c90e88ee8aa24f02a, fetched 2026-11-03T10:00:38.000284Z; baseline units 61; comparable yes
 - Match: 0 of 0 eligible matched, 0 unmatched, 0 fresh peers, informative no
 
 ### Reasons
@@ -163,11 +163,11 @@ No reasons.
 
 ## EEAS
 
-- Download: ok; HTTP 200; 184490 bytes, 1 attempts, 411 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.eeas\.europa\.eu\/eeas\/eu\-election\-observation\-missions\-1\_en
-- Parse: parser 2\.0; 34 units (24 parsed, 0 partial, 0 unparsed, 10 ignored); 24 claims; relevance 0 in or after the window, 0 unknown, 0 before it; 43 ms
+- Download: ok; HTTP 200; 184490 bytes, 1 attempts, 1469 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.eeas\.europa\.eu\/eeas\/eu\-election\-observation\-missions\-1\_en
+- Parse: parser 2\.0; 34 units (24 parsed, 0 partial, 0 unparsed, 10 ignored); 24 claims; relevance 0 in or after the window, 0 unknown, 0 before it; 52 ms
 - Ignored: empty\_cell 6, year\_heading 4
 - Coverage: all: 1 pages, 34 units, ok
-- Snapshot: promoted; fallback no; served 9cf7f6a2113cc37c40efac39aaabee87128fb0fc1c3bf523034cf651184a807a, fetched 2026-11-03T00:14:26.492697Z; baseline units 34; comparable yes
+- Snapshot: promoted; fallback no; served 9cf7f6a2113cc37c40efac39aaabee87128fb0fc1c3bf523034cf651184a807a, fetched 2026-11-03T10:00:39.407512Z; baseline units 34; comparable yes
 - Match: 1 of 1 eligible matched, 0 unmatched, 6 fresh peers, informative no
 
 ### Reasons
@@ -227,11 +227,10 @@ No reasons.
 | undated\_listing | Wikipedia |  | East Timor\: President \(2027\)\, date not given |
 | undated\_listing | Wikipedia |  | Lesotho\: Parliament \(2027\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 5 October\: 2027 Manitoba general election |
+| undated\_listing | OSCE\/ODIHR |  | Bulgaria\: Local Elections \(2027\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Balearic regional election |
 | unparsed\_unit | Wikipedia |  | 13 March\: 2027 New South Wales state election |
 | undated\_listing | Wikipedia |  | Tunisia\: Parliament \(2027\)\, date not given |
-| undated\_listing | OSCE\/ODIHR |  | Tajikistan\: Presidential Election \(2027\)\, date not given |
-| undated\_listing | OSCE\/ODIHR |  | Slovenia\: Presidential Election \(2027\)\, date not given |
 | undated\_listing | Wikipedia |  | Malaysia\: State Legislative Assembly \(2026\)\, date not given |
 | unparsed\_unit | IPU |  | United Arab Emirates \| Federal National Council \| Unicameral \| Other \| 07 Oct 2023 \| 06 Nov 2023 \| 31 Oct 2027 |
 | unparsed\_unit | Wikipedia |  | 2027 Gujarat Legislative Assembly election |
@@ -245,6 +244,7 @@ No reasons.
 | unparsed\_unit | IPU |  | Lesotho \| Senate \| Bicameral \| Upper chamber \| Other \| 02 Nov 2022 \| 03 Nov 2022 \| 30 Nov 2027 |
 | unparsed\_unit | Wikipedia |  | 2027 Goa Legislative Assembly election |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Cantabrian regional election |
+| undated\_listing | OSCE\/ODIHR |  | Slovenia\: Presidential Election \(2027\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 2027 Uttar Pradesh Legislative Assembly election |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections \> 2027 Zaragoza municipal election |
 | unparsed\_unit | Wikipedia |  | 17 October\: 2027 Ålandic legislative election |
@@ -254,10 +254,8 @@ No reasons.
 | unresolved\_evidence | EEAS |  | Sao Tome and Principe\: EU election observation mission \(2026\) |
 | undated\_listing | Wikipedia |  | Libya\: Parliament \(2027\)\, date not given |
 | undated\_listing | EISA |  | Western Sahara\: Sahrawi legislative election \(2026\)\, date not given |
-| undated\_listing | OSCE\/ODIHR |  | Greece\: Parliamentary Elections \(2027\)\, date not given |
 | undated\_listing | Wikipedia |  | Equatorial Guinea\: Parliament \(2027\)\, date not given |
 | undated\_listing | OSCE\/ODIHR |  | Italy\: Parliamentary Elections \(2027\)\, date not given |
-| undated\_listing | OSCE\/ODIHR |  | Poland\: Parliamentary Elections \(2027\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Navarrese regional election |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections \> 2027 Barcelona municipal election |
 | unparsed\_unit | Wikipedia |  | 17 March\: 2027 Dutch provincial elections |
@@ -290,20 +288,22 @@ No reasons.
 | unparsed\_unit | Wikipedia |  | 2027 Sicilian regional election |
 | unparsed\_unit | Wikipedia |  | 2027 Prince Edward Island general election |
 | undated\_listing | Wikipedia |  | Dominica\: Parliament \(2027\)\, date not given |
-| undated\_listing | OSCE\/ODIHR |  | Montenegro\: Parliamentary Elections \(2027\)\, date not given |
-| undated\_listing | OSCE\/ODIHR |  | Bulgaria\: Local Elections \(2027\)\, date not given |
+| undated\_listing | OSCE\/ODIHR |  | Poland\: Parliamentary Elections \(2027\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 2027 Tyrolean state election |
 | unresolved\_evidence | EEAS |  | Bangladesh\: EU election observation mission \(2026\) |
 | undated\_listing | Wikipedia |  | Republic of the Congo\: Parliament \(2027\)\, date not given |
+| undated\_listing | OSCE\/ODIHR |  | Greece\: Parliamentary Elections \(2027\)\, date not given |
 | undated\_listing | Wikipedia |  | Italy\: Chamber of Deputies \(2027\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 2027 Himachal Pradesh Legislative Assembly election |
 | unparsed\_unit | Wikipedia |  | 5 October\: 2027 Northwest Territories general election |
+| undated\_listing | OSCE\/ODIHR |  | Tajikistan\: Presidential Election \(2027\)\, date not given |
 | undated\_listing | Wikipedia |  | Bahrain\: Parliament \(2027\)\, date not given |
 | undated\_listing | Wikipedia |  | Poland\: Senate \(2027\)\, date not given |
 | undated\_listing | Wikipedia |  | India\: Council of States \(2027\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections \> 2027 Valencia municipal election |
 | unresolved\_evidence | EEAS |  | Colombia\: EU election observation mission \(2026\) |
 | unparsed\_unit | IPU |  | Benin \| Senate \| Bicameral \| Upper chamber \| Other \| 30 Jul 2026 \| 30 Jul 2026 \| 30 Jul 2031 |
+| undated\_listing | OSCE\/ODIHR |  | Montenegro\: Parliamentary Elections \(2027\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 2027 Argentine provincial elections |
 | unparsed\_unit | Wikipedia |  | 25 April\: 2027 North Rhine\-Westphalia state election |
 | unparsed\_unit | Wikipedia |  | 3 November\: United States\, midterm elections \> Minnesota \> Hennepin County\, County Attorney |

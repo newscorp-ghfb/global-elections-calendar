@@ -1,7 +1,7 @@
 {
  "source": "eeas",
  "snapshot_id": "9cf7f6a2113cc37c40efac39aaabee87128fb0fc1c3bf523034cf651184a807a",
- "fetched_at": "2026-11-03T00:14:26.492697Z",
+ "fetched_at": "2026-11-03T10:00:39.407512Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,7 +21,7 @@
     "units_seen": 34,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-03T00:14:26.492697Z",
+    "fetched_at": "2026-11-03T10:00:39.407512Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -29,7 +29,7 @@
      "final_url": "https://www.eeas.europa.eu/eeas/eu-election-observation-missions-1_en",
      "content_type": "text/html; charset=utf-8",
      "bytes": 184490,
-     "elapsed_ms": 411,
+     "elapsed_ms": 1469,
      "attempts": 1,
      "error_type": null,
      "error": null,
