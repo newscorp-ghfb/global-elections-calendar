@@ -1,7 +1,7 @@
 {
  "source": "aweb",
- "snapshot_id": "963995b212c8568f6baa1448f8e81f342514b689ac201399438c4a06d9bd9dec",
- "fetched_at": "2026-11-02T00:14:33.226150Z",
+ "snapshot_id": "2ebc4d6e9a585607324e6cc3a2234a002a716dac33cb7ae00e9413f093431840",
+ "fetched_at": "2026-11-03T00:14:25.372543Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -18,18 +18,18 @@
     "link": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052&option=all",
     "outcome": "ok",
     "unit_prefix": "aweb:calendar/",
-    "units_seen": 32,
+    "units_seen": 31,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-02T00:14:33.226150Z",
+    "fetched_at": "2026-11-03T00:14:25.372543Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
      "http_status": 200,
      "final_url": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052&option=all",
      "content_type": "text/html;charset=utf-8",
-     "bytes": 48062,
-     "elapsed_ms": 980,
+     "bytes": 48737,
+     "elapsed_ms": 898,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -322,16 +322,6 @@
   {
    "unit_id": "aweb:calendar/r29",
    "source": "aweb",
-   "text": "The Philippines | 2026 Barangay and Sangguniang Kabataan Elections (BSKE) | 02 Nov 2026",
-   "outcome": "partial",
-   "reason": "office_unrecognised",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": null
-  },
-  {
-   "unit_id": "aweb:calendar/r30",
-   "source": "aweb",
    "text": "Taiwan | 2026 Local Elections | 28 Nov 2026",
    "outcome": "parsed",
    "reason": null,
@@ -340,7 +330,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "aweb:calendar/r31",
+   "unit_id": "aweb:calendar/r30",
    "source": "aweb",
    "text": "Gambia | 2026 Presidential Election | 05 Dec 2026",
    "outcome": "parsed",
@@ -350,7 +340,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "aweb:calendar/r32",
+   "unit_id": "aweb:calendar/r31",
    "source": "aweb",
    "text": "South Sudan | 2026 General Election | 22 Dec 2026",
    "outcome": "parsed",
@@ -1258,39 +1248,6 @@
    "source": "aweb",
    "link": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052&option=all",
    "source_event_id": null,
-   "place_raw": "The Philippines",
-   "place_id": "iso:PH",
-   "jurisdiction": null,
-   "jurisdiction_kind": "nationwide",
-   "level": "unknown",
-   "institution": null,
-   "office_class": "general",
-   "office_label": "2026 Barangay and Sangguniang Kabataan Elections (BSKE)",
-   "aggregate": true,
-   "kind": "aggregate",
-   "round": null,
-   "date": "2026-11-02",
-   "end_date": "2026-11-02",
-   "date_precision": "day",
-   "year": 2026,
-   "date_meaning": "voting_period",
-   "date_status": "unknown",
-   "date_text": "02 Nov 2026",
-   "status_claim": null,
-   "previous_date_text": null,
-   "evidence_kind": "calendar",
-   "indirect": false,
-   "fetched_at": null,
-   "fallback": false,
-   "snapshot_id": null,
-   "provisional": false
-  },
-  {
-   "unit_id": "aweb:calendar/r30",
-   "claim_id": "aweb:calendar/r30#0",
-   "source": "aweb",
-   "link": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052&option=all",
-   "source_event_id": null,
    "place_raw": "Taiwan",
    "place_id": "iso:TW",
    "jurisdiction": null,
@@ -1319,8 +1276,8 @@
    "provisional": false
   },
   {
-   "unit_id": "aweb:calendar/r31",
-   "claim_id": "aweb:calendar/r31#0",
+   "unit_id": "aweb:calendar/r30",
+   "claim_id": "aweb:calendar/r30#0",
    "source": "aweb",
    "link": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052&option=all",
    "source_event_id": null,
@@ -1352,8 +1309,8 @@
    "provisional": false
   },
   {
-   "unit_id": "aweb:calendar/r32",
-   "claim_id": "aweb:calendar/r32#0",
+   "unit_id": "aweb:calendar/r31",
+   "claim_id": "aweb:calendar/r31#0",
    "source": "aweb",
    "link": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052&option=all",
    "source_event_id": null,
@@ -1410,6 +1367,12 @@
    "fetched_at": "2026-11-02T00:14:33.226150Z",
    "units_seen": 32,
    "claims": 31
+  },
+  {
+   "scope": "calendar",
+   "fetched_at": "2026-11-03T00:14:25.372543Z",
+   "units_seen": 31,
+   "claims": 30
   }
  ],
  "disappeared": [],
