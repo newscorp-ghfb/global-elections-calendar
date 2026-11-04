@@ -1,7 +1,7 @@
 {
  "source": "aweb",
  "snapshot_id": "2ebc4d6e9a585607324e6cc3a2234a002a716dac33cb7ae00e9413f093431840",
- "fetched_at": "2026-11-03T10:00:37.359419Z",
+ "fetched_at": "2026-11-04T00:14:42.837664Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,7 +21,7 @@
     "units_seen": 31,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-03T10:00:37.359419Z",
+    "fetched_at": "2026-11-04T00:14:42.837664Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -29,7 +29,7 @@
      "final_url": "https://www.aweb.org/eng/bbs/B0000007/list.do?menuNo=300052&option=all",
      "content_type": "text/html;charset=utf-8",
      "bytes": 48737,
-     "elapsed_ms": 885,
+     "elapsed_ms": 1427,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -1377,6 +1377,12 @@
   {
    "scope": "calendar",
    "fetched_at": "2026-11-03T10:00:37.359419Z",
+   "units_seen": 31,
+   "claims": 30
+  },
+  {
+   "scope": "calendar",
+   "fetched_at": "2026-11-04T00:14:42.837664Z",
    "units_seen": 31,
    "claims": 30
   }
