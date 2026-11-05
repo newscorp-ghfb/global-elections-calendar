@@ -1,7 +1,7 @@
 {
  "source": "eisa",
  "snapshot_id": "4c3f95221e42e021ff808adbd10558e9a25add855550d43427b4337f4a3ba29d",
- "fetched_at": "2026-11-04T00:15:40.891717Z",
+ "fetched_at": "2026-11-05T00:14:15.920868Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,15 +21,15 @@
     "units_seen": 0,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-04T00:15:40.891717Z",
+    "fetched_at": "2026-11-05T00:14:15.920868Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
      "http_status": 200,
      "final_url": "https://www.eisa.org/election-calendar/",
      "content_type": "text/html; charset=UTF-8",
-     "bytes": 527973,
-     "elapsed_ms": 59221,
+     "bytes": 527982,
+     "elapsed_ms": 3829,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -47,7 +47,7 @@
     "units_seen": 22,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-04T00:16:12.036093Z",
+    "fetched_at": "2026-11-05T00:14:17.101905Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -55,7 +55,7 @@
      "final_url": "https://www.eisa.org/wp-admin/admin-ajax.php?action=wp_ajax_ninja_tables_public_action&table_id=38978&target_action=get-all-data",
      "content_type": "application/json; charset=UTF-8",
      "bytes": 4596,
-     "elapsed_ms": 31097,
+     "elapsed_ms": 1133,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -1166,6 +1166,12 @@
    "claims": 0
   },
   {
+   "scope": "calendar",
+   "fetched_at": "2026-11-05T00:14:15.920868Z",
+   "units_seen": 0,
+   "claims": 0
+  },
+  {
    "scope": "y2026",
    "fetched_at": "2026-10-31T19:59:21.348706Z",
    "units_seen": 22,
@@ -1204,6 +1210,12 @@
   {
    "scope": "y2026",
    "fetched_at": "2026-11-04T00:15:40.891717Z",
+   "units_seen": 22,
+   "claims": 25
+  },
+  {
+   "scope": "y2026",
+   "fetched_at": "2026-11-05T00:14:15.920868Z",
    "units_seen": 22,
    "claims": 25
   }
