@@ -1,7 +1,7 @@
 {
  "source": "osce",
  "snapshot_id": "746d0a38ef6abaee13ad79bc1c3905eec47baa6c1f49f2b0aad83c14e950c3ff",
- "fetched_at": "2026-11-08T00:10:58.263257Z",
+ "fetched_at": "2026-11-09T00:11:27.863228Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,7 +21,7 @@
     "units_seen": 634,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-08T00:10:58.263257Z",
+    "fetched_at": "2026-11-09T00:11:27.863228Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -29,7 +29,7 @@
      "final_url": "https://odihr.osce.org/odihr/elections",
      "content_type": "text/html; charset=utf-8",
      "bytes": 753912,
-     "elapsed_ms": 2299,
+     "elapsed_ms": 2028,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -12387,6 +12387,12 @@
   {
    "scope": "elections",
    "fetched_at": "2026-11-08T00:10:58.263257Z",
+   "units_seen": 634,
+   "claims": 180
+  },
+  {
+   "scope": "elections",
+   "fetched_at": "2026-11-09T00:11:27.863228Z",
    "units_seen": 634,
    "claims": 180
   }
