@@ -1,7 +1,7 @@
 {
  "source": "electionguide",
  "snapshot_id": "6066cf84aa27ff4a7da0b24b794439a59bdc88cd05d52e2510375006d85d08ea",
- "fetched_at": "2026-11-09T00:11:26.353777Z",
+ "fetched_at": "2026-11-10T00:15:13.614951Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,7 +21,7 @@
     "units_seen": 27,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-09T00:11:26.353777Z",
+    "fetched_at": "2026-11-10T00:15:13.614951Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -29,7 +29,7 @@
      "final_url": "https://www.electionguide.org/elections/type/upcoming/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 83967,
-     "elapsed_ms": 531,
+     "elapsed_ms": 243,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -47,7 +47,7 @@
     "units_seen": 200,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-09T00:11:28.037736Z",
+    "fetched_at": "2026-11-10T00:15:15.136312Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -55,7 +55,7 @@
      "final_url": "https://www.electionguide.org/elections/type/past/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 600860,
-     "elapsed_ms": 1683,
+     "elapsed_ms": 1521,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -73,7 +73,7 @@
     "units_seen": 104,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-09T00:11:28.472315Z",
+    "fetched_at": "2026-11-10T00:15:15.607355Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -81,7 +81,7 @@
      "final_url": "https://www.electionguide.org/elections/type/anticipated/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 235269,
-     "elapsed_ms": 433,
+     "elapsed_ms": 469,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -10904,6 +10904,12 @@
    "claims": 0
   },
   {
+   "scope": "anticipated",
+   "fetched_at": "2026-11-10T00:15:13.614951Z",
+   "units_seen": 104,
+   "claims": 0
+  },
+  {
    "scope": "past",
    "fetched_at": "2026-10-31T19:59:16.784061Z",
    "units_seen": 200,
@@ -10972,6 +10978,12 @@
   {
    "scope": "past",
    "fetched_at": "2026-11-09T00:11:26.353777Z",
+   "units_seen": 200,
+   "claims": 198
+  },
+  {
+   "scope": "past",
+   "fetched_at": "2026-11-10T00:15:13.614951Z",
    "units_seen": 200,
    "claims": 198
   },
@@ -11046,30 +11058,15 @@
    "fetched_at": "2026-11-09T00:11:26.353777Z",
    "units_seen": 27,
    "claims": 27
-  }
- ],
- "disappeared": [
-  {
-   "source_event_id": "electionguide:5199",
-   "unit_id": "electionguide:upcoming/r21",
-   "text": "Guinea-Bissau | Bissau-Guinean Presidency | 2026-12-06 (t) | 2026-12-06 (t) | Date not confirmed | No",
-   "date_text": "2026-12-06 (t) to 2026-12-06 (t)",
-   "start": "2026-12-06",
-   "end": "2026-12-06",
-   "link": "https://www.electionguide.org/elections/id/5199/",
-   "since": "2026-11-03T00:14:22.696902Z"
   },
   {
-   "source_event_id": "electionguide:5200",
-   "unit_id": "electionguide:upcoming/r19",
-   "text": "Guinea-Bissau | Bissau-Guinean People's National Assembly | 2026-12-06 (t) | 2026-12-06 (t) | Date not confirmed | No",
-   "date_text": "2026-12-06 (t) to 2026-12-06 (t)",
-   "start": "2026-12-06",
-   "end": "2026-12-06",
-   "link": "https://www.electionguide.org/elections/id/5200/",
-   "since": "2026-11-03T00:14:22.696902Z"
+   "scope": "upcoming",
+   "fetched_at": "2026-11-10T00:15:13.614951Z",
+   "units_seen": 27,
+   "claims": 27
   }
  ],
+ "disappeared": [],
  "coverage_gaps": [],
  "checks": {
   "ledger": true,

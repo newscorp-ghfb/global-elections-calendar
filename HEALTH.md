@@ -1,11 +1,11 @@
 # Elections calendar health
 
-- Generated: 2026-11-09T00:11:25.059796Z
+- Generated: 2026-11-10T00:15:12.306393Z
 - Outcome: published
 - Verdict: red
 - Severity: error
 - Data as of: 2026-11-06T00:20:29.669843Z
-- Feed: 372060 bytes of a 524288 byte budget
+- Feed: 371134 bytes of a 524288 byte budget
 
 ## Run
 
@@ -15,41 +15,36 @@ No run reasons.
 
 | Source | Severity | Acceptance | Served data fetched | Open reasons |
 | --- | --- | --- | --- | --- |
-| ElectionGuide | ok | promoted | 2026-11-09T00:11:26.353777Z | 0 |
-| OSCE\/ODIHR | ok | promoted | 2026-11-09T00:11:27.863228Z | 0 |
-| Wikipedia | warning | promoted | 2026-11-09T00:11:26.224460Z | 0 (+2 known) |
-| NDI | warning | promoted | 2026-11-09T00:11:26.961202Z | 0 (+1 known) |
-| A\-WEB | warning | promoted | 2026-11-09T00:11:28.402395Z | 0 (+2 known) |
-| EISA | warning | promoted | 2026-11-09T00:11:31.823844Z | 0 (+1 known) |
-| IPU | warning | promoted | 2026-11-09T00:11:28.466134Z | 0 (+1 known) |
-| Carter Center | ok | promoted | 2026-11-09T00:11:29.449061Z | 0 |
+| ElectionGuide | ok | promoted | 2026-11-10T00:15:13.614951Z | 0 |
+| OSCE\/ODIHR | ok | promoted | 2026-11-10T00:15:15.206641Z | 0 |
+| Wikipedia | warning | promoted | 2026-11-10T00:15:13.614173Z | 0 (+2 known) |
+| NDI | warning | promoted | 2026-11-10T00:15:14.354003Z | 0 (+1 known) |
+| A\-WEB | warning | promoted | 2026-11-10T00:15:15.175942Z | 0 (+2 known) |
+| EISA | warning | promoted | 2026-11-10T00:15:19.106720Z | 0 (+1 known) |
+| IPU | warning | promoted | 2026-11-10T00:15:15.787756Z | 0 (+1 known) |
+| Carter Center | ok | promoted | 2026-11-10T00:15:16.046774Z | 0 |
 | EEAS | error | fallback | 2026-11-06T00:20:29.669843Z | 1 |
 
 ## ElectionGuide
 
-- Download: ok; HTTP 200; 920096 bytes, 3 attempts, 2647 ms; pages 3 of 3 ok, 0 failed, stop complete; url https\:\/\/www\.electionguide\.org\/elections\/type\/upcoming\/
-- Parse: parser 2\.0; 331 units (225 parsed, 0 partial, 2 unparsed, 104 ignored); 225 claims; relevance 0 in or after the window, 0 unknown, 2 before it; 267 ms
+- Download: ok; HTTP 200; 920096 bytes, 3 attempts, 2233 ms; pages 3 of 3 ok, 0 failed, stop complete; url https\:\/\/www\.electionguide\.org\/elections\/type\/upcoming\/
+- Parse: parser 2\.0; 331 units (225 parsed, 0 partial, 2 unparsed, 104 ignored); 225 claims; relevance 0 in or after the window, 0 unknown, 2 before it; 398 ms
 - Ignored: duplicate 104
 - Coverage: all: 3 pages, 331 units, ok
-- Snapshot: promoted; fallback no; served 6066cf84aa27ff4a7da0b24b794439a59bdc88cd05d52e2510375006d85d08ea, fetched 2026-11-09T00:11:26.353777Z; baseline units 332; comparable yes
+- Snapshot: promoted; fallback no; served 6066cf84aa27ff4a7da0b24b794439a59bdc88cd05d52e2510375006d85d08ea, fetched 2026-11-10T00:15:13.614951Z; baseline units 331; comparable yes
 - Match: 32 of 40 eligible matched, 8 unmatched, 7 fresh peers, informative yes
 
 ### Reasons
 
-- **info** units\_disappeared: listed events no longer listed\: 2
-
-### No longer listed
-
-- No longer listed by ElectionGuide\: Guinea\-Bissau \| Bissau\-Guinean Presidency \| 2026\-12\-06 \(t\) \| 2026\-12\-06 \(t\) \| Date not confirmed \| No\, was 2026\-12\-06 \(t\) to 2026\-12\-06 \(t\)
-- No longer listed by ElectionGuide\: Guinea\-Bissau \| Bissau\-Guinean People\'s National Assembly \| 2026\-12\-06 \(t\) \| 2026\-12\-06 \(t\) \| Date not confirmed \| No\, was 2026\-12\-06 \(t\) to 2026\-12\-06 \(t\)
+No reasons.
 
 ## OSCE\/ODIHR
 
-- Download: ok; HTTP 200; 753912 bytes, 1 attempts, 2028 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/odihr\.osce\.org\/odihr\/elections
-- Parse: parser 2\.0; 634 units (173 parsed, 7 partial, 454 unparsed, 0 ignored); 180 claims; relevance 0 in or after the window, 0 unknown, 461 before it; 259 ms
+- Download: ok; HTTP 200; 754321 bytes, 1 attempts, 1828 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/odihr\.osce\.org\/odihr\/elections
+- Parse: parser 2\.0; 634 units (173 parsed, 7 partial, 454 unparsed, 0 ignored); 180 claims; relevance 0 in or after the window, 0 unknown, 461 before it; 406 ms
 - Ignored: none
 - Coverage: all: 1 pages, 634 units, ok
-- Snapshot: promoted; fallback no; served 746d0a38ef6abaee13ad79bc1c3905eec47baa6c1f49f2b0aad83c14e950c3ff, fetched 2026-11-09T00:11:27.863228Z; baseline units 634; comparable yes
+- Snapshot: promoted; fallback no; served 84272054da74831e0fdb5d890d4c322dc86e1a0efb9418d66a4ac41bbf367780, fetched 2026-11-10T00:15:15.206641Z; baseline units 634; comparable yes
 - Match: 5 of 5 eligible matched, 0 unmatched, 5 fresh peers, informative yes
 
 ### Reasons
@@ -58,11 +53,11 @@ No reasons.
 
 ## Wikipedia
 
-- Download: ok; HTTP 200; 570272 bytes, 4 attempts, 1326 ms; pages 4 of 4 ok, 0 failed, stop complete; url https\:\/\/en\.wikipedia\.org\/w\/api\.php\?action\=parse\&page\=2026\_national\_electoral\_calendar\&prop\=text\%7Crevid\&format\=json\&formatversion\=2\&maxlag\=5
-- Parse: parser 2\.0; 704 units (475 parsed, 60 partial, 53 unparsed, 116 ignored); 581 claims; relevance 80 in or after the window, 33 unknown, 0 before it; 338 ms
-- Ignored: container\_item 116
-- Coverage: 2026: 2 pages, 603 units, ok; 2027: 2 pages, 101 units, ok
-- Snapshot: promoted; fallback no; served dc12d3d66a73b58b86f1f49f14e642f9d8ebb66682f5a3bc19d58b8713a5ef91, fetched 2026-11-09T00:11:26.224460Z; baseline units 704; comparable yes
+- Download: ok; HTTP 200; 570581 bytes, 4 attempts, 367 ms; pages 4 of 4 ok, 0 failed, stop complete; url https\:\/\/en\.wikipedia\.org\/w\/api\.php\?action\=parse\&page\=2026\_national\_electoral\_calendar\&prop\=text\%7Crevid\&format\=json\&formatversion\=2\&maxlag\=5
+- Parse: parser 2\.0; 706 units (476 parsed, 60 partial, 53 unparsed, 117 ignored); 582 claims; relevance 80 in or after the window, 33 unknown, 0 before it; 480 ms
+- Ignored: container\_item 117
+- Coverage: 2026: 2 pages, 605 units, ok; 2027: 2 pages, 101 units, ok
+- Snapshot: promoted; fallback no; served a527f2663abae56b5dffce854d7454b96dd9f3f7b80820d0e4b5348345dec150, fetched 2026-11-10T00:15:13.614173Z; baseline units 704; comparable yes
 - Match: 33 of 51 eligible matched, 18 unmatched, 7 fresh peers, informative yes
 
 ### Reasons
@@ -80,11 +75,11 @@ No reasons.
 
 ## NDI
 
-- Download: ok; HTTP 200; 345010 bytes, 2 attempts, 1291 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.ndi\.org\/elections\-calendar\?page\=0
-- Parse: parser 2\.0; 35 units (34 parsed, 1 partial, 0 unparsed, 0 ignored); 35 claims; relevance 0 in or after the window, 1 unknown, 0 before it; 175 ms
+- Download: ok; HTTP 200; 345014 bytes, 2 attempts, 1438 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.ndi\.org\/elections\-calendar\?page\=0
+- Parse: parser 2\.0; 35 units (34 parsed, 1 partial, 0 unparsed, 0 ignored); 35 claims; relevance 0 in or after the window, 1 unknown, 0 before it; 243 ms
 - Ignored: none
 - Coverage: all: 2 pages, 35 units, ok
-- Snapshot: promoted; fallback no; served 9fc11c221ec90c24a6c42e77dde00837fdcdc05a0f07d80b914ce82d334c54e0, fetched 2026-11-09T00:11:26.961202Z; baseline units 35; comparable yes
+- Snapshot: promoted; fallback no; served 9fc11c221ec90c24a6c42e77dde00837fdcdc05a0f07d80b914ce82d334c54e0, fetched 2026-11-10T00:15:14.354003Z; baseline units 35; comparable yes
 - Match: 3 of 5 eligible matched, 2 unmatched, 6 fresh peers, informative yes
 
 ### Reasons
@@ -93,11 +88,11 @@ No reasons.
 
 ## A\-WEB
 
-- Download: ok; HTTP 200; 48737 bytes, 1 attempts, 881 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.aweb\.org\/eng\/bbs\/B0000007\/list\.do\?menuNo\=300052\&option\=all
-- Parse: parser 2\.0; 31 units (29 parsed, 1 partial, 1 unparsed, 0 ignored); 30 claims; relevance 0 in or after the window, 2 unknown, 0 before it; 19 ms
+- Download: ok; HTTP 200; 48737 bytes, 1 attempts, 956 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.aweb\.org\/eng\/bbs\/B0000007\/list\.do\?menuNo\=300052\&option\=all
+- Parse: parser 2\.0; 31 units (29 parsed, 1 partial, 1 unparsed, 0 ignored); 30 claims; relevance 0 in or after the window, 2 unknown, 0 before it; 29 ms
 - Ignored: none
 - Coverage: 2026: 1 pages, 31 units, ok
-- Snapshot: promoted; fallback no; served 2ebc4d6e9a585607324e6cc3a2234a002a716dac33cb7ae00e9413f093431840, fetched 2026-11-09T00:11:28.402395Z; baseline units 31; comparable yes
+- Snapshot: promoted; fallback no; served 2ebc4d6e9a585607324e6cc3a2234a002a716dac33cb7ae00e9413f093431840, fetched 2026-11-10T00:15:15.175942Z; baseline units 31; comparable yes
 - Match: 2 of 2 eligible matched, 0 unmatched, 6 fresh peers, informative no
 
 ### Reasons
@@ -111,11 +106,11 @@ No reasons.
 
 ## EISA
 
-- Download: not\_published\_yet; HTTP 200; 532578 bytes, 2 attempts, 5368 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.eisa\.org\/election\-calendar\/
-- Parse: parser 2\.0; 22 units (20 parsed, 0 partial, 2 unparsed, 0 ignored); 25 claims; relevance 0 in or after the window, 2 unknown, 0 before it; 67 ms
+- Download: not\_published\_yet; HTTP 200; 532575 bytes, 2 attempts, 4678 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.eisa\.org\/election\-calendar\/
+- Parse: parser 2\.0; 22 units (20 parsed, 0 partial, 2 unparsed, 0 ignored); 25 claims; relevance 0 in or after the window, 2 unknown, 0 before it; 101 ms
 - Ignored: none
 - Coverage: 2026: 1 pages, 22 units, ok; all: 1 pages, 0 units, ok
-- Snapshot: promoted; fallback no; served 4c3f95221e42e021ff808adbd10558e9a25add855550d43427b4337f4a3ba29d, fetched 2026-11-09T00:11:31.823844Z; baseline units 22; comparable yes
+- Snapshot: promoted; fallback no; served 4c3f95221e42e021ff808adbd10558e9a25add855550d43427b4337f4a3ba29d, fetched 2026-11-10T00:15:19.106720Z; baseline units 22; comparable yes
 - Match: 4 of 5 eligible matched, 1 unmatched, 5 fresh peers, informative yes
 
 ### Reasons
@@ -130,12 +125,12 @@ No reasons.
 
 ## IPU
 
-- Download: ok; HTTP 200; 393071 bytes, 1 attempts, 261 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/data\.ipu\.org\/elections\/
-- Parse: parser 2\.0; 281 units (234 parsed, 0 partial, 4 unparsed, 43 ignored); 234 claims; relevance 4 in or after the window, 0 unknown, 0 before it; 158 ms
+- Download: ok; HTTP 200; 393071 bytes, 1 attempts, 224 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/data\.ipu\.org\/elections\/
+- Parse: parser 2\.0; 281 units (234 parsed, 0 partial, 4 unparsed, 43 ignored); 234 claims; relevance 4 in or after the window, 0 unknown, 0 before it; 231 ms
 - Ignored: appointed\_chamber 28, inactive\_chamber 10, no\_expected\_date 5
 - Coverage: all: 1 pages, 281 units, ok
-- Snapshot: promoted; fallback no; served 22b350773564a7df3dbf15a092d1e2d881e0bfc92612c664d93950f2c6af8572, fetched 2026-11-09T00:11:28.466134Z; baseline units 281; comparable yes
-- Match: 8 of 11 eligible matched, 3 unmatched, 5 fresh peers, informative yes
+- Snapshot: promoted; fallback no; served d3c92db67143909676db63815e248d6052db6af7e29e543e44f114c46595df0a, fetched 2026-11-10T00:15:15.787756Z; baseline units 281; comparable yes
+- Match: 7 of 10 eligible matched, 3 unmatched, 5 fresh peers, informative yes
 
 ### Reasons
 
@@ -150,11 +145,11 @@ No reasons.
 
 ## Carter Center
 
-- Download: ok; HTTP 200; 146988 bytes, 1 attempts, 707 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.cartercenter\.org\/programs\/democracy\/elections\-observed\/
-- Parse: parser 2\.0; 61 units (14 parsed, 0 partial, 46 unparsed, 1 ignored); 18 claims; relevance 0 in or after the window, 0 unknown, 46 before it; 28 ms
+- Download: ok; HTTP 200; 152562 bytes, 1 attempts, 311 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.cartercenter\.org\/programs\/democracy\/elections\-observed\/
+- Parse: parser 2\.0; 61 units (14 parsed, 0 partial, 46 unparsed, 1 ignored); 18 claims; relevance 0 in or after the window, 0 unknown, 46 before it; 59 ms
 - Ignored: footnote 1
 - Coverage: all: 1 pages, 61 units, ok
-- Snapshot: promoted; fallback no; served 5ef60e154de68ad8456509a4cdf002f221d86ee65a04438c90e88ee8aa24f02a, fetched 2026-11-09T00:11:29.449061Z; baseline units 61; comparable yes
+- Snapshot: promoted; fallback no; served 5ef60e154de68ad8456509a4cdf002f221d86ee65a04438c90e88ee8aa24f02a, fetched 2026-11-10T00:15:16.046774Z; baseline units 61; comparable yes
 - Match: 0 of 0 eligible matched, 0 unmatched, 0 fresh peers, informative no
 
 ### Reasons
@@ -163,7 +158,7 @@ No reasons.
 
 ## EEAS
 
-- Download: http\_error; HTTP 403; 919 bytes, 1 attempts, 353 ms; pages 0 of 1 ok, 1 failed, stop complete; error HTTP 403; url https\:\/\/www\.eeas\.europa\.eu\/eeas\/eu\-election\-observation\-missions\-1\_en
+- Download: http\_error; HTTP 403; 919 bytes, 1 attempts, 1184 ms; pages 0 of 1 ok, 1 failed, stop complete; error HTTP 403; url https\:\/\/www\.eeas\.europa\.eu\/eeas\/eu\-election\-observation\-missions\-1\_en
 - Parse: parser 2\.0; 0 units (0 parsed, 0 partial, 0 unparsed, 0 ignored); 0 claims; relevance 0 in or after the window, 0 unknown, 0 before it; 0 ms
 - Ignored: none
 - Coverage: all: 1 pages, 0 units, http\_error
@@ -178,36 +173,34 @@ No reasons.
 
 | Kind | Source | Date | Text |
 | --- | --- | --- | --- |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> California \> Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> New York\, Governor\, Lieutenant Governor\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Iowa\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Vermont\, Governor\, Lieutenant Governor\, and ballot measure |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Colorado\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Georgia\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Connecticut\, Governor\, Lieutenant Governor\, Secretary of the State\, Attorney General\, Comptroller\, and Treasurer |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Massachusetts\, Governor\, Lieutenant Governor\, Secretary of the Commonwealth\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Wisconsin\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Florida \> Governor\, Lieutenant Governor\, and Attorney General |
 | partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Arkansas\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Minnesota \> Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Maryland\, Governor\, Lieutenant Governor\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Nevada \> Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Kansas\, Governor\, Lieutenant Governor\, Secretary of State\, Attorney General\, and ballot measure |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> South Dakota\, Governor\, Lieutenant Governor\, Secretary of State\, Attorney General\, and ballot measure |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Arizona\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> District of Columbia\, Mayor and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> New Mexico\, Governor\, Lieutenant Governor\, and Secretary of State |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Texas \> Governor\, Lieutenant Governor\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Illinois\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Michigan\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Oklahoma\, Governor\, Lieutenant Governor\, and Attorney General |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Alabama\, Governor\, Lieutenant Governor\, Secretary of State\, Attorney General\, ballot measures\, and local elections |
-| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Ohio\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
 | partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Rhode Island\, Governor\, Lieutenant Governor\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Texas \> Governor\, Lieutenant Governor\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Kansas\, Governor\, Lieutenant Governor\, Secretary of State\, Attorney General\, and ballot measure |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> New Mexico\, Governor\, Lieutenant Governor\, and Secretary of State |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Maryland\, Governor\, Lieutenant Governor\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Iowa\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Connecticut\, Governor\, Lieutenant Governor\, Secretary of the State\, Attorney General\, Comptroller\, and Treasurer |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Minnesota \> Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Michigan\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Alabama\, Governor\, Lieutenant Governor\, Secretary of State\, Attorney General\, ballot measures\, and local elections |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Massachusetts\, Governor\, Lieutenant Governor\, Secretary of the Commonwealth\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> California \> Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Illinois\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Florida \> Governor\, Lieutenant Governor\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Arizona\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Colorado\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> South Dakota\, Governor\, Lieutenant Governor\, Secretary of State\, Attorney General\, and ballot measure |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Wisconsin\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Ohio\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Vermont\, Governor\, Lieutenant Governor\, and ballot measure |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Oklahoma\, Governor\, Lieutenant Governor\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> District of Columbia\, Mayor and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Nevada \> Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
 | partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> South Carolina\, Governor\, Lieutenant Governor\, and Attorney General |
-| disappeared\_unit | ElectionGuide | 2026-12-06 | No longer listed by ElectionGuide\: Guinea\-Bissau \| Bissau\-Guinean Presidency \| 2026\-12\-06 \(t\) \| 2026\-12\-06 \(t\) \| Date not confirmed \| No\, was 2026\-12\-06 \(t\) to 2026\-12\-06 \(t\) |
-| disappeared\_unit | ElectionGuide | 2026-12-06 | No longer listed by ElectionGuide\: Guinea\-Bissau \| Bissau\-Guinean People\'s National Assembly \| 2026\-12\-06 \(t\) \| 2026\-12\-06 \(t\) \| Date not confirmed \| No\, was 2026\-12\-06 \(t\) to 2026\-12\-06 \(t\) |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Georgia\, Governor\, Lieutenant Governor\, Secretary of State\, and Attorney General |
+| partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> New York\, Governor\, Lieutenant Governor\, and Attorney General |
 | partial\_unit | Wikipedia | 2027-06-06 | 6 June\: Mexico\, state elections |
 | partial\_unit | Wikipedia | 2027-11-02 | 2 November\: United States\, off\-year elections |
 | unparsed\_unit | Wikipedia |  | 2027 Uttarakhand Legislative Assembly election |
@@ -215,9 +208,7 @@ No reasons.
 | unparsed\_unit | Wikipedia |  | 18 April\: \> 2027 Saarland state election |
 | unparsed\_unit | Wikipedia |  | 7 May\: 2027 United Kingdom local elections \> 2027 Northern Ireland local elections |
 | unparsed\_unit | Wikipedia |  | 7 May\: 2027 United Kingdom local elections \> 2027 Welsh local elections |
-| undated\_listing | Wikipedia |  | India\: Municipal Corporation \(2026\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Castilian\-Manchegan regional election |
-| unparsed\_unit | Wikipedia |  | 3 November\: United States\, midterm elections \> Indiana\, Secretary of State |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Madrilenian regional election |
 | undated\_listing | Wikipedia |  | East Timor\: President \(2027\)\, date not given |
@@ -226,6 +217,7 @@ No reasons.
 | undated\_listing | OSCE\/ODIHR |  | Bulgaria\: Local Elections \(2027\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Balearic regional election |
 | unparsed\_unit | Wikipedia |  | 13 March\: 2027 New South Wales state election |
+| undated\_listing | Wikipedia |  | India\: Municipal Corporation \(2026\)\, date not given |
 | undated\_listing | Wikipedia |  | Tunisia\: Parliament \(2027\)\, date not given |
 | unparsed\_unit | IPU |  | United Arab Emirates \| Federal National Council \| Unicameral \| Other \| 07 Oct 2023 \| 06 Nov 2023 \| 31 Oct 2027 |
 | unparsed\_unit | Wikipedia |  | 2027 Gujarat Legislative Assembly election |
@@ -243,7 +235,6 @@ No reasons.
 | unparsed\_unit | Wikipedia |  | 2027 Uttar Pradesh Legislative Assembly election |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections \> 2027 Zaragoza municipal election |
 | unparsed\_unit | Wikipedia |  | 17 October\: 2027 Ålandic legislative election |
-| unparsed\_unit | Wikipedia |  | 3 November\: United States\, midterm elections \> Minnesota \> Hennepin County\, County Attorney |
 | unparsed\_unit | Wikipedia |  | 2027 Alberta general election |
 | unparsed\_unit | Wikipedia |  | 7 May\: 2027 United Kingdom local elections \> 2027 Northern Ireland Assembly election |
 | unresolved\_evidence | EEAS |  | Sao Tome and Principe\: EU election observation mission \(2026\) |
@@ -260,7 +251,7 @@ No reasons.
 | unparsed\_unit | Wikipedia |  | 26 September\: 2027 Lower Saxony state election |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Valencian regional election |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish local elections \> 2027 Seville municipal election |
-| unparsed\_unit | Wikipedia |  | 6 December Northern Cyprus\, Assembly of the Republic |
+| unparsed\_unit | Wikipedia |  | 3 November\: United States\, midterm elections \> Minnesota \> Hennepin County\, County Attorney |
 | undated\_listing | Wikipedia |  | Poland\: Sejm \(2027\)\, date not given |
 | undated\_listing | EISA |  | Somaliland\: House of Representatives \(2028\)\, date not given |
 | undated\_listing | Wikipedia |  | Italy\: Senate \(2027\)\, date not given |
@@ -275,6 +266,7 @@ No reasons.
 | undated\_listing | Wikipedia |  | Madagascar\: President \(2027\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Canarian regional election |
 | undated\_listing | Wikipedia |  | Cameroon\: Parliament \(2027\)\, date not given |
+| unparsed\_unit | Wikipedia |  | 6 December Northern Cyprus\, Assembly of the Republic |
 | unparsed\_unit | Wikipedia |  | 23 May\: \> 2027 Spanish regional elections \> 2027 Asturian regional election |
 | unparsed\_unit | IPU |  | Burkina Faso \| People’s Legislative Assembly \| Unicameral \| Other \| 27 Mar 2026 \| 27 Mar 2026 \| 31 Jul 2029 |
 | unresolved\_evidence | EEAS |  | Zambia\: EU election observation mission \(2026\) |
@@ -300,19 +292,20 @@ No reasons.
 | undated\_listing | OSCE\/ODIHR |  | Montenegro\: Parliamentary Elections \(2027\)\, date not given |
 | unparsed\_unit | Wikipedia |  | 2027 Argentine provincial elections |
 | unparsed\_unit | Wikipedia |  | 25 April\: 2027 North Rhine\-Westphalia state election |
+| unparsed\_unit | Wikipedia |  | 3 November\: United States\, midterm elections \> Indiana\, Secretary of State |
 | partial\_unit | A\-WEB | 2026-01-24 | Pakistan \| 2026 Gilgit Baltistan Assembly Election \| 24 Jan 2026 |
 | partial\_unit | Wikipedia | 2026-02-23 | 23 February\: Canada\, Quebec\, Chicoutimi\, by\-election |
 | partial\_unit | Wikipedia | 2026-03-03 | 3–8 March\: Iran\, Supreme Leader |
 | partial\_unit | Wikipedia | 2026-03-07 | 7 March\: Australia\, Northern Territory\, Nightcliff by\-election |
 | partial\_unit | Wikipedia | 2026-03-08 | 8 March\: \> Switzerland \> Nidwalden\, Landrat |
-| partial\_unit | Wikipedia | 2026-03-22 | 22–23 March\: Italy \> Selvazzano Dentro\, by\-election |
 | partial\_unit | Wikipedia | 2026-03-22 | 22–23 March\: Italy \> Rovigo\, by\-election |
+| partial\_unit | Wikipedia | 2026-03-22 | 22–23 March\: Italy \> Selvazzano Dentro\, by\-election |
 | partial\_unit | Wikipedia | 2026-04-07 | 7 April\: United States \> Wisconsin \> Supreme Court |
 | partial\_unit | Wikipedia | 2026-04-09 | 9 April\: \> New Zealand\, Ōtara\-Papatoetoe\, by\-election |
 | partial\_unit | Wikipedia | 2026-05-12 | 12 May\: \> United States \> West Virginia\, Supreme Court of Appeals |
 | partial\_unit | Wikipedia | 2026-05-16 | 16 May\: \> Australia\, Queensland\, Stafford by\-election |
-| partial\_unit | Wikipedia | 2026-05-19 | 19 May\: United States \> Georgia \> Court of Appeals |
 | partial\_unit | Wikipedia | 2026-05-19 | 19 May\: United States \> Georgia \> Supreme Court |
+| partial\_unit | Wikipedia | 2026-05-19 | 19 May\: United States \> Georgia \> Court of Appeals |
 | partial\_unit | Wikipedia | 2026-06-02 | 2 June\: United States \> California \> Los Angeles\, Mayor \(1st round\)\, City Attorney \(1st round\)\, City Controller\, and City Council \(1st round\) |
 | partial\_unit | Wikipedia | 2026-06-02 | 2 June\: United States \> California \> Los Angeles County\, Board of Supervisors\, Sheriff \(1st round\)\, and Assessor |
 | partial\_unit | Wikipedia | 2026-06-16 | 16 June\: United States \> District of Columbia\, at\-large\, special election |
@@ -322,19 +315,19 @@ No reasons.
 | partial\_unit | Wikipedia | 2026-08-06 | 6 August\: United States\, Tennessee \> Supreme Court\, retention elections |
 | partial\_unit | Wikipedia | 2026-08-21 | 21 August\: New Zealand\, Greater Wellington\, Wairarapa\, by\-election |
 | partial\_unit | Wikipedia | 2026-08-29 | 29 August\: \> Australia\, Western Australia\, Secret Harbour by\-election |
-| partial\_unit | Wikipedia | 2026-08-31 | 31 August\: Canada \> Beaches—East York\, by\-election |
-| partial\_unit | Wikipedia | 2026-08-31 | 31 August\: Canada \> Chicoutimi—Le Fjord\, by\-election |
 | partial\_unit | Wikipedia | 2026-08-31 | 31 August\: Canada \> North Vancouver—Capilano\, by\-election |
+| partial\_unit | Wikipedia | 2026-08-31 | 31 August\: Canada \> Chicoutimi—Le Fjord\, by\-election |
+| partial\_unit | Wikipedia | 2026-08-31 | 31 August\: Canada \> Beaches—East York\, by\-election |
+| partial\_unit | Wikipedia | 2026-09-03 | 3 September\: Canada\, Ontario \> Scarborough Southwest\, by\-election |
 | partial\_unit | Wikipedia | 2026-09-03 | 3 September\: Canada\, Ontario \> York—Simcoe\, by\-election |
 | partial\_unit | Wikipedia | 2026-09-03 | 3 September\: Canada\, Ontario \> Hamilton East—Stoney Creek\, by\-election |
-| partial\_unit | Wikipedia | 2026-09-03 | 3 September\: Canada\, Ontario \> Scarborough Southwest\, by\-election |
 | partial\_unit | Wikipedia | 2026-09-12 | 12 September\: Australia\, Northern Territory\, Mulka\, by\-election |
 | partial\_unit | NDI | 2026-09-14 | 2026 Philippines \(BARMM\) Parliamentary Elections \| September 14\, 2026 \(ALL DAY\) \| Parliamentary |
 | partial\_unit | Wikipedia | 2026-09-14 | 14 September\: \> Canada\, Alberta\, Calgary\-Shaw\, by\-election |
 | partial\_unit | Wikipedia | 2026-09-27 | 27–28 September\: Italy\, Reggio Calabria\, by\-election |
 | unparsed\_unit | EISA |  | Libya \(from the row above\) \| House of Representatives \| Postponed from April 2026 |
+| unparsed\_unit | Wikipedia |  | 19 May\: United States \> Oregon \> Commissioner of Labor |
 | unparsed\_unit | Wikipedia |  | 3 April\: Myanmar\, Vice President |
 | unparsed\_unit | A\-WEB |  | Ghana \| 2026 The Presidential Primaries \| 31 Jan 2026 |
-| unparsed\_unit | EISA |  | Libya \| Presidential \| Postponed from April 2026 |
-| unparsed\_unit | Wikipedia |  | 19 May\: United States \> Oregon \> Commissioner of Labor |
 | unparsed\_unit | Wikipedia |  | 16 July\: United Kingdom\, Norfolk\, police and crime commissioner by\-election |
+| unparsed\_unit | EISA |  | Libya \| Presidential \| Postponed from April 2026 |
