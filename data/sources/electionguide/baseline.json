@@ -1,7 +1,7 @@
 {
  "source": "electionguide",
  "snapshot_id": "eb1b32a2a17c590923e1976736ecf881cc239c67e36e0875a96bab090e1f957c",
- "fetched_at": "2026-11-11T00:14:55.500430Z",
+ "fetched_at": "2026-11-12T00:11:05.552709Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,7 +21,7 @@
     "units_seen": 30,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-11T00:14:55.500430Z",
+    "fetched_at": "2026-11-12T00:11:05.552709Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -29,7 +29,7 @@
      "final_url": "https://www.electionguide.org/elections/type/upcoming/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 91594,
-     "elapsed_ms": 402,
+     "elapsed_ms": 432,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -47,7 +47,7 @@
     "units_seen": 200,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-11T00:14:57.003448Z",
+    "fetched_at": "2026-11-12T00:11:06.966849Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -55,7 +55,7 @@
      "final_url": "https://www.electionguide.org/elections/type/past/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 601017,
-     "elapsed_ms": 1502,
+     "elapsed_ms": 1413,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -73,7 +73,7 @@
     "units_seen": 105,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-11T00:14:57.437358Z",
+    "fetched_at": "2026-11-12T00:11:07.366766Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -81,7 +81,7 @@
      "final_url": "https://www.electionguide.org/elections/type/anticipated/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 237414,
-     "elapsed_ms": 433,
+     "elapsed_ms": 398,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -11055,6 +11055,12 @@
    "claims": 0
   },
   {
+   "scope": "anticipated",
+   "fetched_at": "2026-11-12T00:11:05.552709Z",
+   "units_seen": 105,
+   "claims": 0
+  },
+  {
    "scope": "past",
    "fetched_at": "2026-10-31T19:59:16.784061Z",
    "units_seen": 200,
@@ -11139,6 +11145,12 @@
    "claims": 198
   },
   {
+   "scope": "past",
+   "fetched_at": "2026-11-12T00:11:05.552709Z",
+   "units_seen": 200,
+   "claims": 198
+  },
+  {
    "scope": "upcoming",
    "fetched_at": "2026-10-31T19:59:16.784061Z",
    "units_seen": 42,
@@ -11219,6 +11231,12 @@
   {
    "scope": "upcoming",
    "fetched_at": "2026-11-11T00:14:55.500430Z",
+   "units_seen": 30,
+   "claims": 30
+  },
+  {
+   "scope": "upcoming",
+   "fetched_at": "2026-11-12T00:11:05.552709Z",
    "units_seen": 30,
    "claims": 30
   }
