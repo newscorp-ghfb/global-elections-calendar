@@ -1,7 +1,7 @@
 {
  "source": "carter",
  "snapshot_id": "2ae19cbaa573125f5098793e5e0a80c936842fcf00c81013acd4d8131ce4ca7c",
- "fetched_at": "2026-11-20T00:16:47.688867Z",
+ "fetched_at": "2026-11-21T00:15:30.187889Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,15 +21,15 @@
     "units_seen": 61,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-20T00:16:47.688867Z",
+    "fetched_at": "2026-11-21T00:15:30.187889Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
      "http_status": 200,
      "final_url": "https://www.cartercenter.org/programs/democracy/elections-observed/",
      "content_type": "text/html; charset=UTF-8",
-     "bytes": 154189,
-     "elapsed_ms": 692,
+     "bytes": 154274,
+     "elapsed_ms": 500,
      "attempts": 1,
      "error_type": null,
      "error": null,
