@@ -1,7 +1,7 @@
 {
  "source": "ipu",
  "snapshot_id": "c9692616a34c69a634344169d0069cecd08433cd24314aebbd96ea37756b0c4c",
- "fetched_at": "2026-11-21T00:15:29.711889Z",
+ "fetched_at": "2026-11-22T00:11:27.826492Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,7 +21,7 @@
     "units_seen": 281,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-21T00:15:29.711889Z",
+    "fetched_at": "2026-11-22T00:11:27.826492Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -29,7 +29,7 @@
      "final_url": "https://data.ipu.org/elections/",
      "content_type": "text/html; charset=UTF-8",
      "bytes": 393071,
-     "elapsed_ms": 381,
+     "elapsed_ms": 428,
      "attempts": 1,
      "error_type": null,
      "error": null,
