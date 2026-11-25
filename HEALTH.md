@@ -1,11 +1,11 @@
 # Elections calendar health
 
-- Generated: 2026-11-24T00:13:30.599080Z
+- Generated: 2026-11-25T00:12:29.586336Z
 - Outcome: published
 - Verdict: red
 - Severity: error
 - Data as of: 2026-11-19T00:13:04.866749Z
-- Feed: 393139 bytes of a 524288 byte budget
+- Feed: 392490 bytes of a 524288 byte budget
 
 ## Run
 
@@ -15,40 +15,36 @@ No run reasons.
 
 | Source | Severity | Acceptance | Served data fetched | Open reasons |
 | --- | --- | --- | --- | --- |
-| ElectionGuide | ok | promoted | 2026-11-24T00:13:31.909231Z | 0 |
-| OSCE\/ODIHR | ok | promoted | 2026-11-24T00:13:32.889241Z | 0 |
+| ElectionGuide | ok | promoted | 2026-11-25T00:12:31.275937Z | 0 |
+| OSCE\/ODIHR | ok | promoted | 2026-11-25T00:12:32.489960Z | 0 |
 | Wikipedia | error | fallback | 2026-11-19T00:13:04.866749Z | 4 (+2 known) |
-| NDI | warning | promoted | 2026-11-24T00:13:32.347555Z | 0 (+1 known) |
-| A\-WEB | warning | promoted | 2026-11-24T00:13:33.491445Z | 0 (+2 known) |
-| EISA | warning | promoted | 2026-11-24T00:13:36.188075Z | 0 (+1 known) |
-| IPU | warning | promoted | 2026-11-24T00:13:33.397105Z | 0 (+1 known) |
-| Carter Center | ok | promoted | 2026-11-24T00:13:33.733036Z | 0 |
-| EEAS | ok | promoted | 2026-11-24T00:13:34.183652Z | 0 |
+| NDI | warning | promoted | 2026-11-25T00:12:31.659361Z | 0 (+1 known) |
+| A\-WEB | warning | promoted | 2026-11-25T00:12:32.948226Z | 0 (+2 known) |
+| EISA | warning | promoted | 2026-11-25T00:12:51.317807Z | 0 (+1 known) |
+| IPU | warning | promoted | 2026-11-25T00:12:33.106165Z | 0 (+1 known) |
+| Carter Center | ok | promoted | 2026-11-25T00:12:34.063870Z | 0 |
+| EEAS | ok | promoted | 2026-11-25T00:12:33.812220Z | 0 |
 
 ## ElectionGuide
 
-- Download: ok; HTTP 200; 913669 bytes, 3 attempts, 2888 ms; pages 3 of 3 ok, 0 failed, stop complete; url https\:\/\/www\.electionguide\.org\/elections\/type\/upcoming\/
-- Parse: parser 2\.0; 328 units (225 parsed, 0 partial, 2 unparsed, 101 ignored); 225 claims; relevance 0 in or after the window, 0 unknown, 2 before it; 261 ms
+- Download: ok; HTTP 200; 913669 bytes, 3 attempts, 4028 ms; pages 3 of 3 ok, 0 failed, stop complete; url https\:\/\/www\.electionguide\.org\/elections\/type\/upcoming\/
+- Parse: parser 2\.0; 328 units (225 parsed, 0 partial, 2 unparsed, 101 ignored); 225 claims; relevance 0 in or after the window, 0 unknown, 2 before it; 390 ms
 - Ignored: duplicate 101
 - Coverage: all: 3 pages, 328 units, ok
-- Snapshot: promoted; fallback no; served 5df204025b01cd0fc447a282ff46123938d5a8ac96bfbeafbb93e9976ae4baae, fetched 2026-11-24T00:13:31.909231Z; baseline units 328; comparable yes
+- Snapshot: promoted; fallback no; served 5df204025b01cd0fc447a282ff46123938d5a8ac96bfbeafbb93e9976ae4baae, fetched 2026-11-25T00:12:31.275937Z; baseline units 328; comparable yes
 - Match: 14 of 40 eligible matched, 26 unmatched, 7 fresh peers, informative yes
 
 ### Reasons
 
-- **info** units\_disappeared: listed events no longer listed\: 1
-
-### No longer listed
-
-- No longer listed by ElectionGuide\: Fiji \| Referendum \| 2026\-12\-09 \(t\) \| 2026\-12\-09 \(t\) \| Date not confirmed \| No\, was 2026\-12\-09 \(t\) to 2026\-12\-09 \(t\)
+No reasons.
 
 ## OSCE\/ODIHR
 
-- Download: ok; HTTP 200; 754438 bytes, 1 attempts, 1525 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/odihr\.osce\.org\/odihr\/elections
-- Parse: parser 2\.0; 634 units (173 parsed, 7 partial, 454 unparsed, 0 ignored); 180 claims; relevance 0 in or after the window, 0 unknown, 461 before it; 255 ms
+- Download: ok; HTTP 200; 755376 bytes, 1 attempts, 1894 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/odihr\.osce\.org\/odihr\/elections
+- Parse: parser 2\.0; 634 units (173 parsed, 7 partial, 454 unparsed, 0 ignored); 180 claims; relevance 0 in or after the window, 0 unknown, 461 before it; 401 ms
 - Ignored: none
 - Coverage: all: 1 pages, 634 units, ok
-- Snapshot: promoted; fallback no; served da8b8a6b5b0f1dd58049a8b82b51dddac5a6bb6bfaf739c1ea40a86bd165a0a2, fetched 2026-11-24T00:13:32.889241Z; baseline units 634; comparable yes
+- Snapshot: promoted; fallback no; served 65154a9dceb870db5befcfc59fb24462e33d0699ff4fe4cff19f53b721a4794a, fetched 2026-11-25T00:12:32.489960Z; baseline units 634; comparable yes
 - Match: 5 of 5 eligible matched, 0 unmatched, 4 fresh peers, informative yes
 
 ### Reasons
@@ -57,8 +53,8 @@ No reasons.
 
 ## Wikipedia
 
-- Download: layout\_not\_recognised; HTTP 200; 599680 bytes, 4 attempts, 1147 ms; pages 0 of 4 ok, 4 failed, stop complete; url https\:\/\/en\.wikipedia\.org\/w\/api\.php\?action\=parse\&page\=2026\_national\_electoral\_calendar\&prop\=text\%7Crevid\&format\=json\&formatversion\=2\&maxlag\=5
-- Parse: parser 2\.0; 0 units (0 parsed, 0 partial, 0 unparsed, 0 ignored); 0 claims; relevance 0 in or after the window, 0 unknown, 0 before it; 112 ms
+- Download: layout\_not\_recognised; HTTP 200; 598468 bytes, 4 attempts, 1242 ms; pages 0 of 4 ok, 4 failed, stop complete; url https\:\/\/en\.wikipedia\.org\/w\/api\.php\?action\=parse\&page\=2026\_national\_electoral\_calendar\&prop\=text\%7Crevid\&format\=json\&formatversion\=2\&maxlag\=5
+- Parse: parser 2\.0; 0 units (0 parsed, 0 partial, 0 unparsed, 0 ignored); 0 claims; relevance 0 in or after the window, 0 unknown, 0 before it; 176 ms
 - Ignored: none
 - Coverage: 2026: 2 pages, 0 units, layout\_not\_recognised; 2027: 2 pages, 0 units, layout\_not\_recognised
 - Snapshot: fallback; fallback yes; served 34ad360b550f2851d6bba75c8eda8650408ed4322bd874dd9976060b115b3fc6, fetched 2026-11-19T00:13:04.866749Z; baseline units 728; comparable yes
@@ -75,11 +71,11 @@ No reasons.
 
 ## NDI
 
-- Download: ok; HTTP 200; 342673 bytes, 2 attempts, 1186 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.ndi\.org\/elections\-calendar\?page\=0
-- Parse: parser 2\.0; 34 units (33 parsed, 1 partial, 0 unparsed, 0 ignored); 34 claims; relevance 0 in or after the window, 1 unknown, 0 before it; 144 ms
+- Download: ok; HTTP 200; 342674 bytes, 2 attempts, 1235 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.ndi\.org\/elections\-calendar\?page\=0
+- Parse: parser 2\.0; 34 units (33 parsed, 1 partial, 0 unparsed, 0 ignored); 34 claims; relevance 0 in or after the window, 1 unknown, 0 before it; 218 ms
 - Ignored: none
 - Coverage: all: 2 pages, 34 units, ok
-- Snapshot: promoted; fallback no; served 9138facaa71fd8f9902127b24179f19a98ab22eea354a21110da9aba2db23bd8, fetched 2026-11-24T00:13:32.347555Z; baseline units 34; comparable yes
+- Snapshot: promoted; fallback no; served 9138facaa71fd8f9902127b24179f19a98ab22eea354a21110da9aba2db23bd8, fetched 2026-11-25T00:12:31.659361Z; baseline units 34; comparable yes
 - Match: 3 of 5 eligible matched, 2 unmatched, 6 fresh peers, informative yes
 
 ### Reasons
@@ -88,11 +84,11 @@ No reasons.
 
 ## A\-WEB
 
-- Download: ok; HTTP 200; 49414 bytes, 1 attempts, 753 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.aweb\.org\/eng\/bbs\/B0000007\/list\.do\?menuNo\=300052\&option\=all
-- Parse: parser 2\.0; 31 units (29 parsed, 1 partial, 1 unparsed, 0 ignored); 30 claims; relevance 0 in or after the window, 2 unknown, 0 before it; 19 ms
+- Download: ok; HTTP 200; 49414 bytes, 1 attempts, 778 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.aweb\.org\/eng\/bbs\/B0000007\/list\.do\?menuNo\=300052\&option\=all
+- Parse: parser 2\.0; 31 units (29 parsed, 1 partial, 1 unparsed, 0 ignored); 30 claims; relevance 0 in or after the window, 2 unknown, 0 before it; 29 ms
 - Ignored: none
 - Coverage: 2026: 1 pages, 31 units, ok
-- Snapshot: promoted; fallback no; served 2ebc4d6e9a585607324e6cc3a2234a002a716dac33cb7ae00e9413f093431840, fetched 2026-11-24T00:13:33.491445Z; baseline units 31; comparable yes
+- Snapshot: promoted; fallback no; served 2ebc4d6e9a585607324e6cc3a2234a002a716dac33cb7ae00e9413f093431840, fetched 2026-11-25T00:12:32.948226Z; baseline units 31; comparable yes
 - Match: 2 of 2 eligible matched, 0 unmatched, 6 fresh peers, informative no
 
 ### Reasons
@@ -106,11 +102,11 @@ No reasons.
 
 ## EISA
 
-- Download: not\_published\_yet; HTTP 200; 529591 bytes, 2 attempts, 4125 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.eisa\.org\/election\-calendar\/
-- Parse: parser 2\.0; 22 units (20 parsed, 0 partial, 2 unparsed, 0 ignored); 25 claims; relevance 0 in or after the window, 2 unknown, 0 before it; 65 ms
+- Download: not\_published\_yet; HTTP 200; 529582 bytes, 2 attempts, 19810 ms; pages 2 of 2 ok, 0 failed, stop complete; url https\:\/\/www\.eisa\.org\/election\-calendar\/
+- Parse: parser 2\.0; 22 units (20 parsed, 0 partial, 2 unparsed, 0 ignored); 25 claims; relevance 0 in or after the window, 2 unknown, 0 before it; 98 ms
 - Ignored: none
 - Coverage: 2026: 1 pages, 22 units, ok; all: 1 pages, 0 units, ok
-- Snapshot: promoted; fallback no; served 4c3f95221e42e021ff808adbd10558e9a25add855550d43427b4337f4a3ba29d, fetched 2026-11-24T00:13:36.188075Z; baseline units 22; comparable yes
+- Snapshot: promoted; fallback no; served 4c3f95221e42e021ff808adbd10558e9a25add855550d43427b4337f4a3ba29d, fetched 2026-11-25T00:12:51.317807Z; baseline units 22; comparable yes
 - Match: 2 of 4 eligible matched, 2 unmatched, 5 fresh peers, informative no
 
 ### Reasons
@@ -125,11 +121,11 @@ No reasons.
 
 ## IPU
 
-- Download: ok; HTTP 200; 393071 bytes, 1 attempts, 238 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/data\.ipu\.org\/elections\/
-- Parse: parser 2\.0; 281 units (234 parsed, 0 partial, 4 unparsed, 43 ignored); 234 claims; relevance 4 in or after the window, 0 unknown, 0 before it; 144 ms
+- Download: ok; HTTP 200; 393109 bytes, 1 attempts, 279 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/data\.ipu\.org\/elections\/
+- Parse: parser 2\.0; 281 units (234 parsed, 0 partial, 4 unparsed, 43 ignored); 234 claims; relevance 4 in or after the window, 0 unknown, 0 before it; 218 ms
 - Ignored: appointed\_chamber 28, inactive\_chamber 10, no\_expected\_date 5
 - Coverage: all: 1 pages, 281 units, ok
-- Snapshot: promoted; fallback no; served c9692616a34c69a634344169d0069cecd08433cd24314aebbd96ea37756b0c4c, fetched 2026-11-24T00:13:33.397105Z; baseline units 281; comparable yes
+- Snapshot: promoted; fallback no; served afb58870afe43592e7f4c68f10ace1f7b8e3fd56c68e77b5f8ce3a988ba945b4, fetched 2026-11-25T00:12:33.106165Z; baseline units 281; comparable yes
 - Match: 7 of 11 eligible matched, 4 unmatched, 5 fresh peers, informative yes
 
 ### Reasons
@@ -145,11 +141,11 @@ No reasons.
 
 ## Carter Center
 
-- Download: ok; HTTP 200; 154274 bytes, 1 attempts, 56 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.cartercenter\.org\/programs\/democracy\/elections\-observed\/
-- Parse: parser 2\.0; 61 units (14 parsed, 0 partial, 46 unparsed, 1 ignored); 19 claims; relevance 0 in or after the window, 0 unknown, 46 before it; 24 ms
+- Download: ok; HTTP 200; 154274 bytes, 1 attempts, 769 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.cartercenter\.org\/programs\/democracy\/elections\-observed\/
+- Parse: parser 2\.0; 61 units (14 parsed, 0 partial, 46 unparsed, 1 ignored); 19 claims; relevance 0 in or after the window, 0 unknown, 46 before it; 39 ms
 - Ignored: footnote 1
 - Coverage: all: 1 pages, 61 units, ok
-- Snapshot: promoted; fallback no; served 2ae19cbaa573125f5098793e5e0a80c936842fcf00c81013acd4d8131ce4ca7c, fetched 2026-11-24T00:13:33.733036Z; baseline units 61; comparable yes
+- Snapshot: promoted; fallback no; served 2ae19cbaa573125f5098793e5e0a80c936842fcf00c81013acd4d8131ce4ca7c, fetched 2026-11-25T00:12:34.063870Z; baseline units 61; comparable yes
 - Match: 0 of 0 eligible matched, 0 unmatched, 0 fresh peers, informative no
 
 ### Reasons
@@ -158,11 +154,11 @@ No reasons.
 
 ## EEAS
 
-- Download: ok; HTTP 200; 184404 bytes, 1 attempts, 417 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.eeas\.europa\.eu\/eeas\/eu\-election\-observation\-missions\-1\_en
-- Parse: parser 2\.0; 34 units (24 parsed, 0 partial, 0 unparsed, 10 ignored); 24 claims; relevance 0 in or after the window, 0 unknown, 0 before it; 35 ms
+- Download: ok; HTTP 200; 184404 bytes, 1 attempts, 350 ms; pages 1 of 1 ok, 0 failed, stop complete; url https\:\/\/www\.eeas\.europa\.eu\/eeas\/eu\-election\-observation\-missions\-1\_en
+- Parse: parser 2\.0; 34 units (24 parsed, 0 partial, 0 unparsed, 10 ignored); 24 claims; relevance 0 in or after the window, 0 unknown, 0 before it; 52 ms
 - Ignored: empty\_cell 6, year\_heading 4
 - Coverage: all: 1 pages, 34 units, ok
-- Snapshot: promoted; fallback no; served 9cf7f6a2113cc37c40efac39aaabee87128fb0fc1c3bf523034cf651184a807a, fetched 2026-11-24T00:13:34.183652Z; baseline units 34; comparable yes
+- Snapshot: promoted; fallback no; served 9cf7f6a2113cc37c40efac39aaabee87128fb0fc1c3bf523034cf651184a807a, fetched 2026-11-25T00:12:33.812220Z; baseline units 34; comparable yes
 - Match: 1 of 1 eligible matched, 0 unmatched, 5 fresh peers, informative no
 
 ### Reasons
@@ -203,7 +199,6 @@ No reasons.
 | partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Connecticut\, Governor\, Lieutenant Governor\, Secretary of the State\, Attorney General\, Comptroller\, and Treasurer |
 | partial\_unit | Wikipedia | 2026-11-03 | 3 November\: United States\, midterm elections \> Kansas\, Governor\, Lieutenant Governor\, Secretary of State\, Attorney General\, and ballot measure |
 | partial\_unit | Wikipedia | 2026-11-15 | 15–16 November\: Italy\, Chieti\, by\-election |
-| disappeared\_unit | ElectionGuide | 2026-12-09 | No longer listed by ElectionGuide\: Fiji \| Referendum \| 2026\-12\-09 \(t\) \| 2026\-12\-09 \(t\) \| Date not confirmed \| No\, was 2026\-12\-09 \(t\) to 2026\-12\-09 \(t\) |
 | partial\_unit | Wikipedia | 2027-06-06 | 6 June\: \> Mexico\, state elections |
 | partial\_unit | Wikipedia | 2027-10-01 | 5 October \> 2027 Manitoba general election |
 | partial\_unit | Wikipedia | 2027-10-01 | 5 October \> 2027 Northwest Territories general election |

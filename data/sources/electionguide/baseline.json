@@ -1,7 +1,7 @@
 {
  "source": "electionguide",
  "snapshot_id": "5df204025b01cd0fc447a282ff46123938d5a8ac96bfbeafbb93e9976ae4baae",
- "fetched_at": "2026-11-24T00:13:31.909231Z",
+ "fetched_at": "2026-11-25T00:12:31.275937Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,7 +21,7 @@
     "units_seen": 27,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-24T00:13:31.909231Z",
+    "fetched_at": "2026-11-25T00:12:31.275937Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -29,7 +29,7 @@
      "final_url": "https://www.electionguide.org/elections/type/upcoming/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 83964,
-     "elapsed_ms": 611,
+     "elapsed_ms": 652,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -47,7 +47,7 @@
     "units_seen": 200,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-24T00:13:33.726748Z",
+    "fetched_at": "2026-11-25T00:12:33.736260Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -55,7 +55,7 @@
      "final_url": "https://www.electionguide.org/elections/type/past/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 600790,
-     "elapsed_ms": 1817,
+     "elapsed_ms": 2459,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -73,7 +73,7 @@
     "units_seen": 101,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-24T00:13:34.188264Z",
+    "fetched_at": "2026-11-25T00:12:34.655112Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -81,7 +81,7 @@
      "final_url": "https://www.electionguide.org/elections/type/anticipated/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 228915,
-     "elapsed_ms": 460,
+     "elapsed_ms": 917,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -10964,6 +10964,12 @@
    "claims": 0
   },
   {
+   "scope": "anticipated",
+   "fetched_at": "2026-11-25T00:12:31.275937Z",
+   "units_seen": 101,
+   "claims": 0
+  },
+  {
    "scope": "past",
    "fetched_at": "2026-10-31T19:59:16.784061Z",
    "units_seen": 200,
@@ -11122,6 +11128,12 @@
   {
    "scope": "past",
    "fetched_at": "2026-11-24T00:13:31.909231Z",
+   "units_seen": 200,
+   "claims": 198
+  },
+  {
+   "scope": "past",
+   "fetched_at": "2026-11-25T00:12:31.275937Z",
    "units_seen": 200,
    "claims": 198
   },
@@ -11286,20 +11298,15 @@
    "fetched_at": "2026-11-24T00:13:31.909231Z",
    "units_seen": 27,
    "claims": 27
-  }
- ],
- "disappeared": [
+  },
   {
-   "source_event_id": "electionguide:5258",
-   "unit_id": "electionguide:upcoming/r8",
-   "text": "Fiji | Referendum | 2026-12-09 (t) | 2026-12-09 (t) | Date not confirmed | No",
-   "date_text": "2026-12-09 (t) to 2026-12-09 (t)",
-   "start": "2026-12-09",
-   "end": "2026-12-09",
-   "link": "https://www.electionguide.org/elections/id/5258/",
-   "since": "2026-11-17T00:15:37.271363Z"
+   "scope": "upcoming",
+   "fetched_at": "2026-11-25T00:12:31.275937Z",
+   "units_seen": 27,
+   "claims": 27
   }
  ],
+ "disappeared": [],
  "coverage_gaps": [],
  "checks": {
   "ledger": true,

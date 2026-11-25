@@ -1,7 +1,7 @@
 {
  "source": "ipu",
- "snapshot_id": "c9692616a34c69a634344169d0069cecd08433cd24314aebbd96ea37756b0c4c",
- "fetched_at": "2026-11-24T00:13:33.397105Z",
+ "snapshot_id": "afb58870afe43592e7f4c68f10ace1f7b8e3fd56c68e77b5f8ce3a988ba945b4",
+ "fetched_at": "2026-11-25T00:12:33.106165Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,15 +21,15 @@
     "units_seen": 281,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-24T00:13:33.397105Z",
+    "fetched_at": "2026-11-25T00:12:33.106165Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
      "http_status": 200,
      "final_url": "https://data.ipu.org/elections/",
      "content_type": "text/html; charset=UTF-8",
-     "bytes": 393071,
-     "elapsed_ms": 238,
+     "bytes": 393109,
+     "elapsed_ms": 279,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -402,7 +402,7 @@
   {
    "unit_id": "ipu:elections/r37",
    "source": "ipu",
-   "text": "Bosnia and Herzegovina | House of Representatives | Bicameral | Lower chamber | Directly elected | 04 Oct 2026 | - | 31 Oct 2030",
+   "text": "Bosnia and Herzegovina | House of Representatives | Bicameral | Lower chamber | Directly elected | 04 Oct 2026 | 01 Dec 2026 | 31 Oct 2030",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
