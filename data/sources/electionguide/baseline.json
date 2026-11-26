@@ -1,7 +1,7 @@
 {
  "source": "electionguide",
- "snapshot_id": "5df204025b01cd0fc447a282ff46123938d5a8ac96bfbeafbb93e9976ae4baae",
- "fetched_at": "2026-11-25T00:12:31.275937Z",
+ "snapshot_id": "7e62d2c6020d41518f53c1010aea54fdc193daeab5708b821932a151fc1a0194",
+ "fetched_at": "2026-11-26T00:11:44.841758Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -18,18 +18,18 @@
     "link": "https://www.electionguide.org/elections/type/upcoming/",
     "outcome": "ok",
     "unit_prefix": "electionguide:upcoming/",
-    "units_seen": 27,
+    "units_seen": 28,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-25T00:12:31.275937Z",
+    "fetched_at": "2026-11-26T00:11:44.841758Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
      "http_status": 200,
      "final_url": "https://www.electionguide.org/elections/type/upcoming/",
      "content_type": "text/html; charset=utf-8",
-     "bytes": 83964,
-     "elapsed_ms": 652,
+     "bytes": 86517,
+     "elapsed_ms": 429,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -47,7 +47,7 @@
     "units_seen": 200,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-25T00:12:33.736260Z",
+    "fetched_at": "2026-11-26T00:11:46.354871Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -55,7 +55,7 @@
      "final_url": "https://www.electionguide.org/elections/type/past/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 600790,
-     "elapsed_ms": 2459,
+     "elapsed_ms": 1512,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -70,18 +70,18 @@
     "link": "https://www.electionguide.org/elections/type/anticipated/",
     "outcome": "ok",
     "unit_prefix": "electionguide:anticipated/",
-    "units_seen": 101,
+    "units_seen": 100,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-25T00:12:34.655112Z",
+    "fetched_at": "2026-11-26T00:11:46.755663Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
      "http_status": 200,
      "final_url": "https://www.electionguide.org/elections/type/anticipated/",
      "content_type": "text/html; charset=utf-8",
-     "bytes": 228915,
-     "elapsed_ms": 917,
+     "bytes": 226824,
+     "elapsed_ms": 400,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -144,7 +144,7 @@
   {
    "unit_id": "electionguide:upcoming/r6",
    "source": "electionguide",
-   "text": "Fiji | Fijian Parliament | 2026-12-24 (t) | 2027-02-06 (t) | Date not confirmed | No",
+   "text": "Dominica | Dominican House of Assembly | 2026-12-16 (d) | 2026-12-16 (d) | Date not confirmed | Yes",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -154,7 +154,7 @@
   {
    "unit_id": "electionguide:upcoming/r7",
    "source": "electionguide",
-   "text": "Serbia | Serbian Presidency | 2026-12-27 (t) | 2026-12-27 (t) | Date not confirmed | Yes",
+   "text": "Fiji | Fijian Parliament | 2026-12-24 (t) | 2027-02-06 (t) | Date not confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -164,7 +164,7 @@
   {
    "unit_id": "electionguide:upcoming/r8",
    "source": "electionguide",
-   "text": "Somalia | Somali Presidency | 2026-12-31 (t) | 2026-12-31 (t) | Date not confirmed | No",
+   "text": "Serbia | Serbian Presidency | 2026-12-27 (t) | 2026-12-27 (t) | Date not confirmed | Yes",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -174,7 +174,7 @@
   {
    "unit_id": "electionguide:upcoming/r9",
    "source": "electionguide",
-   "text": "Somalia | Somali House of the People | 2026-12-31 (t) | 2026-12-31 (t) | Date not confirmed | No",
+   "text": "Nigeria | Nigerian House of Representatives | 2027-01-16 (d) | 2027-01-16 (d) | Confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -184,7 +184,7 @@
   {
    "unit_id": "electionguide:upcoming/r10",
    "source": "electionguide",
-   "text": "Nigeria | Nigerian House of Representatives | 2027-01-16 (d) | 2027-01-16 (d) | Confirmed | No",
+   "text": "Nigeria | Nigerian Senate | 2027-01-16 (d) | 2027-01-16 (d) | Confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -194,7 +194,7 @@
   {
    "unit_id": "electionguide:upcoming/r11",
    "source": "electionguide",
-   "text": "Nigeria | Nigerian Senate | 2027-01-16 (d) | 2027-01-16 (d) | Confirmed | No",
+   "text": "Nigeria | Nigerien Presidency | 2027-01-16 (d) | 2027-01-16 (d) | Confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -204,7 +204,7 @@
   {
    "unit_id": "electionguide:upcoming/r12",
    "source": "electionguide",
-   "text": "Nigeria | Nigerien Presidency | 2027-01-16 (d) | 2027-01-16 (d) | Confirmed | No",
+   "text": "Kyrgyzstan | Kyrgyz Presidency | 2027-01-27 (t) | 2027-01-27 (t) | Date not confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -214,7 +214,7 @@
   {
    "unit_id": "electionguide:upcoming/r13",
    "source": "electionguide",
-   "text": "Kyrgyzstan | Kyrgyz Presidency | 2027-01-27 (t) | 2027-01-27 (t) | Date not confirmed | No",
+   "text": "South Sudan | South Sudanese Presidency | 2027-02-11 (d) | 2027-02-11 (d) | Date not confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -224,7 +224,7 @@
   {
    "unit_id": "electionguide:upcoming/r14",
    "source": "electionguide",
-   "text": "South Sudan | South Sudanese Presidency | 2027-02-11 (d) | 2027-02-11 (d) | Date not confirmed | No",
+   "text": "South Sudan | South Sudanese Council of States | 2027-02-11 (d) | 2027-02-11 (d) | Date not confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -234,7 +234,7 @@
   {
    "unit_id": "electionguide:upcoming/r15",
    "source": "electionguide",
-   "text": "South Sudan | South Sudanese Council of States | 2027-02-11 (d) | 2027-02-11 (d) | Date not confirmed | No",
+   "text": "South Sudan | South Sudanese National Legislative Assembly | 2027-02-11 (d) | 2027-02-11 (d) | Date not confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -244,7 +244,7 @@
   {
    "unit_id": "electionguide:upcoming/r16",
    "source": "electionguide",
-   "text": "South Sudan | South Sudanese National Legislative Assembly | 2027-02-11 (d) | 2027-02-11 (d) | Date not confirmed | No",
+   "text": "Switzerland | Referendum | 2027-02-28 (t) | 2027-02-28 (t) | Date not confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -264,7 +264,7 @@
   {
    "unit_id": "electionguide:upcoming/r18",
    "source": "electionguide",
-   "text": "Switzerland | Referendum | 2027-02-28 (t) | 2027-02-28 (t) | Date not confirmed | No",
+   "text": "Micronesia, Federated States of | Micronesian Congress | 2027-03-02 (t) | 2027-03-02 (t) | Date not confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -274,7 +274,7 @@
   {
    "unit_id": "electionguide:upcoming/r19",
    "source": "electionguide",
-   "text": "Micronesia, Federated States of | Micronesian Congress | 2027-03-02 (t) | 2027-03-02 (t) | Date not confirmed | No",
+   "text": "Estonia | Estonian Parliament | 2027-03-07 (d) | 2027-03-07 (d) | Confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -284,7 +284,7 @@
   {
    "unit_id": "electionguide:upcoming/r20",
    "source": "electionguide",
-   "text": "Estonia | Estonian Parliament | 2027-03-07 (d) | 2027-03-07 (d) | Confirmed | No",
+   "text": "Mongolia | Mongolian Presidency | 2027-03-19 (t) | 2027-03-19 (t) | Date not confirmed | Yes",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -304,7 +304,7 @@
   {
    "unit_id": "electionguide:upcoming/r22",
    "source": "electionguide",
-   "text": "France | French Presidency | 2027-04-18 (t) | 2027-04-18 (t) | Date not confirmed | No",
+   "text": "Somalia | Somali House of the People | 2027-04-15 (t) | 2027-04-15 (t) | Date not confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -324,7 +324,7 @@
   {
    "unit_id": "electionguide:upcoming/r24",
    "source": "electionguide",
-   "text": "Timor-Leste | Timorese Presidency | 2027-04-30 (t) | 2027-04-30 (t) | Date not confirmed | No",
+   "text": "France | French Presidency | 2027-04-18 (t) | 2027-04-18 (t) | Date not confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -334,7 +334,7 @@
   {
    "unit_id": "electionguide:upcoming/r25",
    "source": "electionguide",
-   "text": "Haiti | Haitian Senate | 2027-07-18 (d) | 2027-07-18 (d) | Confirmed | No",
+   "text": "Timor-Leste | Timorese Presidency | 2027-04-30 (t) | 2027-04-30 (t) | Date not confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -344,7 +344,7 @@
   {
    "unit_id": "electionguide:upcoming/r26",
    "source": "electionguide",
-   "text": "Haiti | Haitian Chamber of Deputies | 2027-07-18 (d) | 2027-07-18 (d) | Confirmed | No",
+   "text": "Haiti | Haitian Senate | 2027-07-18 (d) | 2027-07-18 (d) | Confirmed | No",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -353,6 +353,16 @@
   },
   {
    "unit_id": "electionguide:upcoming/r27",
+   "source": "electionguide",
+   "text": "Haiti | Haitian Chamber of Deputies | 2027-07-18 (d) | 2027-07-18 (d) | Confirmed | No",
+   "outcome": "parsed",
+   "reason": null,
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": null
+  },
+  {
+   "unit_id": "electionguide:upcoming/r28",
    "source": "electionguide",
    "text": "Haiti | Haitian Presidency | 2027-07-18 (d) | 2027-07-18 (d) | Confirmed | No",
    "outcome": "parsed",
@@ -2364,7 +2374,7 @@
   {
    "unit_id": "electionguide:anticipated/r1",
    "source": "electionguide",
-   "text": "Somalia | Somali Presidency | 2026-12-31 (t) | 2026-12-31 (t)",
+   "text": "Serbia | Serbian Presidency | 2026-12-27 (t) | 2026-12-27 (t)",
    "outcome": "ignored",
    "reason": "duplicate",
    "relevance": "in_or_after_window",
@@ -2374,17 +2384,7 @@
   {
    "unit_id": "electionguide:anticipated/r2",
    "source": "electionguide",
-   "text": "Somalia | Somali House of the People | 2026-12-31 (t) | 2026-12-31 (t)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": "electionguide:upcoming/r9"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r3",
-   "source": "electionguide",
-   "text": "Serbia | Serbian Presidency | 2026-12-27 (t) | 2026-12-27 (t)",
+   "text": "Fiji | Fijian Parliament | 2026-12-24 (t) | 2027-02-06 (t)",
    "outcome": "ignored",
    "reason": "duplicate",
    "relevance": "in_or_after_window",
@@ -2392,17 +2392,17 @@
    "duplicate_of": "electionguide:upcoming/r7"
   },
   {
-   "unit_id": "electionguide:anticipated/r4",
+   "unit_id": "electionguide:anticipated/r3",
    "source": "electionguide",
-   "text": "Fiji | Fijian Parliament | 2026-12-24 (t) | 2027-02-06 (t)",
-   "outcome": "ignored",
-   "reason": "duplicate",
+   "text": "Dominica | Dominican House of Assembly | 2026-12-16 (d) | 2026-12-16 (d)",
+   "outcome": "parsed",
+   "reason": null,
    "relevance": "in_or_after_window",
    "leftover": "",
-   "duplicate_of": "electionguide:upcoming/r6"
+   "duplicate_of": null
   },
   {
-   "unit_id": "electionguide:anticipated/r5",
+   "unit_id": "electionguide:anticipated/r4",
    "source": "electionguide",
    "text": "Northern Cyprus | Northern Cypriot Assembly of the Republic | 2026-12-06 (d) | 2026-12-06 (d)",
    "outcome": "ignored",
@@ -2412,7 +2412,7 @@
    "duplicate_of": "electionguide:upcoming/r5"
   },
   {
-   "unit_id": "electionguide:anticipated/r6",
+   "unit_id": "electionguide:anticipated/r5",
    "source": "electionguide",
    "text": "Gambia, The | Gambian Presidency | 2026-12-05 (d) | 2026-12-05 (d)",
    "outcome": "ignored",
@@ -2420,6 +2420,16 @@
    "relevance": "in_or_after_window",
    "leftover": "",
    "duplicate_of": "electionguide:upcoming/r4"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r6",
+   "source": "electionguide",
+   "text": "Spain | Spanish Congress of Deputies | 2026-11-29 (d) | 2026-11-29 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": "electionguide:upcoming/r3"
   },
   {
    "unit_id": "electionguide:anticipated/r7",
@@ -2444,16 +2454,6 @@
   {
    "unit_id": "electionguide:anticipated/r9",
    "source": "electionguide",
-   "text": "Spain | Spanish Congress of Deputies | 2026-11-29 (d) | 2026-11-29 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": "electionguide:upcoming/r3"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r10",
-   "source": "electionguide",
    "text": "Northern Mariana Islands | Northern Mariana Islands Governor | 2026-11-20 (d) | 2026-11-20 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
@@ -2462,7 +2462,7 @@
    "duplicate_of": "electionguide:past/r1"
   },
   {
-   "unit_id": "electionguide:anticipated/r11",
+   "unit_id": "electionguide:anticipated/r10",
    "source": "electionguide",
    "text": "Cabo Verde | Cabo Verdean Presidency | 2026-11-15 (d) | 2026-11-15 (d)",
    "outcome": "ignored",
@@ -2472,7 +2472,7 @@
    "duplicate_of": "electionguide:past/r2"
   },
   {
-   "unit_id": "electionguide:anticipated/r12",
+   "unit_id": "electionguide:anticipated/r11",
    "source": "electionguide",
    "text": "New Zealand | New Zealand House of Representatives | 2026-11-07 (d) | 2026-11-07 (d)",
    "outcome": "ignored",
@@ -2482,7 +2482,7 @@
    "duplicate_of": "electionguide:past/r3"
   },
   {
-   "unit_id": "electionguide:anticipated/r13",
+   "unit_id": "electionguide:anticipated/r12",
    "source": "electionguide",
    "text": "Grenada | Grenadian House of Representatives | 2026-11-05 (d) | 2026-11-05 (d)",
    "outcome": "ignored",
@@ -2492,87 +2492,7 @@
    "duplicate_of": "electionguide:past/r4"
   },
   {
-   "unit_id": "electionguide:anticipated/r14",
-   "source": "electionguide",
-   "text": "US USA | United States of America | US House of Representatives | 2026-11-03 (d) | 2026-11-03 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r13"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r15",
-   "source": "electionguide",
-   "text": "Guam | Guamanian Legislature | 2026-11-03 (d) | 2026-11-03 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r8"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r16",
-   "source": "electionguide",
-   "text": "Guam | Guamanian Governor | 2026-11-03 (d) | 2026-11-03 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r7"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r17",
-   "source": "electionguide",
-   "text": "US USA | Virgin Islands, U.S. | U.S. Virgin Islands Governor | 2026-11-03 (d) | 2026-11-03 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r11"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r18",
-   "source": "electionguide",
-   "text": "Northern Mariana Islands | Northern Mariana Islands Senate | 2026-11-03 (d) | 2026-11-03 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r14"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r19",
-   "source": "electionguide",
-   "text": "Northern Mariana Islands | Northern Mariana Islands House of Representatives | 2026-11-03 (d) | 2026-11-03 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r5"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r20",
-   "source": "electionguide",
-   "text": "Northern Mariana Islands | Northern Mariana Islands Governor | 2026-11-03 (d) | 2026-11-03 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r12"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r21",
-   "source": "electionguide",
-   "text": "American Samoa | American Samoan House of Representatives | 2026-11-03 (d) | 2026-11-03 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r10"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r22",
+   "unit_id": "electionguide:anticipated/r13",
    "source": "electionguide",
    "text": "US USA | United States of America | US Senate | 2026-11-03 (d) | 2026-11-03 (d)",
    "outcome": "ignored",
@@ -2582,7 +2502,57 @@
    "duplicate_of": "electionguide:past/r9"
   },
   {
-   "unit_id": "electionguide:anticipated/r23",
+   "unit_id": "electionguide:anticipated/r14",
+   "source": "electionguide",
+   "text": "Guam | Guamanian Legislature | 2026-11-03 (d) | 2026-11-03 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r8"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r15",
+   "source": "electionguide",
+   "text": "Guam | Guamanian Governor | 2026-11-03 (d) | 2026-11-03 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r7"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r16",
+   "source": "electionguide",
+   "text": "Northern Mariana Islands | Northern Mariana Islands Governor | 2026-11-03 (d) | 2026-11-03 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r12"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r17",
+   "source": "electionguide",
+   "text": "Northern Mariana Islands | Northern Mariana Islands Senate | 2026-11-03 (d) | 2026-11-03 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r14"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r18",
+   "source": "electionguide",
+   "text": "US USA | Virgin Islands, U.S. | U.S. Virgin Islands Governor | 2026-11-03 (d) | 2026-11-03 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r11"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r19",
    "source": "electionguide",
    "text": "US USA | Virgin Islands, U.S. | U.S. Virgin Islands Legislature | 2026-11-03 (d) | 2026-11-03 (d)",
    "outcome": "ignored",
@@ -2592,7 +2562,37 @@
    "duplicate_of": "electionguide:past/r6"
   },
   {
-   "unit_id": "electionguide:anticipated/r24",
+   "unit_id": "electionguide:anticipated/r20",
+   "source": "electionguide",
+   "text": "US USA | United States of America | US House of Representatives | 2026-11-03 (d) | 2026-11-03 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r13"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r21",
+   "source": "electionguide",
+   "text": "Northern Mariana Islands | Northern Mariana Islands House of Representatives | 2026-11-03 (d) | 2026-11-03 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r5"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r22",
+   "source": "electionguide",
+   "text": "American Samoa | American Samoan House of Representatives | 2026-11-03 (d) | 2026-11-03 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r10"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r23",
    "source": "electionguide",
    "text": "Bulgaria | Bulgarian Presidency | 2026-11-01 (d) | 2026-11-01 (d)",
    "outcome": "ignored",
@@ -2602,7 +2602,7 @@
    "duplicate_of": "electionguide:past/r15"
   },
   {
-   "unit_id": "electionguide:anticipated/r25",
+   "unit_id": "electionguide:anticipated/r24",
    "source": "electionguide",
    "text": "Israel | Israeli Knesset | 2026-10-27 (d) | 2026-10-27 (d)",
    "outcome": "ignored",
@@ -2610,6 +2610,16 @@
    "relevance": "in_or_after_window",
    "leftover": "",
    "duplicate_of": "electionguide:past/r16"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r25",
+   "source": "electionguide",
+   "text": "Serbia | Serbian National Assembly | 2026-10-25 (d) | 2026-10-25 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r19"
   },
   {
    "unit_id": "electionguide:anticipated/r26",
@@ -2634,16 +2644,6 @@
   {
    "unit_id": "electionguide:anticipated/r28",
    "source": "electionguide",
-   "text": "Serbia | Serbian National Assembly | 2026-10-25 (d) | 2026-10-25 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r19"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r29",
-   "source": "electionguide",
    "text": "Czech Republic | Czech Senate | 2026-10-16 (d) | 2026-10-17 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
@@ -2652,7 +2652,7 @@
    "duplicate_of": "electionguide:past/r20"
   },
   {
-   "unit_id": "electionguide:anticipated/r30",
+   "unit_id": "electionguide:anticipated/r29",
    "source": "electionguide",
    "text": "Slovenia | Referendum | 2026-10-11 (d) | 2026-10-11 (d)",
    "outcome": "ignored",
@@ -2662,7 +2662,7 @@
    "duplicate_of": "electionguide:past/r21"
   },
   {
-   "unit_id": "electionguide:anticipated/r31",
+   "unit_id": "electionguide:anticipated/r30",
    "source": "electionguide",
    "text": "Czech Republic | Czech Senate | 2026-10-09 (d) | 2026-10-10 (d)",
    "outcome": "ignored",
@@ -2672,27 +2672,7 @@
    "duplicate_of": "electionguide:past/r22"
   },
   {
-   "unit_id": "electionguide:anticipated/r32",
-   "source": "electionguide",
-   "text": "Brazil | Brazilian Presidency | 2026-10-04 (d) | 2026-10-04 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r26"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r33",
-   "source": "electionguide",
-   "text": "Bosnia and Herzegovina | Bosnia and Herzegovina House of Representatives | 2026-10-04 (d) | 2026-10-04 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r24"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r34",
+   "unit_id": "electionguide:anticipated/r31",
    "source": "electionguide",
    "text": "Brazil | Brazilian Federal Senate | 2026-10-04 (d) | 2026-10-04 (d)",
    "outcome": "ignored",
@@ -2702,7 +2682,27 @@
    "duplicate_of": "electionguide:past/r23"
   },
   {
-   "unit_id": "electionguide:anticipated/r35",
+   "unit_id": "electionguide:anticipated/r32",
+   "source": "electionguide",
+   "text": "Bosnia and Herzegovina | Bosnia and Herzegovina House of Representatives | 2026-10-04 (d) | 2026-10-04 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r24"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r33",
+   "source": "electionguide",
+   "text": "Brazil | Brazilian Presidency | 2026-10-04 (d) | 2026-10-04 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r26"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r34",
    "source": "electionguide",
    "text": "Brazil | Brazilian Chamber of Deputies | 2026-10-04 (d) | 2026-10-04 (d)",
    "outcome": "ignored",
@@ -2712,7 +2712,7 @@
    "duplicate_of": "electionguide:past/r27"
   },
   {
-   "unit_id": "electionguide:anticipated/r36",
+   "unit_id": "electionguide:anticipated/r35",
    "source": "electionguide",
    "text": "Bosnia and Herzegovina | Bosnia and Herzegovina Presidency | 2026-10-04 (d) | 2026-10-04 (d)",
    "outcome": "ignored",
@@ -2722,7 +2722,7 @@
    "duplicate_of": "electionguide:past/r25"
   },
   {
-   "unit_id": "electionguide:anticipated/r37",
+   "unit_id": "electionguide:anticipated/r36",
    "source": "electionguide",
    "text": "Latvia | Latvian Parliament | 2026-10-03 (d) | 2026-10-03 (d)",
    "outcome": "ignored",
@@ -2732,7 +2732,7 @@
    "duplicate_of": "electionguide:past/r28"
   },
   {
-   "unit_id": "electionguide:anticipated/r38",
+   "unit_id": "electionguide:anticipated/r37",
    "source": "electionguide",
    "text": "Switzerland | Referendum | 2026-09-27 (d) | 2026-09-27 (d)",
    "outcome": "ignored",
@@ -2742,7 +2742,7 @@
    "duplicate_of": "electionguide:past/r29"
   },
   {
-   "unit_id": "electionguide:anticipated/r39",
+   "unit_id": "electionguide:anticipated/r38",
    "source": "electionguide",
    "text": "Sao Tome and Principe | Sao Tomean National Assembly | 2026-09-27 (d) | 2026-09-27 (d)",
    "outcome": "ignored",
@@ -2752,7 +2752,7 @@
    "duplicate_of": "electionguide:past/r30"
   },
   {
-   "unit_id": "electionguide:anticipated/r40",
+   "unit_id": "electionguide:anticipated/r39",
    "source": "electionguide",
    "text": "Morocco | Moroccan Chamber of Representatives | 2026-09-23 (d) | 2026-09-23 (d)",
    "outcome": "ignored",
@@ -2762,7 +2762,7 @@
    "duplicate_of": "electionguide:past/r31"
   },
   {
-   "unit_id": "electionguide:anticipated/r41",
+   "unit_id": "electionguide:anticipated/r40",
    "source": "electionguide",
    "text": "Russian Federation | Russian State Duma | 2026-09-18 (d) | 2026-09-20 (d)",
    "outcome": "ignored",
@@ -2772,7 +2772,7 @@
    "duplicate_of": "electionguide:past/r32"
   },
   {
-   "unit_id": "electionguide:anticipated/r42",
+   "unit_id": "electionguide:anticipated/r41",
    "source": "electionguide",
    "text": "Sweden | Swedish Parliament | 2026-09-13 (d) | 2026-09-13 (d)",
    "outcome": "ignored",
@@ -2782,7 +2782,7 @@
    "duplicate_of": "electionguide:past/r33"
   },
   {
-   "unit_id": "electionguide:anticipated/r43",
+   "unit_id": "electionguide:anticipated/r42",
    "source": "electionguide",
    "text": "Guinea-Bissau | Referendum | 2026-08-30 (t) | 2026-08-30 (t)",
    "outcome": "ignored",
@@ -2792,7 +2792,7 @@
    "duplicate_of": "electionguide:past/r34"
   },
   {
-   "unit_id": "electionguide:anticipated/r44",
+   "unit_id": "electionguide:anticipated/r43",
    "source": "electionguide",
    "text": "Iceland | Referendum | 2026-08-29 (d) | 2026-08-29 (d)",
    "outcome": "ignored",
@@ -2802,7 +2802,7 @@
    "duplicate_of": "electionguide:past/r35"
   },
   {
-   "unit_id": "electionguide:anticipated/r45",
+   "unit_id": "electionguide:anticipated/r44",
    "source": "electionguide",
    "text": "Kazakhstan | Kazakh National Congress | 2026-08-23 (d) | 2026-08-23 (d)",
    "outcome": "ignored",
@@ -2812,7 +2812,7 @@
    "duplicate_of": "electionguide:past/r36"
   },
   {
-   "unit_id": "electionguide:anticipated/r46",
+   "unit_id": "electionguide:anticipated/r45",
    "source": "electionguide",
    "text": "Zambia | Zambian Presidency | 2026-08-13 (d) | 2026-08-13 (d)",
    "outcome": "ignored",
@@ -2822,7 +2822,7 @@
    "duplicate_of": "electionguide:past/r37"
   },
   {
-   "unit_id": "electionguide:anticipated/r47",
+   "unit_id": "electionguide:anticipated/r46",
    "source": "electionguide",
    "text": "Zambia | Zambian National Assembly | 2026-08-13 (d) | 2026-08-13 (d)",
    "outcome": "ignored",
@@ -2832,7 +2832,7 @@
    "duplicate_of": "electionguide:past/r38"
   },
   {
-   "unit_id": "electionguide:anticipated/r48",
+   "unit_id": "electionguide:anticipated/r47",
    "source": "electionguide",
    "text": "Cook Islands | Cook Islands Parliament | 2026-08-12 (d) | 2026-08-12 (d)",
    "outcome": "ignored",
@@ -2842,7 +2842,7 @@
    "duplicate_of": "electionguide:past/r39"
   },
   {
-   "unit_id": "electionguide:anticipated/r49",
+   "unit_id": "electionguide:anticipated/r48",
    "source": "electionguide",
    "text": "Sao Tome and Principe | Sao Tomean Presidency | 2026-07-19 (d) | 2026-07-19 (d)",
    "outcome": "ignored",
@@ -2852,7 +2852,7 @@
    "duplicate_of": "electionguide:past/r40"
   },
   {
-   "unit_id": "electionguide:anticipated/r50",
+   "unit_id": "electionguide:anticipated/r49",
    "source": "electionguide",
    "text": "Slovakia | Referendum | 2026-07-04 (d) | 2026-07-04 (d)",
    "outcome": "ignored",
@@ -2862,7 +2862,7 @@
    "duplicate_of": "electionguide:past/r41"
   },
   {
-   "unit_id": "electionguide:anticipated/r51",
+   "unit_id": "electionguide:anticipated/r50",
    "source": "electionguide",
    "text": "Algeria | Algerian National People's Assembly | 2026-07-02 (d) | 2026-07-02 (d)",
    "outcome": "ignored",
@@ -2872,7 +2872,7 @@
    "duplicate_of": "electionguide:past/r42"
   },
   {
-   "unit_id": "electionguide:anticipated/r52",
+   "unit_id": "electionguide:anticipated/r51",
    "source": "electionguide",
    "text": "New Caledonia | New Caledonian Territorial Congress | 2026-06-28 (d) | 2026-06-28 (d)",
    "outcome": "ignored",
@@ -2882,7 +2882,7 @@
    "duplicate_of": "electionguide:past/r44"
   },
   {
-   "unit_id": "electionguide:anticipated/r53",
+   "unit_id": "electionguide:anticipated/r52",
    "source": "electionguide",
    "text": "Colombia | Colombian Presidency | 2026-06-21 (t) | 2026-06-21 (t)",
    "outcome": "ignored",
@@ -2892,7 +2892,7 @@
    "duplicate_of": "electionguide:past/r45"
   },
   {
-   "unit_id": "electionguide:anticipated/r54",
+   "unit_id": "electionguide:anticipated/r53",
    "source": "electionguide",
    "text": "Switzerland | Referendum | 2026-06-14 (d) | 2026-06-14 (d)",
    "outcome": "ignored",
@@ -2902,7 +2902,7 @@
    "duplicate_of": "electionguide:past/r46"
   },
   {
-   "unit_id": "electionguide:anticipated/r55",
+   "unit_id": "electionguide:anticipated/r54",
    "source": "electionguide",
    "text": "Peru | Peruvian Presidency | 2026-06-07 (d) | 2026-06-07 (d)",
    "outcome": "ignored",
@@ -2910,6 +2910,16 @@
    "relevance": "unknown",
    "leftover": "",
    "duplicate_of": "electionguide:past/r47"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r55",
+   "source": "electionguide",
+   "text": "Kosovo | Kosovar Assembly | 2026-06-07 (d) | 2026-06-07 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "unknown",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r48"
   },
   {
    "unit_id": "electionguide:anticipated/r56",
@@ -2924,22 +2934,22 @@
   {
    "unit_id": "electionguide:anticipated/r57",
    "source": "electionguide",
-   "text": "Kosovo | Kosovar Assembly | 2026-06-07 (d) | 2026-06-07 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "unknown",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r48"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r58",
-   "source": "electionguide",
    "text": "Ethiopia | Ethiopian House of People's Representatives | 2026-06-01 (d) | 2026-06-01 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
    "relevance": "unknown",
    "leftover": "",
    "duplicate_of": "electionguide:past/r50"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r58",
+   "source": "electionguide",
+   "text": "Colombia | Colombian Presidency | 2026-05-31 (d) | 2026-05-31 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "unknown",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r51"
   },
   {
    "unit_id": "electionguide:anticipated/r59",
@@ -2954,16 +2964,6 @@
   {
    "unit_id": "electionguide:anticipated/r60",
    "source": "electionguide",
-   "text": "Colombia | Colombian Presidency | 2026-05-31 (d) | 2026-05-31 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "unknown",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r51"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r61",
-   "source": "electionguide",
    "text": "Malta | Maltese House of Representatives | 2026-05-30 (d) | 2026-05-30 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
@@ -2972,7 +2972,7 @@
    "duplicate_of": "electionguide:past/r54"
   },
   {
-   "unit_id": "electionguide:anticipated/r62",
+   "unit_id": "electionguide:anticipated/r61",
    "source": "electionguide",
    "text": "Cyprus | Cypriot House of Representatives | 2026-05-24 (d) | 2026-05-24 (d)",
    "outcome": "ignored",
@@ -2982,7 +2982,7 @@
    "duplicate_of": "electionguide:past/r55"
   },
   {
-   "unit_id": "electionguide:anticipated/r63",
+   "unit_id": "electionguide:anticipated/r62",
    "source": "electionguide",
    "text": "Cabo Verde | Cabo Verdean National Assembly | 2026-05-17 (d) | 2026-05-17 (d)",
    "outcome": "ignored",
@@ -2992,7 +2992,7 @@
    "duplicate_of": "electionguide:past/r56"
   },
   {
-   "unit_id": "electionguide:anticipated/r64",
+   "unit_id": "electionguide:anticipated/r63",
    "source": "electionguide",
    "text": "Bahamas | Bahaman House of Assembly | 2026-05-12 (d) | 2026-05-12 (d)",
    "outcome": "ignored",
@@ -3002,7 +3002,7 @@
    "duplicate_of": "electionguide:past/r57"
   },
   {
-   "unit_id": "electionguide:anticipated/r65",
+   "unit_id": "electionguide:anticipated/r64",
    "source": "electionguide",
    "text": "Wales (part of the United Kingdom) | Welsh National Assembly | 2026-05-07 (d) | 2026-05-07 (d)",
    "outcome": "ignored",
@@ -3012,7 +3012,7 @@
    "duplicate_of": "electionguide:past/r59"
   },
   {
-   "unit_id": "electionguide:anticipated/r66",
+   "unit_id": "electionguide:anticipated/r65",
    "source": "electionguide",
    "text": "Scotland (part of the United Kingdom) | Scottish Parliament | 2026-05-07 (d) | 2026-05-07 (d)",
    "outcome": "ignored",
@@ -3022,7 +3022,7 @@
    "duplicate_of": "electionguide:past/r60"
   },
   {
-   "unit_id": "electionguide:anticipated/r67",
+   "unit_id": "electionguide:anticipated/r66",
    "source": "electionguide",
    "text": "Niue | Niuean Assembly | 2026-05-02 (d) | 2026-05-02 (d)",
    "outcome": "ignored",
@@ -3032,7 +3032,7 @@
    "duplicate_of": "electionguide:past/r61"
   },
   {
-   "unit_id": "electionguide:anticipated/r68",
+   "unit_id": "electionguide:anticipated/r67",
    "source": "electionguide",
    "text": "Antigua and Barbuda | Antiguan and Barbudan House of Representatives | 2026-04-30 (d) | 2026-04-30 (d)",
    "outcome": "ignored",
@@ -3042,7 +3042,7 @@
    "duplicate_of": "electionguide:past/r62"
   },
   {
-   "unit_id": "electionguide:anticipated/r69",
+   "unit_id": "electionguide:anticipated/r68",
    "source": "electionguide",
    "text": "Bulgaria | Bulgarian National Assembly | 2026-04-19 (d) | 2026-04-19 (d)",
    "outcome": "ignored",
@@ -3052,7 +3052,7 @@
    "duplicate_of": "electionguide:past/r63"
   },
   {
-   "unit_id": "electionguide:anticipated/r70",
+   "unit_id": "electionguide:anticipated/r69",
    "source": "electionguide",
    "text": "Benin | Beninese Presidency | 2026-04-12 (t) | 2026-04-12 (t)",
    "outcome": "ignored",
@@ -3060,6 +3060,16 @@
    "relevance": "unknown",
    "leftover": "",
    "duplicate_of": "electionguide:past/r67"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r70",
+   "source": "electionguide",
+   "text": "Peru | Peruvian Chamber of Deputies | 2026-04-12 (d) | 2026-04-12 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "unknown",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r66"
   },
   {
    "unit_id": "electionguide:anticipated/r71",
@@ -3094,16 +3104,6 @@
   {
    "unit_id": "electionguide:anticipated/r74",
    "source": "electionguide",
-   "text": "Peru | Peruvian Chamber of Deputies | 2026-04-12 (d) | 2026-04-12 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "unknown",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r66"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r75",
-   "source": "electionguide",
    "text": "Djibouti | Djiboutian Presidency | 2026-04-10 (d) | 2026-04-10 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
@@ -3112,7 +3112,7 @@
    "duplicate_of": "electionguide:past/r69"
   },
   {
-   "unit_id": "electionguide:anticipated/r76",
+   "unit_id": "electionguide:anticipated/r75",
    "source": "electionguide",
    "text": "Maldives | Referendum | 2026-04-04 (d) | 2026-04-04 (d)",
    "outcome": "ignored",
@@ -3122,7 +3122,7 @@
    "duplicate_of": "electionguide:past/r70"
   },
   {
-   "unit_id": "electionguide:anticipated/r77",
+   "unit_id": "electionguide:anticipated/r76",
    "source": "electionguide",
    "text": "Faroe Islands | Faroese Parliament | 2026-03-26 (d) | 2026-03-26 (d)",
    "outcome": "ignored",
@@ -3132,7 +3132,7 @@
    "duplicate_of": "electionguide:past/r71"
   },
   {
-   "unit_id": "electionguide:anticipated/r78",
+   "unit_id": "electionguide:anticipated/r77",
    "source": "electionguide",
    "text": "Denmark | Danish Parliament | 2026-03-24 (d) | 2026-03-24 (d)",
    "outcome": "ignored",
@@ -3140,6 +3140,16 @@
    "relevance": "unknown",
    "leftover": "",
    "duplicate_of": "electionguide:past/r72"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r78",
+   "source": "electionguide",
+   "text": "Slovenia | Slovenian National Assembly | 2026-03-22 (d) | 2026-03-22 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "unknown",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r73"
   },
   {
    "unit_id": "electionguide:anticipated/r79",
@@ -3154,12 +3164,12 @@
   {
    "unit_id": "electionguide:anticipated/r80",
    "source": "electionguide",
-   "text": "Slovenia | Slovenian National Assembly | 2026-03-22 (d) | 2026-03-22 (d)",
+   "text": "Congo (Brazzaville) | Congo RC Presidency | 2026-03-15 (d) | 2026-03-15 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
    "relevance": "unknown",
    "leftover": "",
-   "duplicate_of": "electionguide:past/r73"
+   "duplicate_of": "electionguide:past/r76"
   },
   {
    "unit_id": "electionguide:anticipated/r81",
@@ -3184,22 +3194,22 @@
   {
    "unit_id": "electionguide:anticipated/r83",
    "source": "electionguide",
-   "text": "Congo (Brazzaville) | Congo RC Presidency | 2026-03-15 (d) | 2026-03-15 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "unknown",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r76"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r84",
-   "source": "electionguide",
    "text": "Colombia | Colombian Senate | 2026-03-08 (d) | 2026-03-08 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
    "relevance": "unknown",
    "leftover": "",
    "duplicate_of": "electionguide:past/r80"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r84",
+   "source": "electionguide",
+   "text": "Colombia | Colombian House of Representatives | 2026-03-08 (d) | 2026-03-08 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "unknown",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r78"
   },
   {
    "unit_id": "electionguide:anticipated/r85",
@@ -3214,16 +3224,6 @@
   {
    "unit_id": "electionguide:anticipated/r86",
    "source": "electionguide",
-   "text": "Colombia | Colombian House of Representatives | 2026-03-08 (d) | 2026-03-08 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "unknown",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r78"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r87",
-   "source": "electionguide",
    "text": "Nepal | Nepalese House of Representatives | 2026-03-05 (d) | 2026-03-05 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
@@ -3232,7 +3232,7 @@
    "duplicate_of": "electionguide:past/r81"
   },
   {
-   "unit_id": "electionguide:anticipated/r88",
+   "unit_id": "electionguide:anticipated/r87",
    "source": "electionguide",
    "text": "Laos | Laotian National Assembly | 2026-02-22 (d) | 2026-02-22 (d)",
    "outcome": "ignored",
@@ -3242,7 +3242,7 @@
    "duplicate_of": "electionguide:past/r82"
   },
   {
-   "unit_id": "electionguide:anticipated/r89",
+   "unit_id": "electionguide:anticipated/r88",
    "source": "electionguide",
    "text": "Bangladesh | Referendum | 2026-02-12 (d) | 2026-02-12 (d)",
    "outcome": "ignored",
@@ -3252,7 +3252,7 @@
    "duplicate_of": "electionguide:past/r84"
   },
   {
-   "unit_id": "electionguide:anticipated/r90",
+   "unit_id": "electionguide:anticipated/r89",
    "source": "electionguide",
    "text": "Bangladesh | Bangladeshi National Parliament | 2026-02-12 (d) | 2026-02-12 (d)",
    "outcome": "ignored",
@@ -3262,7 +3262,7 @@
    "duplicate_of": "electionguide:past/r83"
   },
   {
-   "unit_id": "electionguide:anticipated/r91",
+   "unit_id": "electionguide:anticipated/r90",
    "source": "electionguide",
    "text": "Barbados | Barbadian House of Assembly | 2026-02-11 (d) | 2026-02-11 (d)",
    "outcome": "ignored",
@@ -3272,17 +3272,17 @@
    "duplicate_of": "electionguide:past/r85"
   },
   {
-   "unit_id": "electionguide:anticipated/r92",
+   "unit_id": "electionguide:anticipated/r91",
    "source": "electionguide",
-   "text": "Thailand | Thai House of Representatives | 2026-02-08 (d) | 2026-02-08 (d)",
+   "text": "Thailand | Referendum | 2026-02-08 (d) | 2026-02-08 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
    "relevance": "unknown",
    "leftover": "",
-   "duplicate_of": "electionguide:past/r86"
+   "duplicate_of": "electionguide:past/r89"
   },
   {
-   "unit_id": "electionguide:anticipated/r93",
+   "unit_id": "electionguide:anticipated/r92",
    "source": "electionguide",
    "text": "Japan | Japanese House of Representatives | 2026-02-08 (d) | 2026-02-08 (d)",
    "outcome": "ignored",
@@ -3292,7 +3292,7 @@
    "duplicate_of": "electionguide:past/r87"
   },
   {
-   "unit_id": "electionguide:anticipated/r94",
+   "unit_id": "electionguide:anticipated/r93",
    "source": "electionguide",
    "text": "Portugal | Portuguese Presidency | 2026-02-08 (d) | 2026-02-08 (d)",
    "outcome": "ignored",
@@ -3302,14 +3302,24 @@
    "duplicate_of": "electionguide:past/r88"
   },
   {
-   "unit_id": "electionguide:anticipated/r95",
+   "unit_id": "electionguide:anticipated/r94",
    "source": "electionguide",
-   "text": "Thailand | Referendum | 2026-02-08 (d) | 2026-02-08 (d)",
+   "text": "Thailand | Thai House of Representatives | 2026-02-08 (d) | 2026-02-08 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
    "relevance": "unknown",
    "leftover": "",
-   "duplicate_of": "electionguide:past/r89"
+   "duplicate_of": "electionguide:past/r86"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r95",
+   "source": "electionguide",
+   "text": "Costa Rica | Costa Rican Legislative Assembly | 2026-02-01 (d) | 2026-02-01 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "unknown",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r91"
   },
   {
    "unit_id": "electionguide:anticipated/r96",
@@ -3324,22 +3334,22 @@
   {
    "unit_id": "electionguide:anticipated/r97",
    "source": "electionguide",
-   "text": "Costa Rica | Costa Rican Legislative Assembly | 2026-02-01 (d) | 2026-02-01 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "unknown",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r91"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r98",
-   "source": "electionguide",
    "text": "Portugal | Portuguese Presidency | 2026-01-18 (d) | 2026-01-18 (d)",
    "outcome": "ignored",
    "reason": "duplicate",
    "relevance": "unknown",
    "leftover": "",
    "duplicate_of": "electionguide:past/r92"
+  },
+  {
+   "unit_id": "electionguide:anticipated/r98",
+   "source": "electionguide",
+   "text": "Uganda | Ugandan National Assembly | 2026-01-15 (d) | 2026-02-06 (d)",
+   "outcome": "ignored",
+   "reason": "duplicate",
+   "relevance": "unknown",
+   "leftover": "",
+   "duplicate_of": "electionguide:past/r93"
   },
   {
    "unit_id": "electionguide:anticipated/r99",
@@ -3353,16 +3363,6 @@
   },
   {
    "unit_id": "electionguide:anticipated/r100",
-   "source": "electionguide",
-   "text": "Uganda | Ugandan National Assembly | 2026-01-15 (d) | 2026-02-06 (d)",
-   "outcome": "ignored",
-   "reason": "duplicate",
-   "relevance": "unknown",
-   "leftover": "",
-   "duplicate_of": "electionguide:past/r93"
-  },
-  {
-   "unit_id": "electionguide:anticipated/r101",
    "source": "electionguide",
    "text": "Benin | Beninese National Assembly | 2026-01-11 (d) | 2026-01-11 (d)",
    "outcome": "ignored",
@@ -3542,6 +3542,39 @@
    "unit_id": "electionguide:upcoming/r6",
    "claim_id": "electionguide:upcoming/r6#0",
    "source": "electionguide",
+   "link": "https://www.electionguide.org/elections/id/5329/",
+   "source_event_id": "electionguide:5329",
+   "place_raw": "Dominica",
+   "place_id": "iso:DM",
+   "jurisdiction": null,
+   "jurisdiction_kind": "nationwide",
+   "level": "national",
+   "institution": "iso:DM/house-of-assembly",
+   "office_class": "legislature",
+   "office_label": "Dominican House of Assembly",
+   "aggregate": false,
+   "kind": "candidate_election",
+   "round": null,
+   "date": "2026-12-16",
+   "end_date": "2026-12-16",
+   "date_precision": "day",
+   "year": 2026,
+   "date_meaning": "voting_period",
+   "date_status": "tentative",
+   "date_text": "2026-12-16 (d) to 2026-12-16 (d)",
+   "status_claim": null,
+   "previous_date_text": null,
+   "evidence_kind": "calendar",
+   "indirect": false,
+   "fetched_at": null,
+   "fallback": false,
+   "snapshot_id": null,
+   "provisional": false
+  },
+  {
+   "unit_id": "electionguide:upcoming/r7",
+   "claim_id": "electionguide:upcoming/r7#0",
+   "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/5206/",
    "source_event_id": "electionguide:5206",
    "place_raw": "Fiji",
@@ -3572,8 +3605,8 @@
    "provisional": false
   },
   {
-   "unit_id": "electionguide:upcoming/r7",
-   "claim_id": "electionguide:upcoming/r7#0",
+   "unit_id": "electionguide:upcoming/r8",
+   "claim_id": "electionguide:upcoming/r8#0",
    "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/5295/",
    "source_event_id": "electionguide:5295",
@@ -3605,74 +3638,8 @@
    "provisional": false
   },
   {
-   "unit_id": "electionguide:upcoming/r8",
-   "claim_id": "electionguide:upcoming/r8#0",
-   "source": "electionguide",
-   "link": "https://www.electionguide.org/elections/id/5112/",
-   "source_event_id": "electionguide:5112",
-   "place_raw": "Somalia",
-   "place_id": "iso:SO",
-   "jurisdiction": null,
-   "jurisdiction_kind": "nationwide",
-   "level": "national",
-   "institution": "iso:SO/president",
-   "office_class": "head_of_state",
-   "office_label": "Somali Presidency",
-   "aggregate": false,
-   "kind": "candidate_election",
-   "round": null,
-   "date": "2026-12-31",
-   "end_date": "2026-12-31",
-   "date_precision": "day",
-   "year": 2026,
-   "date_meaning": "voting_period",
-   "date_status": "tentative",
-   "date_text": "2026-12-31 (t) to 2026-12-31 (t)",
-   "status_claim": null,
-   "previous_date_text": null,
-   "evidence_kind": "calendar",
-   "indirect": false,
-   "fetched_at": null,
-   "fallback": false,
-   "snapshot_id": null,
-   "provisional": false
-  },
-  {
    "unit_id": "electionguide:upcoming/r9",
    "claim_id": "electionguide:upcoming/r9#0",
-   "source": "electionguide",
-   "link": "https://www.electionguide.org/elections/id/5113/",
-   "source_event_id": "electionguide:5113",
-   "place_raw": "Somalia",
-   "place_id": "iso:SO",
-   "jurisdiction": null,
-   "jurisdiction_kind": "nationwide",
-   "level": "national",
-   "institution": "iso:SO/house-of-the-people",
-   "office_class": "lower_house",
-   "office_label": "Somali House of the People",
-   "aggregate": false,
-   "kind": "candidate_election",
-   "round": null,
-   "date": "2026-12-31",
-   "end_date": "2026-12-31",
-   "date_precision": "day",
-   "year": 2026,
-   "date_meaning": "voting_period",
-   "date_status": "tentative",
-   "date_text": "2026-12-31 (t) to 2026-12-31 (t)",
-   "status_claim": null,
-   "previous_date_text": null,
-   "evidence_kind": "calendar",
-   "indirect": false,
-   "fetched_at": null,
-   "fallback": false,
-   "snapshot_id": null,
-   "provisional": false
-  },
-  {
-   "unit_id": "electionguide:upcoming/r10",
-   "claim_id": "electionguide:upcoming/r10#0",
    "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/5202/",
    "source_event_id": "electionguide:5202",
@@ -3704,8 +3671,8 @@
    "provisional": false
   },
   {
-   "unit_id": "electionguide:upcoming/r11",
-   "claim_id": "electionguide:upcoming/r11#0",
+   "unit_id": "electionguide:upcoming/r10",
+   "claim_id": "electionguide:upcoming/r10#0",
    "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/5203/",
    "source_event_id": "electionguide:5203",
@@ -3737,8 +3704,8 @@
    "provisional": false
   },
   {
-   "unit_id": "electionguide:upcoming/r12",
-   "claim_id": "electionguide:upcoming/r12#0",
+   "unit_id": "electionguide:upcoming/r11",
+   "claim_id": "electionguide:upcoming/r11#0",
    "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/5204/",
    "source_event_id": "electionguide:5204",
@@ -3770,8 +3737,8 @@
    "provisional": false
   },
   {
-   "unit_id": "electionguide:upcoming/r13",
-   "claim_id": "electionguide:upcoming/r13#0",
+   "unit_id": "electionguide:upcoming/r12",
+   "claim_id": "electionguide:upcoming/r12#0",
    "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/5205/",
    "source_event_id": "electionguide:5205",
@@ -3803,8 +3770,8 @@
    "provisional": false
   },
   {
-   "unit_id": "electionguide:upcoming/r14",
-   "claim_id": "electionguide:upcoming/r14#0",
+   "unit_id": "electionguide:upcoming/r13",
+   "claim_id": "electionguide:upcoming/r13#0",
    "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/5110/",
    "source_event_id": "electionguide:5110",
@@ -3836,8 +3803,8 @@
    "provisional": false
   },
   {
-   "unit_id": "electionguide:upcoming/r15",
-   "claim_id": "electionguide:upcoming/r15#0",
+   "unit_id": "electionguide:upcoming/r14",
+   "claim_id": "electionguide:upcoming/r14#0",
    "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/5109/",
    "source_event_id": "electionguide:5109",
@@ -3869,8 +3836,8 @@
    "provisional": false
   },
   {
-   "unit_id": "electionguide:upcoming/r16",
-   "claim_id": "electionguide:upcoming/r16#0",
+   "unit_id": "electionguide:upcoming/r15",
+   "claim_id": "electionguide:upcoming/r15#0",
    "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/5108/",
    "source_event_id": "electionguide:5108",
@@ -3892,6 +3859,39 @@
    "date_meaning": "voting_period",
    "date_status": "tentative",
    "date_text": "2027-02-11 (d) to 2027-02-11 (d)",
+   "status_claim": null,
+   "previous_date_text": null,
+   "evidence_kind": "calendar",
+   "indirect": false,
+   "fetched_at": null,
+   "fallback": false,
+   "snapshot_id": null,
+   "provisional": false
+  },
+  {
+   "unit_id": "electionguide:upcoming/r16",
+   "claim_id": "electionguide:upcoming/r16#0",
+   "source": "electionguide",
+   "link": "https://www.electionguide.org/elections/id/5209/",
+   "source_event_id": "electionguide:5209",
+   "place_raw": "Switzerland",
+   "place_id": "iso:CH",
+   "jurisdiction": null,
+   "jurisdiction_kind": "nationwide",
+   "level": "national",
+   "institution": null,
+   "office_class": "referendum",
+   "office_label": "Referendum",
+   "aggregate": false,
+   "kind": "referendum_day",
+   "round": null,
+   "date": "2027-02-28",
+   "end_date": "2027-02-28",
+   "date_precision": "day",
+   "year": 2027,
+   "date_meaning": "voting_period",
+   "date_status": "tentative",
+   "date_text": "2027-02-28 (t) to 2027-02-28 (t)",
    "status_claim": null,
    "previous_date_text": null,
    "evidence_kind": "calendar",
@@ -3938,39 +3938,6 @@
    "unit_id": "electionguide:upcoming/r18",
    "claim_id": "electionguide:upcoming/r18#0",
    "source": "electionguide",
-   "link": "https://www.electionguide.org/elections/id/5209/",
-   "source_event_id": "electionguide:5209",
-   "place_raw": "Switzerland",
-   "place_id": "iso:CH",
-   "jurisdiction": null,
-   "jurisdiction_kind": "nationwide",
-   "level": "national",
-   "institution": null,
-   "office_class": "referendum",
-   "office_label": "Referendum",
-   "aggregate": false,
-   "kind": "referendum_day",
-   "round": null,
-   "date": "2027-02-28",
-   "end_date": "2027-02-28",
-   "date_precision": "day",
-   "year": 2027,
-   "date_meaning": "voting_period",
-   "date_status": "tentative",
-   "date_text": "2027-02-28 (t) to 2027-02-28 (t)",
-   "status_claim": null,
-   "previous_date_text": null,
-   "evidence_kind": "calendar",
-   "indirect": false,
-   "fetched_at": null,
-   "fallback": false,
-   "snapshot_id": null,
-   "provisional": false
-  },
-  {
-   "unit_id": "electionguide:upcoming/r19",
-   "claim_id": "electionguide:upcoming/r19#0",
-   "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/5210/",
    "source_event_id": "electionguide:5210",
    "place_raw": "Micronesia, Federated States of",
@@ -4001,8 +3968,8 @@
    "provisional": false
   },
   {
-   "unit_id": "electionguide:upcoming/r20",
-   "claim_id": "electionguide:upcoming/r20#0",
+   "unit_id": "electionguide:upcoming/r19",
+   "claim_id": "electionguide:upcoming/r19#0",
    "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/5211/",
    "source_event_id": "electionguide:5211",
@@ -4024,6 +3991,39 @@
    "date_meaning": "voting_period",
    "date_status": "confirmed",
    "date_text": "2027-03-07 (d) to 2027-03-07 (d)",
+   "status_claim": null,
+   "previous_date_text": null,
+   "evidence_kind": "calendar",
+   "indirect": false,
+   "fetched_at": null,
+   "fallback": false,
+   "snapshot_id": null,
+   "provisional": false
+  },
+  {
+   "unit_id": "electionguide:upcoming/r20",
+   "claim_id": "electionguide:upcoming/r20#0",
+   "source": "electionguide",
+   "link": "https://www.electionguide.org/elections/id/5328/",
+   "source_event_id": "electionguide:5328",
+   "place_raw": "Mongolia",
+   "place_id": "iso:MN",
+   "jurisdiction": null,
+   "jurisdiction_kind": "nationwide",
+   "level": "national",
+   "institution": "iso:MN/president",
+   "office_class": "head_of_state",
+   "office_label": "Mongolian Presidency",
+   "aggregate": false,
+   "kind": "candidate_election",
+   "round": null,
+   "date": "2027-03-19",
+   "end_date": "2027-03-19",
+   "date_precision": "day",
+   "year": 2027,
+   "date_meaning": "voting_period",
+   "date_status": "tentative",
+   "date_text": "2027-03-19 (t) to 2027-03-19 (t)",
    "status_claim": null,
    "previous_date_text": null,
    "evidence_kind": "calendar",
@@ -4070,26 +4070,26 @@
    "unit_id": "electionguide:upcoming/r22",
    "claim_id": "electionguide:upcoming/r22#0",
    "source": "electionguide",
-   "link": "https://www.electionguide.org/elections/id/5250/",
-   "source_event_id": "electionguide:5250",
-   "place_raw": "France",
-   "place_id": "iso:FR",
+   "link": "https://www.electionguide.org/elections/id/5113/",
+   "source_event_id": "electionguide:5113",
+   "place_raw": "Somalia",
+   "place_id": "iso:SO",
    "jurisdiction": null,
    "jurisdiction_kind": "nationwide",
    "level": "national",
-   "institution": "iso:FR/president",
-   "office_class": "head_of_state",
-   "office_label": "French Presidency",
+   "institution": "iso:SO/house-of-the-people",
+   "office_class": "lower_house",
+   "office_label": "Somali House of the People",
    "aggregate": false,
    "kind": "candidate_election",
    "round": null,
-   "date": "2027-04-18",
-   "end_date": "2027-04-18",
+   "date": "2027-04-15",
+   "end_date": "2027-04-15",
    "date_precision": "day",
    "year": 2027,
    "date_meaning": "voting_period",
    "date_status": "tentative",
-   "date_text": "2027-04-18 (t) to 2027-04-18 (t)",
+   "date_text": "2027-04-15 (t) to 2027-04-15 (t)",
    "status_claim": null,
    "previous_date_text": null,
    "evidence_kind": "calendar",
@@ -4136,6 +4136,39 @@
    "unit_id": "electionguide:upcoming/r24",
    "claim_id": "electionguide:upcoming/r24#0",
    "source": "electionguide",
+   "link": "https://www.electionguide.org/elections/id/5250/",
+   "source_event_id": "electionguide:5250",
+   "place_raw": "France",
+   "place_id": "iso:FR",
+   "jurisdiction": null,
+   "jurisdiction_kind": "nationwide",
+   "level": "national",
+   "institution": "iso:FR/president",
+   "office_class": "head_of_state",
+   "office_label": "French Presidency",
+   "aggregate": false,
+   "kind": "candidate_election",
+   "round": null,
+   "date": "2027-04-18",
+   "end_date": "2027-04-18",
+   "date_precision": "day",
+   "year": 2027,
+   "date_meaning": "voting_period",
+   "date_status": "tentative",
+   "date_text": "2027-04-18 (t) to 2027-04-18 (t)",
+   "status_claim": null,
+   "previous_date_text": null,
+   "evidence_kind": "calendar",
+   "indirect": false,
+   "fetched_at": null,
+   "fallback": false,
+   "snapshot_id": null,
+   "provisional": false
+  },
+  {
+   "unit_id": "electionguide:upcoming/r25",
+   "claim_id": "electionguide:upcoming/r25#0",
+   "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/5251/",
    "source_event_id": "electionguide:5251",
    "place_raw": "Timor-Leste",
@@ -4166,8 +4199,8 @@
    "provisional": false
   },
   {
-   "unit_id": "electionguide:upcoming/r25",
-   "claim_id": "electionguide:upcoming/r25#0",
+   "unit_id": "electionguide:upcoming/r26",
+   "claim_id": "electionguide:upcoming/r26#0",
    "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/4665/",
    "source_event_id": "electionguide:4665",
@@ -4199,8 +4232,8 @@
    "provisional": false
   },
   {
-   "unit_id": "electionguide:upcoming/r26",
-   "claim_id": "electionguide:upcoming/r26#0",
+   "unit_id": "electionguide:upcoming/r27",
+   "claim_id": "electionguide:upcoming/r27#0",
    "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/4664/",
    "source_event_id": "electionguide:4664",
@@ -4232,8 +4265,8 @@
    "provisional": false
   },
   {
-   "unit_id": "electionguide:upcoming/r27",
-   "claim_id": "electionguide:upcoming/r27#0",
+   "unit_id": "electionguide:upcoming/r28",
+   "claim_id": "electionguide:upcoming/r28#0",
    "source": "electionguide",
    "link": "https://www.electionguide.org/elections/id/4663/",
    "source_event_id": "electionguide:4663",
@@ -10797,6 +10830,39 @@
    "fallback": false,
    "snapshot_id": null,
    "provisional": false
+  },
+  {
+   "unit_id": "electionguide:anticipated/r3",
+   "claim_id": "electionguide:anticipated/r3#0",
+   "source": "electionguide",
+   "link": "https://www.electionguide.org/elections/id/5329/",
+   "source_event_id": "electionguide:5329",
+   "place_raw": "Dominica",
+   "place_id": "iso:DM",
+   "jurisdiction": null,
+   "jurisdiction_kind": "nationwide",
+   "level": "national",
+   "institution": "iso:DM/house-of-assembly",
+   "office_class": "legislature",
+   "office_label": "Dominican House of Assembly",
+   "aggregate": false,
+   "kind": "candidate_election",
+   "round": null,
+   "date": "2026-12-16",
+   "end_date": "2026-12-16",
+   "date_precision": "day",
+   "year": 2026,
+   "date_meaning": "voting_period",
+   "date_status": "confirmed",
+   "date_text": "2026-12-16 (d) to 2026-12-16 (d)",
+   "status_claim": null,
+   "previous_date_text": null,
+   "evidence_kind": "calendar",
+   "indirect": false,
+   "fetched_at": null,
+   "fallback": false,
+   "snapshot_id": null,
+   "provisional": false
   }
  ],
  "notes": [],
@@ -10970,6 +11036,12 @@
    "claims": 0
   },
   {
+   "scope": "anticipated",
+   "fetched_at": "2026-11-26T00:11:44.841758Z",
+   "units_seen": 100,
+   "claims": 1
+  },
+  {
    "scope": "past",
    "fetched_at": "2026-10-31T19:59:16.784061Z",
    "units_seen": 200,
@@ -11134,6 +11206,12 @@
   {
    "scope": "past",
    "fetched_at": "2026-11-25T00:12:31.275937Z",
+   "units_seen": 200,
+   "claims": 198
+  },
+  {
+   "scope": "past",
+   "fetched_at": "2026-11-26T00:11:44.841758Z",
    "units_seen": 200,
    "claims": 198
   },
@@ -11304,9 +11382,26 @@
    "fetched_at": "2026-11-25T00:12:31.275937Z",
    "units_seen": 27,
    "claims": 27
+  },
+  {
+   "scope": "upcoming",
+   "fetched_at": "2026-11-26T00:11:44.841758Z",
+   "units_seen": 28,
+   "claims": 28
   }
  ],
- "disappeared": [],
+ "disappeared": [
+  {
+   "source_event_id": "electionguide:5112",
+   "unit_id": "electionguide:upcoming/r8",
+   "text": "Somalia | Somali Presidency | 2026-12-31 (t) | 2026-12-31 (t) | Date not confirmed | No",
+   "date_text": "2026-12-31 (t) to 2026-12-31 (t)",
+   "start": "2026-12-31",
+   "end": "2026-12-31",
+   "link": "https://www.electionguide.org/elections/id/5112/",
+   "since": "2026-11-26T00:11:43.798917Z"
+  }
+ ],
  "coverage_gaps": [],
  "checks": {
   "ledger": true,
