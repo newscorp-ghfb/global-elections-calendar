@@ -1,7 +1,7 @@
 {
  "source": "ipu",
- "snapshot_id": "afb58870afe43592e7f4c68f10ace1f7b8e3fd56c68e77b5f8ce3a988ba945b4",
- "fetched_at": "2026-11-26T00:11:48.258535Z",
+ "snapshot_id": "f32fc98916c1d0ed766fd2da99415adc385cd6b3d5d042049d14330bdb1eb90c",
+ "fetched_at": "2026-11-27T00:15:01.297235Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -18,18 +18,18 @@
     "link": "https://data.ipu.org/elections/",
     "outcome": "ok",
     "unit_prefix": "ipu:elections/",
-    "units_seen": 281,
+    "units_seen": 278,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-26T00:11:48.258535Z",
+    "fetched_at": "2026-11-27T00:15:01.297235Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
      "http_status": 200,
      "final_url": "https://data.ipu.org/elections/",
      "content_type": "text/html; charset=UTF-8",
-     "bytes": 393109,
-     "elapsed_ms": 1734,
+     "bytes": 392255,
+     "elapsed_ms": 257,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -472,7 +472,7 @@
   {
    "unit_id": "ipu:elections/r44",
    "source": "ipu",
-   "text": "Burkina Faso | People’s Legislative Assembly | Unicameral | Other | 27 Mar 2026 | 27 Mar 2026 | 31 Jul 2029",
+   "text": "Burkina Faso | People's Legislative Assembly | Unicameral | Other | 27 Mar 2026 | 27 Mar 2026 | 31 Jul 2029",
    "outcome": "unparsed",
    "reason": "designation_unrecognised",
    "relevance": "in_or_after_window",
@@ -532,7 +532,7 @@
   {
    "unit_id": "ipu:elections/r50",
    "source": "ipu",
-   "text": "Cameroon | National Assembly | Bicameral | Lower chamber | Directly elected | 09 Feb 2020 - 22 Mar 2020 | 10 Mar 2020 | 31 Jan 2027",
+   "text": "Cameroon | National Assembly | Bicameral | Lower chamber | Directly elected | 09 Feb 2020 - 22 Mar 2020 | 10 Mar 2020 | 07 Feb 2027",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -962,7 +962,7 @@
   {
    "unit_id": "ipu:elections/r93",
    "source": "ipu",
-   "text": "Fiji | Parliament | Unicameral | Directly elected | 14 Dec 2022 | 24 Dec 2022 | 31 Dec 2026",
+   "text": "Fiji | Parliament | Unicameral | Directly elected | 14 Dec 2022 | 24 Dec 2022 | 06 Feb 2027",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -972,7 +972,7 @@
   {
    "unit_id": "ipu:elections/r94",
    "source": "ipu",
-   "text": "Finland | Parliament | Unicameral | Directly elected | 02 Apr 2023 | 13 Apr 2023 | 30 Apr 2027",
+   "text": "Finland | Parliament | Unicameral | Directly elected | 02 Apr 2023 | 13 Apr 2023 | 18 Apr 2027",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -1362,16 +1362,6 @@
   {
    "unit_id": "ipu:elections/r133",
    "source": "ipu",
-   "text": "Kazakhstan | Senate (Suspended) | Unicameral | Indirectly elected | 14 Jan 2023 | 26 Jan 2023 | -",
-   "outcome": "ignored",
-   "reason": "inactive_chamber",
-   "relevance": "unknown",
-   "leftover": "",
-   "duplicate_of": null
-  },
-  {
-   "unit_id": "ipu:elections/r134",
-   "source": "ipu",
    "text": "Kenya | National Assembly | Bicameral | Lower chamber | Directly elected | 09 Aug 2022 | 08 Sep 2022 | 10 Aug 2027",
    "outcome": "parsed",
    "reason": null,
@@ -1380,7 +1370,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r135",
+   "unit_id": "ipu:elections/r134",
    "source": "ipu",
    "text": "Kenya | Senate | Bicameral | Upper chamber | Directly elected | 09 Aug 2022 | 13 Sep 2022 | 10 Aug 2027",
    "outcome": "parsed",
@@ -1390,7 +1380,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r136",
+   "unit_id": "ipu:elections/r135",
    "source": "ipu",
    "text": "Kiribati | House of Assembly | Unicameral | Directly elected | 14 Aug 2024 - 19 Aug 2024 | 13 Sep 2024 | 31 Aug 2028",
    "outcome": "parsed",
@@ -1400,7 +1390,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r137",
+   "unit_id": "ipu:elections/r136",
    "source": "ipu",
    "text": "Kuwait | National Assembly (Suspended) | Unicameral | Directly elected | 04 Apr 2024 | - | 30 Apr 2028",
    "outcome": "ignored",
@@ -1410,7 +1400,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r138",
+   "unit_id": "ipu:elections/r137",
    "source": "ipu",
    "text": "Kyrgyzstan | Supreme Council | Unicameral | Directly elected | 30 Nov 2025 | 17 Dec 2025 | 30 Nov 2030",
    "outcome": "parsed",
@@ -1420,7 +1410,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r139",
+   "unit_id": "ipu:elections/r138",
    "source": "ipu",
    "text": "Lao People's Democratic Republic | National Assembly | Unicameral | Directly elected | 22 Feb 2026 | 23 Mar 2026 | 28 Feb 2031",
    "outcome": "parsed",
@@ -1430,7 +1420,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r140",
+   "unit_id": "ipu:elections/r139",
    "source": "ipu",
    "text": "Latvia | Parliament | Unicameral | Directly elected | 03 Oct 2026 | 03 Nov 2026 | 05 Oct 2030",
    "outcome": "parsed",
@@ -1440,7 +1430,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r141",
+   "unit_id": "ipu:elections/r140",
    "source": "ipu",
    "text": "Lebanon | National Assembly | Unicameral | Directly elected | 15 May 2022 | 31 May 2022 | 31 May 2028",
    "outcome": "parsed",
@@ -1450,7 +1440,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r142",
+   "unit_id": "ipu:elections/r141",
    "source": "ipu",
    "text": "Lesotho | National Assembly | Bicameral | Lower chamber | Directly elected | 07 Oct 2022 | 25 Oct 2022 | 31 Oct 2027",
    "outcome": "parsed",
@@ -1460,7 +1450,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r143",
+   "unit_id": "ipu:elections/r142",
    "source": "ipu",
    "text": "Lesotho | Senate | Bicameral | Upper chamber | Other | 02 Nov 2022 | 03 Nov 2022 | 30 Nov 2027",
    "outcome": "unparsed",
@@ -1470,7 +1460,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r144",
+   "unit_id": "ipu:elections/r143",
    "source": "ipu",
    "text": "Liberia | House of Representatives | Bicameral | Lower chamber | Directly elected | 10 Oct 2023 | 15 Jan 2024 | 09 Oct 2029",
    "outcome": "parsed",
@@ -1480,7 +1470,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r145",
+   "unit_id": "ipu:elections/r144",
    "source": "ipu",
    "text": "Liberia | The Liberian Senate | Bicameral | Upper chamber | Directly elected | 10 Oct 2023 | 15 Jan 2024 | 09 Oct 2029",
    "outcome": "parsed",
@@ -1490,7 +1480,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r146",
+   "unit_id": "ipu:elections/r145",
    "source": "ipu",
    "text": "Libya | House of Representatives | Unicameral | Directly elected | 25 Jun 2014 | 04 Aug 2014 | 31 Dec 2026",
    "outcome": "parsed",
@@ -1500,7 +1490,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r147",
+   "unit_id": "ipu:elections/r146",
    "source": "ipu",
    "text": "Liechtenstein | Parliament | Unicameral | Directly elected | 09 Feb 2025 | 07 May 2025 | 28 Feb 2029",
    "outcome": "parsed",
@@ -1510,7 +1500,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r148",
+   "unit_id": "ipu:elections/r147",
    "source": "ipu",
    "text": "Lithuania | Parliament | Unicameral | Directly elected | 13 Oct 2024 - 27 Oct 2024 | 14 Nov 2024 | 31 Oct 2028",
    "outcome": "parsed",
@@ -1520,7 +1510,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r149",
+   "unit_id": "ipu:elections/r148",
    "source": "ipu",
    "text": "Luxembourg | Chamber of Deputies | Unicameral | Directly elected | 08 Oct 2023 | 24 Oct 2023 | 31 Oct 2028",
    "outcome": "parsed",
@@ -1530,7 +1520,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r150",
+   "unit_id": "ipu:elections/r149",
    "source": "ipu",
    "text": "Madagascar | National Assembly | Bicameral | Lower chamber | Directly elected | 29 May 2024 | 09 Jul 2024 | 31 May 2029",
    "outcome": "parsed",
@@ -1540,7 +1530,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r151",
+   "unit_id": "ipu:elections/r150",
    "source": "ipu",
    "text": "Madagascar | Senate | Bicameral | Upper chamber | Indirectly elected | 11 Dec 2020 | 19 Jan 2021 | 31 Dec 2026",
    "outcome": "parsed",
@@ -1550,7 +1540,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r152",
+   "unit_id": "ipu:elections/r151",
    "source": "ipu",
    "text": "Malawi | National Assembly | Unicameral | Directly elected | 16 Sep 2025 | 31 Oct 2025 | -",
    "outcome": "ignored",
@@ -1560,7 +1550,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r153",
+   "unit_id": "ipu:elections/r152",
    "source": "ipu",
    "text": "Malaysia | House of Representatives | Bicameral | Lower chamber | Directly elected | 19 Nov 2022 | 19 Dec 2022 | 30 Nov 2027",
    "outcome": "parsed",
@@ -1570,7 +1560,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r154",
+   "unit_id": "ipu:elections/r153",
    "source": "ipu",
    "text": "Malaysia | Senate | Bicameral | Upper chamber | Appointed | - | - | -",
    "outcome": "ignored",
@@ -1580,7 +1570,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r155",
+   "unit_id": "ipu:elections/r154",
    "source": "ipu",
    "text": "Maldives | People's Majlis | Unicameral | Directly elected | 21 Apr 2024 | 28 May 2024 | 30 Apr 2029",
    "outcome": "parsed",
@@ -1590,7 +1580,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r156",
+   "unit_id": "ipu:elections/r155",
    "source": "ipu",
    "text": "Mali | Transitional National Council | Unicameral | Appointed | 05 Dec 2020 | 05 Dec 2020 | 31 Dec 2030",
    "outcome": "ignored",
@@ -1600,7 +1590,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r157",
+   "unit_id": "ipu:elections/r156",
    "source": "ipu",
    "text": "Malta | House of Representatives | Unicameral | Directly elected | 30 May 2026 | 20 Jun 2026 | 31 May 2031",
    "outcome": "parsed",
@@ -1610,7 +1600,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r158",
+   "unit_id": "ipu:elections/r157",
    "source": "ipu",
    "text": "Marshall Islands | Parliament | Unicameral | Directly elected | 20 Nov 2023 | 02 Jan 2024 | 15 Nov 2027",
    "outcome": "parsed",
@@ -1620,7 +1610,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r159",
+   "unit_id": "ipu:elections/r158",
    "source": "ipu",
    "text": "Mauritania | National Assembly | Unicameral | Directly elected | 13 May 2023 - 27 May 2023 | 19 Jun 2023 | 31 May 2028",
    "outcome": "parsed",
@@ -1630,17 +1620,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r160",
-   "source": "ipu",
-   "text": "Mauritania | Senate (Suspended) | Unicameral | Indirectly elected | - | - | -",
-   "outcome": "ignored",
-   "reason": "inactive_chamber",
-   "relevance": "unknown",
-   "leftover": "",
-   "duplicate_of": null
-  },
-  {
-   "unit_id": "ipu:elections/r161",
+   "unit_id": "ipu:elections/r159",
    "source": "ipu",
    "text": "Mauritius | National Assembly | Unicameral | Directly elected | 10 Nov 2024 | 29 Nov 2024 | 31 Oct 2029",
    "outcome": "parsed",
@@ -1650,7 +1630,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r162",
+   "unit_id": "ipu:elections/r160",
    "source": "ipu",
    "text": "Mexico | Chamber of Deputies | Bicameral | Lower chamber | Directly elected | 02 Jun 2024 | 01 Sep 2024 | 06 Jun 2027",
    "outcome": "parsed",
@@ -1660,7 +1640,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r163",
+   "unit_id": "ipu:elections/r161",
    "source": "ipu",
    "text": "Mexico | Senate | Bicameral | Upper chamber | Directly elected | 02 Jun 2024 | 01 Sep 2024 | 09 Jun 2030",
    "outcome": "parsed",
@@ -1670,7 +1650,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r164",
+   "unit_id": "ipu:elections/r162",
    "source": "ipu",
    "text": "Micronesia (Federated States of) | Congress | Unicameral | Directly elected | 04 Mar 2025 | 11 May 2025 | 02 Mar 2027",
    "outcome": "parsed",
@@ -1680,7 +1660,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r165",
+   "unit_id": "ipu:elections/r163",
    "source": "ipu",
    "text": "Monaco | National Council | Unicameral | Directly elected | 05 Feb 2023 | 16 Feb 2023 | 29 Feb 2028",
    "outcome": "parsed",
@@ -1690,7 +1670,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r166",
+   "unit_id": "ipu:elections/r164",
    "source": "ipu",
    "text": "Mongolia | State Great Hural | Unicameral | Directly elected | 28 Jun 2024 | 02 Jul 2024 | 30 Jun 2028",
    "outcome": "parsed",
@@ -1700,7 +1680,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r167",
+   "unit_id": "ipu:elections/r165",
    "source": "ipu",
    "text": "Montenegro | Parliament | Unicameral | Directly elected | 11 Jun 2023 | 27 Jul 2023 | 30 Jun 2027",
    "outcome": "parsed",
@@ -1710,7 +1690,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r168",
+   "unit_id": "ipu:elections/r166",
    "source": "ipu",
    "text": "Morocco | House of Representatives | Bicameral | Lower chamber | Directly elected | 23 Sep 2026 | 09 Oct 2026 | 30 Sep 2031",
    "outcome": "parsed",
@@ -1720,7 +1700,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r169",
+   "unit_id": "ipu:elections/r167",
    "source": "ipu",
    "text": "Morocco | House of Councillors | Bicameral | Upper chamber | Indirectly elected | 05 Oct 2021 | 09 Oct 2021 | 31 Oct 2027",
    "outcome": "parsed",
@@ -1730,7 +1710,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r170",
+   "unit_id": "ipu:elections/r168",
    "source": "ipu",
    "text": "Mozambique | Assembly of the Republic | Unicameral | Directly elected | 09 Oct 2024 | 13 Jan 2025 | 31 Oct 2029",
    "outcome": "parsed",
@@ -1740,7 +1720,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r171",
+   "unit_id": "ipu:elections/r169",
    "source": "ipu",
    "text": "Myanmar | House of Representatives (Suspended) | Bicameral | Lower chamber | Directly elected | 08 Nov 2020 | 01 Feb 2021 | 28 Dec 2025",
    "outcome": "ignored",
@@ -1750,7 +1730,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r172",
+   "unit_id": "ipu:elections/r170",
    "source": "ipu",
    "text": "Myanmar | House of Nationalities (Suspended) | Bicameral | Upper chamber | Directly elected | 08 Nov 2020 | 01 Feb 2021 | 28 Dec 2025",
    "outcome": "ignored",
@@ -1760,7 +1740,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r173",
+   "unit_id": "ipu:elections/r171",
    "source": "ipu",
    "text": "Namibia | National Assembly | Bicameral | Lower chamber | Directly elected | 27 Nov 2024 - 30 Nov 2024 | 20 Mar 2025 | 30 Nov 2029",
    "outcome": "parsed",
@@ -1770,7 +1750,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r174",
+   "unit_id": "ipu:elections/r172",
    "source": "ipu",
    "text": "Namibia | National Council | Bicameral | Upper chamber | Indirectly elected | 12 Dec 2025 | 12 Dec 2025 | 31 Dec 2030",
    "outcome": "parsed",
@@ -1780,7 +1760,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r175",
+   "unit_id": "ipu:elections/r173",
    "source": "ipu",
    "text": "Naoero | Parliament | Unicameral | Directly elected | 11 Oct 2025 | 14 Oct 2025 | 31 Oct 2028",
    "outcome": "parsed",
@@ -1790,7 +1770,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r176",
+   "unit_id": "ipu:elections/r174",
    "source": "ipu",
    "text": "Nepal | House of Representatives | Bicameral | Lower chamber | Directly elected | 05 Mar 2026 | 02 Apr 2026 | 28 Feb 2031",
    "outcome": "parsed",
@@ -1800,7 +1780,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r177",
+   "unit_id": "ipu:elections/r175",
    "source": "ipu",
    "text": "Nepal | National Assembly | Bicameral | Upper chamber | Indirectly elected | 25 Jan 2026 | 09 Mar 2026 | 31 Jan 2028",
    "outcome": "parsed",
@@ -1810,7 +1790,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r178",
+   "unit_id": "ipu:elections/r176",
    "source": "ipu",
    "text": "Netherlands | House of Representatives | Bicameral | Lower chamber | Directly elected | 29 Oct 2025 | 12 Nov 2025 | 31 Oct 2029",
    "outcome": "parsed",
@@ -1820,7 +1800,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r179",
+   "unit_id": "ipu:elections/r177",
    "source": "ipu",
    "text": "Netherlands | Senate | Bicameral | Upper chamber | Indirectly elected | 30 May 2023 | 13 Jun 2023 | 31 May 2027",
    "outcome": "parsed",
@@ -1830,9 +1810,9 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r180",
+   "unit_id": "ipu:elections/r178",
    "source": "ipu",
-   "text": "New Zealand | House of Representatives | Unicameral | Directly elected | 14 Oct 2023 | 05 Dec 2023 | 07 Nov 2026",
+   "text": "New Zealand | House of Representatives | Unicameral | Directly elected | 07 Nov 2026 | - | 30 Nov 2029",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -1840,7 +1820,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r181",
+   "unit_id": "ipu:elections/r179",
    "source": "ipu",
    "text": "Nicaragua | National Assembly | Unicameral | Directly elected | 07 Nov 2021 | 09 Jan 2022 | 30 Nov 2028",
    "outcome": "parsed",
@@ -1850,7 +1830,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r182",
+   "unit_id": "ipu:elections/r180",
    "source": "ipu",
    "text": "Niger | Advisory Council for the Refoundation | Unicameral | Appointed | 01 May 2025 | 28 Jun 2025 | 30 Apr 2030",
    "outcome": "ignored",
@@ -1860,7 +1840,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r183",
+   "unit_id": "ipu:elections/r181",
    "source": "ipu",
    "text": "Nigeria | House of Representatives | Bicameral | Lower chamber | Directly elected | 25 Feb 2023 | 13 Jun 2023 | 16 Jan 2027",
    "outcome": "parsed",
@@ -1870,7 +1850,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r184",
+   "unit_id": "ipu:elections/r182",
    "source": "ipu",
    "text": "Nigeria | Senate | Bicameral | Upper chamber | Directly elected | 25 Feb 2023 | 13 Jun 2023 | 16 Jan 2027",
    "outcome": "parsed",
@@ -1880,7 +1860,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r185",
+   "unit_id": "ipu:elections/r183",
    "source": "ipu",
    "text": "North Macedonia | Assembly of the Republic | Unicameral | Directly elected | 08 May 2024 | 28 May 2024 | 31 May 2028",
    "outcome": "parsed",
@@ -1890,7 +1870,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r186",
+   "unit_id": "ipu:elections/r184",
    "source": "ipu",
    "text": "Norway | Parliament | Unicameral | Directly elected | 08 Sep 2025 | 01 Oct 2025 | 30 Sep 2029",
    "outcome": "parsed",
@@ -1900,7 +1880,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r187",
+   "unit_id": "ipu:elections/r185",
    "source": "ipu",
    "text": "Oman | Shura Council | Bicameral | Lower chamber | Directly elected | 29 Oct 2023 | 09 Nov 2023 | 31 Oct 2027",
    "outcome": "parsed",
@@ -1910,7 +1890,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r188",
+   "unit_id": "ipu:elections/r186",
    "source": "ipu",
    "text": "Oman | State Council | Bicameral | Upper chamber | Appointed | 01 Nov 2023 | 01 Nov 2023 | 30 Nov 2027",
    "outcome": "ignored",
@@ -1920,7 +1900,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r189",
+   "unit_id": "ipu:elections/r187",
    "source": "ipu",
    "text": "Pakistan | National Assembly | Bicameral | Lower chamber | Directly elected | 08 Feb 2024 | 29 Feb 2024 | 28 Feb 2029",
    "outcome": "parsed",
@@ -1930,7 +1910,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r190",
+   "unit_id": "ipu:elections/r188",
    "source": "ipu",
    "text": "Pakistan | Senate | Bicameral | Upper chamber | Indirectly elected | 02 Apr 2024 | 09 Apr 2024 | 31 Mar 2027",
    "outcome": "parsed",
@@ -1940,7 +1920,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r191",
+   "unit_id": "ipu:elections/r189",
    "source": "ipu",
    "text": "Palau | House of Delegates | Bicameral | Lower chamber | Directly elected | 05 Nov 2024 | 16 Jan 2025 | 07 Nov 2028",
    "outcome": "parsed",
@@ -1950,7 +1930,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r192",
+   "unit_id": "ipu:elections/r190",
    "source": "ipu",
    "text": "Palau | Senate | Bicameral | Upper chamber | Directly elected | 05 Nov 2024 | 16 Jan 2025 | 07 Nov 2028",
    "outcome": "parsed",
@@ -1960,7 +1940,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r193",
+   "unit_id": "ipu:elections/r191",
    "source": "ipu",
    "text": "Panama | National Assembly | Unicameral | Directly elected | 05 May 2024 | 01 Jul 2024 | 31 May 2029",
    "outcome": "parsed",
@@ -1970,7 +1950,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r194",
+   "unit_id": "ipu:elections/r192",
    "source": "ipu",
    "text": "Papua New Guinea | National Parliament | Unicameral | Directly elected | 04 Jul 2022 - 22 Jul 2022 | 08 Aug 2022 | 26 Jun 2027",
    "outcome": "parsed",
@@ -1980,7 +1960,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r195",
+   "unit_id": "ipu:elections/r193",
    "source": "ipu",
    "text": "Paraguay | Chamber of Deputies | Bicameral | Lower chamber | Directly elected | 30 Apr 2023 | 01 Jul 2023 | 30 Apr 2028",
    "outcome": "parsed",
@@ -1990,7 +1970,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r196",
+   "unit_id": "ipu:elections/r194",
    "source": "ipu",
    "text": "Paraguay | Senate | Bicameral | Upper chamber | Directly elected | 30 Apr 2023 | 01 Jul 2023 | 30 Apr 2028",
    "outcome": "parsed",
@@ -2000,7 +1980,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r197",
+   "unit_id": "ipu:elections/r195",
    "source": "ipu",
    "text": "Peru | Chamber of Deputies | Bicameral | Lower chamber | Directly elected | 12 Apr 2026 | 26 Jul 2026 | 13 Apr 2031",
    "outcome": "parsed",
@@ -2010,7 +1990,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r198",
+   "unit_id": "ipu:elections/r196",
    "source": "ipu",
    "text": "Peru | Senate | Bicameral | Upper chamber | Directly elected | 12 Apr 2026 | 26 Jul 2026 | 13 Apr 2031",
    "outcome": "parsed",
@@ -2020,7 +2000,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r199",
+   "unit_id": "ipu:elections/r197",
    "source": "ipu",
    "text": "Philippines | House of Representatives | Bicameral | Lower chamber | Directly elected | 12 May 2025 | 28 Jul 2025 | 08 May 2028",
    "outcome": "parsed",
@@ -2030,7 +2010,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r200",
+   "unit_id": "ipu:elections/r198",
    "source": "ipu",
    "text": "Philippines | Senate | Bicameral | Upper chamber | Directly elected | 12 May 2025 | 28 Jul 2025 | 08 May 2028",
    "outcome": "parsed",
@@ -2040,7 +2020,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r201",
+   "unit_id": "ipu:elections/r199",
    "source": "ipu",
    "text": "Poland | Sejm | Bicameral | Lower chamber | Directly elected | 15 Oct 2023 | 13 Nov 2023 | 31 Oct 2027",
    "outcome": "parsed",
@@ -2050,7 +2030,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r202",
+   "unit_id": "ipu:elections/r200",
    "source": "ipu",
    "text": "Poland | Senate | Bicameral | Upper chamber | Directly elected | 15 Oct 2023 | 13 Nov 2023 | 31 Oct 2027",
    "outcome": "parsed",
@@ -2060,7 +2040,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r203",
+   "unit_id": "ipu:elections/r201",
    "source": "ipu",
    "text": "Portugal | Assembly of the Republic | Unicameral | Directly elected | 18 May 2025 | 03 Jun 2025 | 30 Sep 2029",
    "outcome": "parsed",
@@ -2070,7 +2050,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r204",
+   "unit_id": "ipu:elections/r202",
    "source": "ipu",
    "text": "Qatar | Shura Council | Unicameral | Appointed | 09 Oct 2025 | 21 Oct 2025 | 30 Sep 2029",
    "outcome": "ignored",
@@ -2080,7 +2060,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r205",
+   "unit_id": "ipu:elections/r203",
    "source": "ipu",
    "text": "Republic of Korea | National Assembly | Unicameral | Directly elected | 10 Apr 2024 | 30 May 2024 | 30 Apr 2028",
    "outcome": "parsed",
@@ -2090,7 +2070,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r206",
+   "unit_id": "ipu:elections/r204",
    "source": "ipu",
    "text": "Republic of Moldova | Parliament | Unicameral | Directly elected | 28 Sep 2025 | 22 Oct 2025 | 30 Sep 2029",
    "outcome": "parsed",
@@ -2100,7 +2080,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r207",
+   "unit_id": "ipu:elections/r205",
    "source": "ipu",
    "text": "Romania | Chamber of Deputies | Bicameral | Lower chamber | Directly elected | 01 Dec 2024 | 20 Dec 2024 | 30 Nov 2028",
    "outcome": "parsed",
@@ -2110,7 +2090,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r208",
+   "unit_id": "ipu:elections/r206",
    "source": "ipu",
    "text": "Romania | Senate | Bicameral | Upper chamber | Directly elected | 01 Dec 2024 | 20 Dec 2024 | 30 Nov 2028",
    "outcome": "parsed",
@@ -2120,7 +2100,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r209",
+   "unit_id": "ipu:elections/r207",
    "source": "ipu",
    "text": "Russian Federation | State Duma | Bicameral | Lower chamber | Directly elected | 18 Sep 2026 - 20 Sep 2026 | 30 Sep 2026 | 30 Sep 2031",
    "outcome": "parsed",
@@ -2130,7 +2110,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r210",
+   "unit_id": "ipu:elections/r208",
    "source": "ipu",
    "text": "Russian Federation | Council of the Federation | Bicameral | Upper chamber | Appointed | - | - | -",
    "outcome": "ignored",
@@ -2140,7 +2120,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r211",
+   "unit_id": "ipu:elections/r209",
    "source": "ipu",
    "text": "Rwanda | Chamber of Deputies | Bicameral | Lower chamber | Directly elected | 15 Jul 2024 - 16 Jul 2024 | 14 Aug 2024 | 31 Jul 2029",
    "outcome": "parsed",
@@ -2150,7 +2130,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r212",
+   "unit_id": "ipu:elections/r210",
    "source": "ipu",
    "text": "Rwanda | Senate | Bicameral | Upper chamber | Indirectly elected | 16 Sep 2024 - 17 Sep 2024 | 26 Sep 2024 | 30 Sep 2029",
    "outcome": "parsed",
@@ -2160,7 +2140,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r213",
+   "unit_id": "ipu:elections/r211",
    "source": "ipu",
    "text": "Saint Kitts and Nevis | National Assembly | Unicameral | Directly elected | 05 Aug 2022 | 25 Oct 2022 | 31 Oct 2027",
    "outcome": "parsed",
@@ -2170,7 +2150,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r214",
+   "unit_id": "ipu:elections/r212",
    "source": "ipu",
    "text": "Saint Lucia | House of Assembly | Bicameral | Lower chamber | Directly elected | 01 Dec 2025 | 16 Dec 2025 | 30 Nov 2030",
    "outcome": "parsed",
@@ -2180,7 +2160,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r215",
+   "unit_id": "ipu:elections/r213",
    "source": "ipu",
    "text": "Saint Lucia | Senate | Bicameral | Upper chamber | Appointed | 16 Dec 2025 | 16 Dec 2025 | 31 Dec 2030",
    "outcome": "ignored",
@@ -2190,7 +2170,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r216",
+   "unit_id": "ipu:elections/r214",
    "source": "ipu",
    "text": "Saint Vincent and the Grenadines | House of Assembly | Unicameral | Directly elected | 27 Nov 2025 | 23 Dec 2025 | 30 Nov 2030",
    "outcome": "parsed",
@@ -2200,7 +2180,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r217",
+   "unit_id": "ipu:elections/r215",
    "source": "ipu",
    "text": "Samoa | Legislative Assembly | Unicameral | Directly elected | 29 Aug 2025 | 16 Sep 2025 | 31 Aug 2030",
    "outcome": "parsed",
@@ -2210,7 +2190,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r218",
+   "unit_id": "ipu:elections/r216",
    "source": "ipu",
    "text": "San Marino | Great and General Council | Unicameral | Directly elected | 09 Jun 2024 | 02 Jul 2024 | 30 Jun 2029",
    "outcome": "parsed",
@@ -2220,7 +2200,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r219",
+   "unit_id": "ipu:elections/r217",
    "source": "ipu",
    "text": "Sao Tome and Principe | National Assembly | Unicameral | Directly elected | 27 Sep 2026 | 10 Nov 2026 | 30 Sep 2030",
    "outcome": "parsed",
@@ -2230,7 +2210,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r220",
+   "unit_id": "ipu:elections/r218",
    "source": "ipu",
    "text": "Saudi Arabia | Shura Council | Unicameral | Appointed | 02 Sep 2024 | 02 Sep 2024 | 31 Aug 2028",
    "outcome": "ignored",
@@ -2240,7 +2220,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r221",
+   "unit_id": "ipu:elections/r219",
    "source": "ipu",
    "text": "Senegal | National Assembly | Unicameral | Directly elected | 17 Nov 2024 | 02 Dec 2024 | 30 Nov 2029",
    "outcome": "parsed",
@@ -2250,9 +2230,9 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r222",
+   "unit_id": "ipu:elections/r220",
    "source": "ipu",
-   "text": "Serbia | National Assembly | Unicameral | Directly elected | 25 Oct 2026 | - | 31 Oct 2030",
+   "text": "Serbia | National Assembly | Unicameral | Directly elected | 25 Oct 2026 | 17 Nov 2026 | 31 Oct 2030",
    "outcome": "parsed",
    "reason": null,
    "relevance": "in_or_after_window",
@@ -2260,7 +2240,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r223",
+   "unit_id": "ipu:elections/r221",
    "source": "ipu",
    "text": "Seychelles | National Assembly | Unicameral | Directly elected | 27 Sep 2025 | 28 Oct 2025 | 30 Sep 2030",
    "outcome": "parsed",
@@ -2270,7 +2250,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r224",
+   "unit_id": "ipu:elections/r222",
    "source": "ipu",
    "text": "Sierra Leone | Parliament | Unicameral | Directly elected | 24 Jun 2023 | 13 Jul 2023 | 30 Jun 2028",
    "outcome": "parsed",
@@ -2280,7 +2260,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r225",
+   "unit_id": "ipu:elections/r223",
    "source": "ipu",
    "text": "Singapore | Parliament | Unicameral | Directly elected | 03 May 2025 | 05 Sep 2025 | 31 May 2030",
    "outcome": "parsed",
@@ -2290,7 +2270,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r226",
+   "unit_id": "ipu:elections/r224",
    "source": "ipu",
    "text": "Slovakia | National Council | Unicameral | Directly elected | 30 Sep 2023 | 25 Oct 2023 | 30 Sep 2027",
    "outcome": "parsed",
@@ -2300,7 +2280,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r227",
+   "unit_id": "ipu:elections/r225",
    "source": "ipu",
    "text": "Slovenia | National Assembly | Bicameral | Lower chamber | Directly elected | 22 Mar 2026 | 10 Apr 2026 | 31 Mar 2030",
    "outcome": "parsed",
@@ -2310,7 +2290,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r228",
+   "unit_id": "ipu:elections/r226",
    "source": "ipu",
    "text": "Slovenia | National Council | Bicameral | Upper chamber | Indirectly elected | 23 Nov 2022 - 24 Nov 2022 | 12 Dec 2022 | 30 Nov 2027",
    "outcome": "parsed",
@@ -2320,7 +2300,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r229",
+   "unit_id": "ipu:elections/r227",
    "source": "ipu",
    "text": "Solomon Islands | National Parliament | Unicameral | Directly elected | 17 Apr 2024 | 17 May 2024 | 30 Apr 2028",
    "outcome": "parsed",
@@ -2330,7 +2310,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r230",
+   "unit_id": "ipu:elections/r228",
    "source": "ipu",
    "text": "Somalia | House of the People | Bicameral | Lower chamber | Indirectly elected | 01 Nov 2021 - 05 May 2022 | 16 Apr 2022 | 15 Apr 2027",
    "outcome": "parsed",
@@ -2340,7 +2320,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r231",
+   "unit_id": "ipu:elections/r229",
    "source": "ipu",
    "text": "Somalia | Upper House | Bicameral | Upper chamber | Indirectly elected | 27 Jul 2021 - 13 Nov 2021 | 16 Apr 2022 | 15 Apr 2027",
    "outcome": "parsed",
@@ -2350,7 +2330,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r232",
+   "unit_id": "ipu:elections/r230",
    "source": "ipu",
    "text": "South Africa | National Assembly | Bicameral | Lower chamber | Directly elected | 29 May 2024 | 14 Jun 2024 | 31 May 2029",
    "outcome": "parsed",
@@ -2360,7 +2340,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r233",
+   "unit_id": "ipu:elections/r231",
    "source": "ipu",
    "text": "South Africa | National Council of Provinces | Bicameral | Upper chamber | Appointed | 15 Jun 2024 | 15 Jun 2024 | 30 Jun 2029",
    "outcome": "ignored",
@@ -2370,27 +2350,27 @@
    "duplicate_of": null
   },
   {
+   "unit_id": "ipu:elections/r232",
+   "source": "ipu",
+   "text": "South Sudan | Transitional National Legislative Assembly | Bicameral | Lower chamber | Appointed | 10 May 2021 | 02 Aug 2021 | 11 Feb 2027",
+   "outcome": "ignored",
+   "reason": "appointed_chamber",
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": null
+  },
+  {
+   "unit_id": "ipu:elections/r233",
+   "source": "ipu",
+   "text": "South Sudan | Council of States | Bicameral | Upper chamber | Appointed | 02 Aug 2021 | 02 Aug 2021 | 28 Feb 2027",
+   "outcome": "ignored",
+   "reason": "appointed_chamber",
+   "relevance": "in_or_after_window",
+   "leftover": "",
+   "duplicate_of": null
+  },
+  {
    "unit_id": "ipu:elections/r234",
-   "source": "ipu",
-   "text": "South Sudan | Transitional National Legislative Assembly | Bicameral | Lower chamber | Appointed | 10 May 2021 | 02 Aug 2021 | 22 Dec 2026",
-   "outcome": "ignored",
-   "reason": "appointed_chamber",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": null
-  },
-  {
-   "unit_id": "ipu:elections/r235",
-   "source": "ipu",
-   "text": "South Sudan | Council of States | Bicameral | Upper chamber | Appointed | 02 Aug 2021 | 02 Aug 2021 | 31 Dec 2026",
-   "outcome": "ignored",
-   "reason": "appointed_chamber",
-   "relevance": "in_or_after_window",
-   "leftover": "",
-   "duplicate_of": null
-  },
-  {
-   "unit_id": "ipu:elections/r236",
    "source": "ipu",
    "text": "Spain | Congress of Deputies | Bicameral | Lower chamber | Directly elected | 23 Jul 2023 | 17 Aug 2023 | 29 Nov 2026",
    "outcome": "parsed",
@@ -2400,7 +2380,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r237",
+   "unit_id": "ipu:elections/r235",
    "source": "ipu",
    "text": "Spain | Senate | Bicameral | Upper chamber | Directly elected | 23 Jul 2023 | 17 Aug 2023 | 29 Nov 2026",
    "outcome": "parsed",
@@ -2410,7 +2390,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r238",
+   "unit_id": "ipu:elections/r236",
    "source": "ipu",
    "text": "Sri Lanka | Parliament | Unicameral | Directly elected | 14 Nov 2024 | 21 Nov 2024 | 30 Nov 2029",
    "outcome": "parsed",
@@ -2420,7 +2400,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r239",
+   "unit_id": "ipu:elections/r237",
    "source": "ipu",
    "text": "Sudan | National Assembly (Suspended) | Bicameral | Lower chamber | Directly elected | 13 Apr 2015 - 16 Apr 2015 | 01 Jun 2015 | 31 May 2028",
    "outcome": "ignored",
@@ -2430,7 +2410,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r240",
+   "unit_id": "ipu:elections/r238",
    "source": "ipu",
    "text": "Sudan | Council of States (Suspended) | Bicameral | Upper chamber | Indirectly elected | 01 Jun 2015 | 01 Jun 2015 | -",
    "outcome": "ignored",
@@ -2440,7 +2420,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r241",
+   "unit_id": "ipu:elections/r239",
    "source": "ipu",
    "text": "Suriname | National Assembly | Unicameral | Directly elected | 25 May 2025 | 30 Jun 2025 | 31 May 2030",
    "outcome": "parsed",
@@ -2450,7 +2430,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r242",
+   "unit_id": "ipu:elections/r240",
    "source": "ipu",
    "text": "Sweden | Parliament | Unicameral | Directly elected | 13 Sep 2026 | 28 Sep 2026 | 30 Sep 2030",
    "outcome": "parsed",
@@ -2460,7 +2440,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r243",
+   "unit_id": "ipu:elections/r241",
    "source": "ipu",
    "text": "Switzerland | National Council | Bicameral | Lower chamber | Directly elected | 22 Oct 2023 | 04 Dec 2023 | 24 Oct 2027",
    "outcome": "parsed",
@@ -2470,7 +2450,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r244",
+   "unit_id": "ipu:elections/r242",
    "source": "ipu",
    "text": "Switzerland | Council of States | Bicameral | Upper chamber | Directly elected | 22 Oct 2023 | 04 Dec 2023 | 24 Oct 2027",
    "outcome": "parsed",
@@ -2480,7 +2460,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r245",
+   "unit_id": "ipu:elections/r243",
    "source": "ipu",
    "text": "Syrian Arab Republic | People's Assembly | Unicameral | Indirectly elected | 05 Oct 2025 | 12 Jul 2026 | 30 Mar 2030",
    "outcome": "parsed",
@@ -2490,7 +2470,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r246",
+   "unit_id": "ipu:elections/r244",
    "source": "ipu",
    "text": "Tajikistan | House of Representatives | Bicameral | Lower chamber | Directly elected | 02 Mar 2025 | 19 Mar 2025 | 31 Mar 2030",
    "outcome": "parsed",
@@ -2500,7 +2480,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r247",
+   "unit_id": "ipu:elections/r245",
    "source": "ipu",
    "text": "Tajikistan | National Assembly | Bicameral | Upper chamber | Indirectly elected | 28 Mar 2025 | 11 Apr 2025 | 31 Mar 2030",
    "outcome": "parsed",
@@ -2510,7 +2490,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r248",
+   "unit_id": "ipu:elections/r246",
    "source": "ipu",
    "text": "Thailand | House of Representatives | Bicameral | Lower chamber | Directly elected | 08 Feb 2026 | 14 Mar 2026 | 31 Jan 2030",
    "outcome": "parsed",
@@ -2520,7 +2500,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r249",
+   "unit_id": "ipu:elections/r247",
    "source": "ipu",
    "text": "Thailand | Senate | Bicameral | Upper chamber | Indirectly elected | 09 Jun 2024 - 26 Jun 2024 | 23 Jul 2024 | 30 Jun 2029",
    "outcome": "parsed",
@@ -2530,7 +2510,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r250",
+   "unit_id": "ipu:elections/r248",
    "source": "ipu",
    "text": "Timor-Leste | National Parliament | Unicameral | Directly elected | 21 May 2023 | 22 Jun 2023 | 31 May 2028",
    "outcome": "parsed",
@@ -2540,7 +2520,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r251",
+   "unit_id": "ipu:elections/r249",
    "source": "ipu",
    "text": "Togo | National Assembly | Bicameral | Lower chamber | Directly elected | 29 Apr 2024 | 21 May 2024 | 30 Apr 2030",
    "outcome": "parsed",
@@ -2550,7 +2530,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r252",
+   "unit_id": "ipu:elections/r250",
    "source": "ipu",
    "text": "Togo | Senate | Bicameral | Upper chamber | Indirectly elected | 15 Feb 2025 | 06 Mar 2025 | 28 Feb 2031",
    "outcome": "parsed",
@@ -2560,7 +2540,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r253",
+   "unit_id": "ipu:elections/r251",
    "source": "ipu",
    "text": "Tonga | Legislative Assembly | Unicameral | Directly elected | 20 Nov 2025 | 15 Dec 2025 | 30 Nov 2029",
    "outcome": "parsed",
@@ -2570,7 +2550,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r254",
+   "unit_id": "ipu:elections/r252",
    "source": "ipu",
    "text": "Trinidad and Tobago | House of Representatives | Bicameral | Lower chamber | Directly elected | 28 Apr 2025 | 23 May 2025 | 30 Apr 2030",
    "outcome": "parsed",
@@ -2580,7 +2560,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r255",
+   "unit_id": "ipu:elections/r253",
    "source": "ipu",
    "text": "Trinidad and Tobago | Senate | Bicameral | Upper chamber | Appointed | 23 May 2025 | 23 May 2025 | 31 May 2030",
    "outcome": "ignored",
@@ -2590,7 +2570,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r256",
+   "unit_id": "ipu:elections/r254",
    "source": "ipu",
    "text": "Tunisia | Assembly of People's Representatives | Bicameral | Lower chamber | Directly elected | 17 Dec 2022 - 29 Jan 2023 | 13 Mar 2023 | 31 Dec 2027",
    "outcome": "parsed",
@@ -2600,7 +2580,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r257",
+   "unit_id": "ipu:elections/r255",
    "source": "ipu",
    "text": "Tunisia | National Council of Regions and Districts | Bicameral | Upper chamber | Indirectly elected | 19 Apr 2024 | 19 Apr 2024 | 30 Apr 2029",
    "outcome": "parsed",
@@ -2610,7 +2590,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r258",
+   "unit_id": "ipu:elections/r256",
    "source": "ipu",
    "text": "Türkiye | Grand National Assembly of Türkiye | Unicameral | Directly elected | 14 May 2023 | 02 Jun 2023 | 31 May 2028",
    "outcome": "parsed",
@@ -2620,7 +2600,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r259",
+   "unit_id": "ipu:elections/r257",
    "source": "ipu",
    "text": "Turkmenistan | Assembly | Unicameral | Directly elected | 26 Mar 2023 | 06 Apr 2023 | 31 Mar 2028",
    "outcome": "parsed",
@@ -2630,17 +2610,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r260",
-   "source": "ipu",
-   "text": "Turkmenistan | People’s Council (Suspended) | Unicameral | Indirectly elected | 28 Mar 2021 | 14 Apr 2021 | -",
-   "outcome": "ignored",
-   "reason": "inactive_chamber",
-   "relevance": "unknown",
-   "leftover": "",
-   "duplicate_of": null
-  },
-  {
-   "unit_id": "ipu:elections/r261",
+   "unit_id": "ipu:elections/r258",
    "source": "ipu",
    "text": "Tuvalu | Parliament of Tuvalu | Unicameral | Directly elected | 26 Jan 2024 | 26 Feb 2024 | 31 Jan 2028",
    "outcome": "parsed",
@@ -2650,7 +2620,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r262",
+   "unit_id": "ipu:elections/r259",
    "source": "ipu",
    "text": "Uganda | Parliament | Unicameral | Directly elected | 15 Jan 2026 - 06 Feb 2026 | 13 May 2026 | 31 Jan 2031",
    "outcome": "parsed",
@@ -2660,7 +2630,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r263",
+   "unit_id": "ipu:elections/r260",
    "source": "ipu",
    "text": "Ukraine | Parliament | Unicameral | Directly elected | 21 Jul 2019 | 29 Aug 2019 | -",
    "outcome": "ignored",
@@ -2670,7 +2640,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r264",
+   "unit_id": "ipu:elections/r261",
    "source": "ipu",
    "text": "United Arab Emirates | Federal National Council | Unicameral | Other | 07 Oct 2023 | 06 Nov 2023 | 31 Oct 2027",
    "outcome": "unparsed",
@@ -2680,7 +2650,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r265",
+   "unit_id": "ipu:elections/r262",
    "source": "ipu",
    "text": "United Kingdom | House of Commons | Bicameral | Lower chamber | Directly elected | 04 Jul 2024 | 09 Jul 2024 | 31 Jul 2029",
    "outcome": "parsed",
@@ -2690,7 +2660,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r266",
+   "unit_id": "ipu:elections/r263",
    "source": "ipu",
    "text": "United Kingdom | House of Lords | Bicameral | Upper chamber | Appointed | - | - | -",
    "outcome": "ignored",
@@ -2700,7 +2670,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r267",
+   "unit_id": "ipu:elections/r264",
    "source": "ipu",
    "text": "United Republic of Tanzania | National Assembly | Unicameral | Directly elected | 29 Oct 2025 | 11 Nov 2025 | 31 Oct 2030",
    "outcome": "parsed",
@@ -2710,7 +2680,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r268",
+   "unit_id": "ipu:elections/r265",
    "source": "ipu",
    "text": "United States of America | House of Representatives | Bicameral | Lower chamber | Directly elected | 03 Nov 2026 | - | 07 Nov 2028",
    "outcome": "parsed",
@@ -2720,7 +2690,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r269",
+   "unit_id": "ipu:elections/r266",
    "source": "ipu",
    "text": "United States of America | Senate | Bicameral | Upper chamber | Directly elected | 03 Nov 2026 | - | 07 Nov 2028",
    "outcome": "parsed",
@@ -2730,7 +2700,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r270",
+   "unit_id": "ipu:elections/r267",
    "source": "ipu",
    "text": "Uruguay | House of Representatives | Bicameral | Lower chamber | Directly elected | 27 Oct 2024 | 15 Feb 2025 | 31 Oct 2029",
    "outcome": "parsed",
@@ -2740,7 +2710,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r271",
+   "unit_id": "ipu:elections/r268",
    "source": "ipu",
    "text": "Uruguay | Senate | Bicameral | Upper chamber | Directly elected | 27 Oct 2024 | 15 Feb 2025 | 31 Oct 2029",
    "outcome": "parsed",
@@ -2750,7 +2720,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r272",
+   "unit_id": "ipu:elections/r269",
    "source": "ipu",
    "text": "Uzbekistan | Legislative Chamber | Bicameral | Lower chamber | Directly elected | 27 Oct 2024 | 18 Nov 2024 | 21 Oct 2029",
    "outcome": "parsed",
@@ -2760,7 +2730,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r273",
+   "unit_id": "ipu:elections/r270",
    "source": "ipu",
    "text": "Uzbekistan | Senate | Bicameral | Upper chamber | Indirectly elected | 07 Nov 2024 - 12 Nov 2024 | 19 Nov 2024 | 30 Nov 2029",
    "outcome": "parsed",
@@ -2770,7 +2740,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r274",
+   "unit_id": "ipu:elections/r271",
    "source": "ipu",
    "text": "Vanuatu | Parliament | Unicameral | Directly elected | 16 Jan 2025 | 11 Feb 2025 | 31 Jan 2029",
    "outcome": "parsed",
@@ -2780,7 +2750,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r275",
+   "unit_id": "ipu:elections/r272",
    "source": "ipu",
    "text": "Venezuela (Bolivarian Republic of) | National Assembly | Unicameral | Directly elected | 25 May 2025 | 05 Jan 2026 | 31 May 2030",
    "outcome": "parsed",
@@ -2790,7 +2760,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r276",
+   "unit_id": "ipu:elections/r273",
    "source": "ipu",
    "text": "Viet Nam | National Assembly | Unicameral | Directly elected | 15 Mar 2026 | 06 Apr 2026 | 31 Mar 2031",
    "outcome": "parsed",
@@ -2800,7 +2770,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r277",
+   "unit_id": "ipu:elections/r274",
    "source": "ipu",
    "text": "Yemen | House of Representatives | Bicameral | Lower chamber | Directly elected | 27 Apr 2003 | 10 May 2003 | -",
    "outcome": "ignored",
@@ -2810,7 +2780,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r278",
+   "unit_id": "ipu:elections/r275",
    "source": "ipu",
    "text": "Yemen | Shura Council | Bicameral | Upper chamber | Appointed | 28 Apr 2001 | 28 Apr 2001 | -",
    "outcome": "ignored",
@@ -2820,7 +2790,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r279",
+   "unit_id": "ipu:elections/r276",
    "source": "ipu",
    "text": "Zambia | National Assembly | Unicameral | Directly elected | 13 Aug 2026 | 09 Oct 2026 | 31 Aug 2031",
    "outcome": "parsed",
@@ -2830,7 +2800,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r280",
+   "unit_id": "ipu:elections/r277",
    "source": "ipu",
    "text": "Zimbabwe | National Assembly | Bicameral | Lower chamber | Directly elected | 23 Aug 2023 | 08 Sep 2023 | 31 Aug 2028",
    "outcome": "parsed",
@@ -2840,7 +2810,7 @@
    "duplicate_of": null
   },
   {
-   "unit_id": "ipu:elections/r281",
+   "unit_id": "ipu:elections/r278",
    "source": "ipu",
    "text": "Zimbabwe | Senate | Bicameral | Upper chamber | Directly elected | 23 Aug 2023 | 08 Sep 2023 | 31 Aug 2028",
    "outcome": "parsed",
@@ -4089,13 +4059,13 @@
    "aggregate": false,
    "kind": "candidate_election",
    "round": null,
-   "date": "2027-01-01",
-   "end_date": "2027-01-31",
-   "date_precision": "month",
+   "date": "2027-02-07",
+   "end_date": "2027-02-07",
+   "date_precision": "day",
    "year": 2027,
    "date_meaning": "expected_window",
    "date_status": "tentative",
-   "date_text": "31 Jan 2027",
+   "date_text": "07 Feb 2027",
    "status_claim": null,
    "previous_date_text": null,
    "evidence_kind": "expected_renewal",
@@ -5409,13 +5379,13 @@
    "aggregate": false,
    "kind": "candidate_election",
    "round": null,
-   "date": "2026-12-01",
-   "end_date": "2026-12-31",
-   "date_precision": "month",
-   "year": 2026,
+   "date": "2027-02-06",
+   "end_date": "2027-02-06",
+   "date_precision": "day",
+   "year": 2027,
    "date_meaning": "expected_window",
    "date_status": "tentative",
-   "date_text": "31 Dec 2026",
+   "date_text": "06 Feb 2027",
    "status_claim": null,
    "previous_date_text": null,
    "evidence_kind": "expected_renewal",
@@ -5442,13 +5412,13 @@
    "aggregate": false,
    "kind": "candidate_election",
    "round": null,
-   "date": "2027-04-01",
-   "end_date": "2027-04-30",
-   "date_precision": "month",
+   "date": "2027-04-18",
+   "end_date": "2027-04-18",
+   "date_precision": "day",
    "year": 2027,
    "date_meaning": "expected_window",
    "date_status": "tentative",
-   "date_text": "30 Apr 2027",
+   "date_text": "18 Apr 2027",
    "status_claim": null,
    "previous_date_text": null,
    "evidence_kind": "expected_renewal",
@@ -6548,8 +6518,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r134",
-   "claim_id": "ipu:elections/r134#0",
+   "unit_id": "ipu:elections/r133",
+   "claim_id": "ipu:elections/r133#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/KE/KE-LC01/elections/elections",
    "source_event_id": "ipu:KE-LC01",
@@ -6581,8 +6551,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r135",
-   "claim_id": "ipu:elections/r135#0",
+   "unit_id": "ipu:elections/r134",
+   "claim_id": "ipu:elections/r134#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/KE/KE-UC01/elections/elections",
    "source_event_id": "ipu:KE-UC01",
@@ -6614,8 +6584,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r136",
-   "claim_id": "ipu:elections/r136#0",
+   "unit_id": "ipu:elections/r135",
+   "claim_id": "ipu:elections/r135#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/KI/KI-LC01/elections/elections",
    "source_event_id": "ipu:KI-LC01",
@@ -6647,8 +6617,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r138",
-   "claim_id": "ipu:elections/r138#0",
+   "unit_id": "ipu:elections/r137",
+   "claim_id": "ipu:elections/r137#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/KG/KG-LC01/elections/elections",
    "source_event_id": "ipu:KG-LC01",
@@ -6680,8 +6650,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r139",
-   "claim_id": "ipu:elections/r139#0",
+   "unit_id": "ipu:elections/r138",
+   "claim_id": "ipu:elections/r138#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/LA/LA-LC01/elections/elections",
    "source_event_id": "ipu:LA-LC01",
@@ -6713,8 +6683,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r140",
-   "claim_id": "ipu:elections/r140#0",
+   "unit_id": "ipu:elections/r139",
+   "claim_id": "ipu:elections/r139#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/LV/LV-LC01/elections/elections",
    "source_event_id": "ipu:LV-LC01",
@@ -6746,8 +6716,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r141",
-   "claim_id": "ipu:elections/r141#0",
+   "unit_id": "ipu:elections/r140",
+   "claim_id": "ipu:elections/r140#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/LB/LB-LC01/elections/elections",
    "source_event_id": "ipu:LB-LC01",
@@ -6779,8 +6749,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r142",
-   "claim_id": "ipu:elections/r142#0",
+   "unit_id": "ipu:elections/r141",
+   "claim_id": "ipu:elections/r141#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/LS/LS-LC01/elections/elections",
    "source_event_id": "ipu:LS-LC01",
@@ -6812,8 +6782,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r144",
-   "claim_id": "ipu:elections/r144#0",
+   "unit_id": "ipu:elections/r143",
+   "claim_id": "ipu:elections/r143#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/LR/LR-LC01/elections/elections",
    "source_event_id": "ipu:LR-LC01",
@@ -6845,8 +6815,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r145",
-   "claim_id": "ipu:elections/r145#0",
+   "unit_id": "ipu:elections/r144",
+   "claim_id": "ipu:elections/r144#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/LR/LR-UC01/elections/elections",
    "source_event_id": "ipu:LR-UC01",
@@ -6878,8 +6848,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r146",
-   "claim_id": "ipu:elections/r146#0",
+   "unit_id": "ipu:elections/r145",
+   "claim_id": "ipu:elections/r145#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/LY/LY-LC01/elections/elections",
    "source_event_id": "ipu:LY-LC01",
@@ -6911,8 +6881,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r147",
-   "claim_id": "ipu:elections/r147#0",
+   "unit_id": "ipu:elections/r146",
+   "claim_id": "ipu:elections/r146#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/LI/LI-LC01/elections/elections",
    "source_event_id": "ipu:LI-LC01",
@@ -6944,8 +6914,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r148",
-   "claim_id": "ipu:elections/r148#0",
+   "unit_id": "ipu:elections/r147",
+   "claim_id": "ipu:elections/r147#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/LT/LT-LC01/elections/elections",
    "source_event_id": "ipu:LT-LC01",
@@ -6977,8 +6947,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r149",
-   "claim_id": "ipu:elections/r149#0",
+   "unit_id": "ipu:elections/r148",
+   "claim_id": "ipu:elections/r148#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/LU/LU-LC01/elections/elections",
    "source_event_id": "ipu:LU-LC01",
@@ -7010,8 +6980,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r150",
-   "claim_id": "ipu:elections/r150#0",
+   "unit_id": "ipu:elections/r149",
+   "claim_id": "ipu:elections/r149#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MG/MG-LC01/elections/elections",
    "source_event_id": "ipu:MG-LC01",
@@ -7043,8 +7013,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r151",
-   "claim_id": "ipu:elections/r151#0",
+   "unit_id": "ipu:elections/r150",
+   "claim_id": "ipu:elections/r150#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MG/MG-UC01/elections/elections",
    "source_event_id": "ipu:MG-UC01",
@@ -7076,8 +7046,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r153",
-   "claim_id": "ipu:elections/r153#0",
+   "unit_id": "ipu:elections/r152",
+   "claim_id": "ipu:elections/r152#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MY/MY-LC01/elections/elections",
    "source_event_id": "ipu:MY-LC01",
@@ -7109,8 +7079,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r155",
-   "claim_id": "ipu:elections/r155#0",
+   "unit_id": "ipu:elections/r154",
+   "claim_id": "ipu:elections/r154#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MV/MV-LC01/elections/elections",
    "source_event_id": "ipu:MV-LC01",
@@ -7142,8 +7112,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r157",
-   "claim_id": "ipu:elections/r157#0",
+   "unit_id": "ipu:elections/r156",
+   "claim_id": "ipu:elections/r156#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MT/MT-LC01/elections/elections",
    "source_event_id": "ipu:MT-LC01",
@@ -7175,8 +7145,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r158",
-   "claim_id": "ipu:elections/r158#0",
+   "unit_id": "ipu:elections/r157",
+   "claim_id": "ipu:elections/r157#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MH/MH-LC01/elections/elections",
    "source_event_id": "ipu:MH-LC01",
@@ -7208,8 +7178,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r159",
-   "claim_id": "ipu:elections/r159#0",
+   "unit_id": "ipu:elections/r158",
+   "claim_id": "ipu:elections/r158#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MR/MR-LC01/elections/elections",
    "source_event_id": "ipu:MR-LC01",
@@ -7241,8 +7211,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r161",
-   "claim_id": "ipu:elections/r161#0",
+   "unit_id": "ipu:elections/r159",
+   "claim_id": "ipu:elections/r159#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MU/MU-LC01/elections/elections",
    "source_event_id": "ipu:MU-LC01",
@@ -7274,8 +7244,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r162",
-   "claim_id": "ipu:elections/r162#0",
+   "unit_id": "ipu:elections/r160",
+   "claim_id": "ipu:elections/r160#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MX/MX-LC01/elections/elections",
    "source_event_id": "ipu:MX-LC01",
@@ -7307,8 +7277,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r163",
-   "claim_id": "ipu:elections/r163#0",
+   "unit_id": "ipu:elections/r161",
+   "claim_id": "ipu:elections/r161#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MX/MX-UC01/elections/elections",
    "source_event_id": "ipu:MX-UC01",
@@ -7340,8 +7310,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r164",
-   "claim_id": "ipu:elections/r164#0",
+   "unit_id": "ipu:elections/r162",
+   "claim_id": "ipu:elections/r162#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/FM/FM-LC01/elections/elections",
    "source_event_id": "ipu:FM-LC01",
@@ -7373,8 +7343,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r165",
-   "claim_id": "ipu:elections/r165#0",
+   "unit_id": "ipu:elections/r163",
+   "claim_id": "ipu:elections/r163#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MC/MC-LC01/elections/elections",
    "source_event_id": "ipu:MC-LC01",
@@ -7406,8 +7376,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r166",
-   "claim_id": "ipu:elections/r166#0",
+   "unit_id": "ipu:elections/r164",
+   "claim_id": "ipu:elections/r164#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MN/MN-LC01/elections/elections",
    "source_event_id": "ipu:MN-LC01",
@@ -7439,8 +7409,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r167",
-   "claim_id": "ipu:elections/r167#0",
+   "unit_id": "ipu:elections/r165",
+   "claim_id": "ipu:elections/r165#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/ME/ME-LC01/elections/elections",
    "source_event_id": "ipu:ME-LC01",
@@ -7472,8 +7442,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r168",
-   "claim_id": "ipu:elections/r168#0",
+   "unit_id": "ipu:elections/r166",
+   "claim_id": "ipu:elections/r166#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MA/MA-LC01/elections/elections",
    "source_event_id": "ipu:MA-LC01",
@@ -7505,8 +7475,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r169",
-   "claim_id": "ipu:elections/r169#0",
+   "unit_id": "ipu:elections/r167",
+   "claim_id": "ipu:elections/r167#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MA/MA-UC01/elections/elections",
    "source_event_id": "ipu:MA-UC01",
@@ -7538,8 +7508,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r170",
-   "claim_id": "ipu:elections/r170#0",
+   "unit_id": "ipu:elections/r168",
+   "claim_id": "ipu:elections/r168#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MZ/MZ-LC01/elections/elections",
    "source_event_id": "ipu:MZ-LC01",
@@ -7571,8 +7541,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r173",
-   "claim_id": "ipu:elections/r173#0",
+   "unit_id": "ipu:elections/r171",
+   "claim_id": "ipu:elections/r171#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/NA/NA-LC01/elections/elections",
    "source_event_id": "ipu:NA-LC01",
@@ -7604,8 +7574,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r174",
-   "claim_id": "ipu:elections/r174#0",
+   "unit_id": "ipu:elections/r172",
+   "claim_id": "ipu:elections/r172#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/NA/NA-UC01/elections/elections",
    "source_event_id": "ipu:NA-UC01",
@@ -7637,8 +7607,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r175",
-   "claim_id": "ipu:elections/r175#0",
+   "unit_id": "ipu:elections/r173",
+   "claim_id": "ipu:elections/r173#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/NR/NR-LC01/elections/elections",
    "source_event_id": "ipu:NR-LC01",
@@ -7670,8 +7640,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r176",
-   "claim_id": "ipu:elections/r176#0",
+   "unit_id": "ipu:elections/r174",
+   "claim_id": "ipu:elections/r174#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/NP/NP-LC01/elections/elections",
    "source_event_id": "ipu:NP-LC01",
@@ -7703,8 +7673,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r177",
-   "claim_id": "ipu:elections/r177#0",
+   "unit_id": "ipu:elections/r175",
+   "claim_id": "ipu:elections/r175#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/NP/NP-UC01/elections/elections",
    "source_event_id": "ipu:NP-UC01",
@@ -7736,8 +7706,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r178",
-   "claim_id": "ipu:elections/r178#0",
+   "unit_id": "ipu:elections/r176",
+   "claim_id": "ipu:elections/r176#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/NL/NL-LC01/elections/elections",
    "source_event_id": "ipu:NL-LC01",
@@ -7769,8 +7739,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r179",
-   "claim_id": "ipu:elections/r179#0",
+   "unit_id": "ipu:elections/r177",
+   "claim_id": "ipu:elections/r177#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/NL/NL-UC01/elections/elections",
    "source_event_id": "ipu:NL-UC01",
@@ -7802,8 +7772,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r180",
-   "claim_id": "ipu:elections/r180#0",
+   "unit_id": "ipu:elections/r178",
+   "claim_id": "ipu:elections/r178#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/NZ/NZ-LC01/elections/elections",
    "source_event_id": "ipu:NZ-LC01",
@@ -7818,13 +7788,13 @@
    "aggregate": false,
    "kind": "candidate_election",
    "round": null,
-   "date": "2026-11-07",
-   "end_date": "2026-11-07",
-   "date_precision": "day",
-   "year": 2026,
+   "date": "2029-11-01",
+   "end_date": "2029-11-30",
+   "date_precision": "month",
+   "year": 2029,
    "date_meaning": "expected_window",
    "date_status": "tentative",
-   "date_text": "07 Nov 2026",
+   "date_text": "30 Nov 2029",
    "status_claim": null,
    "previous_date_text": null,
    "evidence_kind": "expected_renewal",
@@ -7835,8 +7805,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r181",
-   "claim_id": "ipu:elections/r181#0",
+   "unit_id": "ipu:elections/r179",
+   "claim_id": "ipu:elections/r179#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/NI/NI-LC01/elections/elections",
    "source_event_id": "ipu:NI-LC01",
@@ -7868,8 +7838,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r183",
-   "claim_id": "ipu:elections/r183#0",
+   "unit_id": "ipu:elections/r181",
+   "claim_id": "ipu:elections/r181#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/NG/NG-LC01/elections/elections",
    "source_event_id": "ipu:NG-LC01",
@@ -7901,8 +7871,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r184",
-   "claim_id": "ipu:elections/r184#0",
+   "unit_id": "ipu:elections/r182",
+   "claim_id": "ipu:elections/r182#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/NG/NG-UC01/elections/elections",
    "source_event_id": "ipu:NG-UC01",
@@ -7934,8 +7904,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r185",
-   "claim_id": "ipu:elections/r185#0",
+   "unit_id": "ipu:elections/r183",
+   "claim_id": "ipu:elections/r183#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MK/MK-LC01/elections/elections",
    "source_event_id": "ipu:MK-LC01",
@@ -7967,8 +7937,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r186",
-   "claim_id": "ipu:elections/r186#0",
+   "unit_id": "ipu:elections/r184",
+   "claim_id": "ipu:elections/r184#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/NO/NO-LC01/elections/elections",
    "source_event_id": "ipu:NO-LC01",
@@ -8000,8 +7970,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r187",
-   "claim_id": "ipu:elections/r187#0",
+   "unit_id": "ipu:elections/r185",
+   "claim_id": "ipu:elections/r185#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/OM/OM-LC01/elections/elections",
    "source_event_id": "ipu:OM-LC01",
@@ -8033,8 +8003,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r189",
-   "claim_id": "ipu:elections/r189#0",
+   "unit_id": "ipu:elections/r187",
+   "claim_id": "ipu:elections/r187#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PK/PK-LC01/elections/elections",
    "source_event_id": "ipu:PK-LC01",
@@ -8066,8 +8036,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r190",
-   "claim_id": "ipu:elections/r190#0",
+   "unit_id": "ipu:elections/r188",
+   "claim_id": "ipu:elections/r188#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PK/PK-UC01/elections/elections",
    "source_event_id": "ipu:PK-UC01",
@@ -8099,8 +8069,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r191",
-   "claim_id": "ipu:elections/r191#0",
+   "unit_id": "ipu:elections/r189",
+   "claim_id": "ipu:elections/r189#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PW/PW-LC01/elections/elections",
    "source_event_id": "ipu:PW-LC01",
@@ -8132,8 +8102,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r192",
-   "claim_id": "ipu:elections/r192#0",
+   "unit_id": "ipu:elections/r190",
+   "claim_id": "ipu:elections/r190#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PW/PW-UC01/elections/elections",
    "source_event_id": "ipu:PW-UC01",
@@ -8165,8 +8135,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r193",
-   "claim_id": "ipu:elections/r193#0",
+   "unit_id": "ipu:elections/r191",
+   "claim_id": "ipu:elections/r191#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PA/PA-LC01/elections/elections",
    "source_event_id": "ipu:PA-LC01",
@@ -8198,8 +8168,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r194",
-   "claim_id": "ipu:elections/r194#0",
+   "unit_id": "ipu:elections/r192",
+   "claim_id": "ipu:elections/r192#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PG/PG-LC01/elections/elections",
    "source_event_id": "ipu:PG-LC01",
@@ -8231,8 +8201,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r195",
-   "claim_id": "ipu:elections/r195#0",
+   "unit_id": "ipu:elections/r193",
+   "claim_id": "ipu:elections/r193#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PY/PY-LC01/elections/elections",
    "source_event_id": "ipu:PY-LC01",
@@ -8264,8 +8234,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r196",
-   "claim_id": "ipu:elections/r196#0",
+   "unit_id": "ipu:elections/r194",
+   "claim_id": "ipu:elections/r194#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PY/PY-UC01/elections/elections",
    "source_event_id": "ipu:PY-UC01",
@@ -8297,8 +8267,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r197",
-   "claim_id": "ipu:elections/r197#0",
+   "unit_id": "ipu:elections/r195",
+   "claim_id": "ipu:elections/r195#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PE/PE-LC01/elections/elections",
    "source_event_id": "ipu:PE-LC01",
@@ -8330,8 +8300,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r198",
-   "claim_id": "ipu:elections/r198#0",
+   "unit_id": "ipu:elections/r196",
+   "claim_id": "ipu:elections/r196#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PE/PE-UC01/elections/elections",
    "source_event_id": "ipu:PE-UC01",
@@ -8363,8 +8333,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r199",
-   "claim_id": "ipu:elections/r199#0",
+   "unit_id": "ipu:elections/r197",
+   "claim_id": "ipu:elections/r197#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PH/PH-LC01/elections/elections",
    "source_event_id": "ipu:PH-LC01",
@@ -8396,8 +8366,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r200",
-   "claim_id": "ipu:elections/r200#0",
+   "unit_id": "ipu:elections/r198",
+   "claim_id": "ipu:elections/r198#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PH/PH-UC01/elections/elections",
    "source_event_id": "ipu:PH-UC01",
@@ -8429,8 +8399,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r201",
-   "claim_id": "ipu:elections/r201#0",
+   "unit_id": "ipu:elections/r199",
+   "claim_id": "ipu:elections/r199#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PL/PL-LC01/elections/elections",
    "source_event_id": "ipu:PL-LC01",
@@ -8462,8 +8432,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r202",
-   "claim_id": "ipu:elections/r202#0",
+   "unit_id": "ipu:elections/r200",
+   "claim_id": "ipu:elections/r200#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PL/PL-UC01/elections/elections",
    "source_event_id": "ipu:PL-UC01",
@@ -8495,8 +8465,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r203",
-   "claim_id": "ipu:elections/r203#0",
+   "unit_id": "ipu:elections/r201",
+   "claim_id": "ipu:elections/r201#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/PT/PT-LC01/elections/elections",
    "source_event_id": "ipu:PT-LC01",
@@ -8528,8 +8498,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r205",
-   "claim_id": "ipu:elections/r205#0",
+   "unit_id": "ipu:elections/r203",
+   "claim_id": "ipu:elections/r203#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/KR/KR-LC01/elections/elections",
    "source_event_id": "ipu:KR-LC01",
@@ -8561,8 +8531,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r206",
-   "claim_id": "ipu:elections/r206#0",
+   "unit_id": "ipu:elections/r204",
+   "claim_id": "ipu:elections/r204#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/MD/MD-LC01/elections/elections",
    "source_event_id": "ipu:MD-LC01",
@@ -8594,8 +8564,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r207",
-   "claim_id": "ipu:elections/r207#0",
+   "unit_id": "ipu:elections/r205",
+   "claim_id": "ipu:elections/r205#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/RO/RO-LC01/elections/elections",
    "source_event_id": "ipu:RO-LC01",
@@ -8627,8 +8597,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r208",
-   "claim_id": "ipu:elections/r208#0",
+   "unit_id": "ipu:elections/r206",
+   "claim_id": "ipu:elections/r206#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/RO/RO-UC01/elections/elections",
    "source_event_id": "ipu:RO-UC01",
@@ -8660,8 +8630,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r209",
-   "claim_id": "ipu:elections/r209#0",
+   "unit_id": "ipu:elections/r207",
+   "claim_id": "ipu:elections/r207#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/RU/RU-LC01/elections/elections",
    "source_event_id": "ipu:RU-LC01",
@@ -8693,8 +8663,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r211",
-   "claim_id": "ipu:elections/r211#0",
+   "unit_id": "ipu:elections/r209",
+   "claim_id": "ipu:elections/r209#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/RW/RW-LC01/elections/elections",
    "source_event_id": "ipu:RW-LC01",
@@ -8726,8 +8696,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r212",
-   "claim_id": "ipu:elections/r212#0",
+   "unit_id": "ipu:elections/r210",
+   "claim_id": "ipu:elections/r210#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/RW/RW-UC01/elections/elections",
    "source_event_id": "ipu:RW-UC01",
@@ -8759,8 +8729,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r213",
-   "claim_id": "ipu:elections/r213#0",
+   "unit_id": "ipu:elections/r211",
+   "claim_id": "ipu:elections/r211#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/KN/KN-LC01/elections/elections",
    "source_event_id": "ipu:KN-LC01",
@@ -8792,8 +8762,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r214",
-   "claim_id": "ipu:elections/r214#0",
+   "unit_id": "ipu:elections/r212",
+   "claim_id": "ipu:elections/r212#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/LC/LC-LC01/elections/elections",
    "source_event_id": "ipu:LC-LC01",
@@ -8825,8 +8795,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r216",
-   "claim_id": "ipu:elections/r216#0",
+   "unit_id": "ipu:elections/r214",
+   "claim_id": "ipu:elections/r214#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/VC/VC-LC01/elections/elections",
    "source_event_id": "ipu:VC-LC01",
@@ -8858,8 +8828,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r217",
-   "claim_id": "ipu:elections/r217#0",
+   "unit_id": "ipu:elections/r215",
+   "claim_id": "ipu:elections/r215#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/WS/WS-LC01/elections/elections",
    "source_event_id": "ipu:WS-LC01",
@@ -8891,8 +8861,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r218",
-   "claim_id": "ipu:elections/r218#0",
+   "unit_id": "ipu:elections/r216",
+   "claim_id": "ipu:elections/r216#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/SM/SM-LC01/elections/elections",
    "source_event_id": "ipu:SM-LC01",
@@ -8924,8 +8894,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r219",
-   "claim_id": "ipu:elections/r219#0",
+   "unit_id": "ipu:elections/r217",
+   "claim_id": "ipu:elections/r217#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/ST/ST-LC01/elections/elections",
    "source_event_id": "ipu:ST-LC01",
@@ -8957,8 +8927,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r221",
-   "claim_id": "ipu:elections/r221#0",
+   "unit_id": "ipu:elections/r219",
+   "claim_id": "ipu:elections/r219#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/SN/SN-LC01/elections/elections",
    "source_event_id": "ipu:SN-LC01",
@@ -8990,8 +8960,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r222",
-   "claim_id": "ipu:elections/r222#0",
+   "unit_id": "ipu:elections/r220",
+   "claim_id": "ipu:elections/r220#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/RS/RS-LC01/elections/elections",
    "source_event_id": "ipu:RS-LC01",
@@ -9023,8 +8993,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r223",
-   "claim_id": "ipu:elections/r223#0",
+   "unit_id": "ipu:elections/r221",
+   "claim_id": "ipu:elections/r221#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/SC/SC-LC01/elections/elections",
    "source_event_id": "ipu:SC-LC01",
@@ -9056,8 +9026,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r224",
-   "claim_id": "ipu:elections/r224#0",
+   "unit_id": "ipu:elections/r222",
+   "claim_id": "ipu:elections/r222#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/SL/SL-LC01/elections/elections",
    "source_event_id": "ipu:SL-LC01",
@@ -9089,8 +9059,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r225",
-   "claim_id": "ipu:elections/r225#0",
+   "unit_id": "ipu:elections/r223",
+   "claim_id": "ipu:elections/r223#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/SG/SG-LC01/elections/elections",
    "source_event_id": "ipu:SG-LC01",
@@ -9122,8 +9092,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r226",
-   "claim_id": "ipu:elections/r226#0",
+   "unit_id": "ipu:elections/r224",
+   "claim_id": "ipu:elections/r224#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/SK/SK-LC01/elections/elections",
    "source_event_id": "ipu:SK-LC01",
@@ -9155,8 +9125,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r227",
-   "claim_id": "ipu:elections/r227#0",
+   "unit_id": "ipu:elections/r225",
+   "claim_id": "ipu:elections/r225#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/SI/SI-LC01/elections/elections",
    "source_event_id": "ipu:SI-LC01",
@@ -9188,8 +9158,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r228",
-   "claim_id": "ipu:elections/r228#0",
+   "unit_id": "ipu:elections/r226",
+   "claim_id": "ipu:elections/r226#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/SI/SI-UC01/elections/elections",
    "source_event_id": "ipu:SI-UC01",
@@ -9221,8 +9191,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r229",
-   "claim_id": "ipu:elections/r229#0",
+   "unit_id": "ipu:elections/r227",
+   "claim_id": "ipu:elections/r227#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/SB/SB-LC01/elections/elections",
    "source_event_id": "ipu:SB-LC01",
@@ -9254,8 +9224,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r230",
-   "claim_id": "ipu:elections/r230#0",
+   "unit_id": "ipu:elections/r228",
+   "claim_id": "ipu:elections/r228#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/SO/SO-LC01/elections/elections",
    "source_event_id": "ipu:SO-LC01",
@@ -9287,8 +9257,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r231",
-   "claim_id": "ipu:elections/r231#0",
+   "unit_id": "ipu:elections/r229",
+   "claim_id": "ipu:elections/r229#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/SO/SO-UC01/elections/elections",
    "source_event_id": "ipu:SO-UC01",
@@ -9320,8 +9290,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r232",
-   "claim_id": "ipu:elections/r232#0",
+   "unit_id": "ipu:elections/r230",
+   "claim_id": "ipu:elections/r230#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/ZA/ZA-LC01/elections/elections",
    "source_event_id": "ipu:ZA-LC01",
@@ -9353,8 +9323,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r236",
-   "claim_id": "ipu:elections/r236#0",
+   "unit_id": "ipu:elections/r234",
+   "claim_id": "ipu:elections/r234#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/ES/ES-LC01/elections/elections",
    "source_event_id": "ipu:ES-LC01",
@@ -9386,8 +9356,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r237",
-   "claim_id": "ipu:elections/r237#0",
+   "unit_id": "ipu:elections/r235",
+   "claim_id": "ipu:elections/r235#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/ES/ES-UC01/elections/elections",
    "source_event_id": "ipu:ES-UC01",
@@ -9419,8 +9389,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r238",
-   "claim_id": "ipu:elections/r238#0",
+   "unit_id": "ipu:elections/r236",
+   "claim_id": "ipu:elections/r236#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/LK/LK-LC01/elections/elections",
    "source_event_id": "ipu:LK-LC01",
@@ -9452,8 +9422,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r241",
-   "claim_id": "ipu:elections/r241#0",
+   "unit_id": "ipu:elections/r239",
+   "claim_id": "ipu:elections/r239#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/SR/SR-LC01/elections/elections",
    "source_event_id": "ipu:SR-LC01",
@@ -9485,8 +9455,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r242",
-   "claim_id": "ipu:elections/r242#0",
+   "unit_id": "ipu:elections/r240",
+   "claim_id": "ipu:elections/r240#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/SE/SE-LC01/elections/elections",
    "source_event_id": "ipu:SE-LC01",
@@ -9518,8 +9488,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r243",
-   "claim_id": "ipu:elections/r243#0",
+   "unit_id": "ipu:elections/r241",
+   "claim_id": "ipu:elections/r241#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/CH/CH-LC01/elections/elections",
    "source_event_id": "ipu:CH-LC01",
@@ -9551,8 +9521,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r244",
-   "claim_id": "ipu:elections/r244#0",
+   "unit_id": "ipu:elections/r242",
+   "claim_id": "ipu:elections/r242#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/CH/CH-UC01/elections/elections",
    "source_event_id": "ipu:CH-UC01",
@@ -9584,11 +9554,11 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r245",
-   "claim_id": "ipu:elections/r245#0",
+   "unit_id": "ipu:elections/r243",
+   "claim_id": "ipu:elections/r243#0",
    "source": "ipu",
-   "link": "https://data.ipu.org/parliament/SY/SY-LC01/elections/elections",
-   "source_event_id": "ipu:SY-LC01",
+   "link": "https://data.ipu.org/parliament/SY/SY-LC02/elections/elections",
+   "source_event_id": "ipu:SY-LC02",
    "place_raw": "Syrian Arab Republic",
    "place_id": "iso:SY",
    "jurisdiction": null,
@@ -9617,8 +9587,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r246",
-   "claim_id": "ipu:elections/r246#0",
+   "unit_id": "ipu:elections/r244",
+   "claim_id": "ipu:elections/r244#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TJ/TJ-LC01/elections/elections",
    "source_event_id": "ipu:TJ-LC01",
@@ -9650,8 +9620,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r247",
-   "claim_id": "ipu:elections/r247#0",
+   "unit_id": "ipu:elections/r245",
+   "claim_id": "ipu:elections/r245#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TJ/TJ-UC01/elections/elections",
    "source_event_id": "ipu:TJ-UC01",
@@ -9683,8 +9653,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r248",
-   "claim_id": "ipu:elections/r248#0",
+   "unit_id": "ipu:elections/r246",
+   "claim_id": "ipu:elections/r246#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TH/TH-LC01/elections/elections",
    "source_event_id": "ipu:TH-LC01",
@@ -9716,8 +9686,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r249",
-   "claim_id": "ipu:elections/r249#0",
+   "unit_id": "ipu:elections/r247",
+   "claim_id": "ipu:elections/r247#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TH/TH-UC01/elections/elections",
    "source_event_id": "ipu:TH-UC01",
@@ -9749,8 +9719,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r250",
-   "claim_id": "ipu:elections/r250#0",
+   "unit_id": "ipu:elections/r248",
+   "claim_id": "ipu:elections/r248#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TL/TL-LC01/elections/elections",
    "source_event_id": "ipu:TL-LC01",
@@ -9782,8 +9752,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r251",
-   "claim_id": "ipu:elections/r251#0",
+   "unit_id": "ipu:elections/r249",
+   "claim_id": "ipu:elections/r249#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TG/TG-LC01/elections/elections",
    "source_event_id": "ipu:TG-LC01",
@@ -9815,8 +9785,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r252",
-   "claim_id": "ipu:elections/r252#0",
+   "unit_id": "ipu:elections/r250",
+   "claim_id": "ipu:elections/r250#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TG/TG-UC01/elections/elections",
    "source_event_id": "ipu:TG-UC01",
@@ -9848,8 +9818,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r253",
-   "claim_id": "ipu:elections/r253#0",
+   "unit_id": "ipu:elections/r251",
+   "claim_id": "ipu:elections/r251#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TO/TO-LC01/elections/elections",
    "source_event_id": "ipu:TO-LC01",
@@ -9881,8 +9851,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r254",
-   "claim_id": "ipu:elections/r254#0",
+   "unit_id": "ipu:elections/r252",
+   "claim_id": "ipu:elections/r252#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TT/TT-LC01/elections/elections",
    "source_event_id": "ipu:TT-LC01",
@@ -9914,8 +9884,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r256",
-   "claim_id": "ipu:elections/r256#0",
+   "unit_id": "ipu:elections/r254",
+   "claim_id": "ipu:elections/r254#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TN/TN-LC01/elections/elections",
    "source_event_id": "ipu:TN-LC01",
@@ -9947,8 +9917,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r257",
-   "claim_id": "ipu:elections/r257#0",
+   "unit_id": "ipu:elections/r255",
+   "claim_id": "ipu:elections/r255#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TN/TN-UC01/elections/elections",
    "source_event_id": "ipu:TN-UC01",
@@ -9980,8 +9950,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r258",
-   "claim_id": "ipu:elections/r258#0",
+   "unit_id": "ipu:elections/r256",
+   "claim_id": "ipu:elections/r256#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TR/TR-LC01/elections/elections",
    "source_event_id": "ipu:TR-LC01",
@@ -10013,8 +9983,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r259",
-   "claim_id": "ipu:elections/r259#0",
+   "unit_id": "ipu:elections/r257",
+   "claim_id": "ipu:elections/r257#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TM/TM-LC01/elections/elections",
    "source_event_id": "ipu:TM-LC01",
@@ -10046,8 +10016,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r261",
-   "claim_id": "ipu:elections/r261#0",
+   "unit_id": "ipu:elections/r258",
+   "claim_id": "ipu:elections/r258#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TV/TV-LC01/elections/elections",
    "source_event_id": "ipu:TV-LC01",
@@ -10079,8 +10049,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r262",
-   "claim_id": "ipu:elections/r262#0",
+   "unit_id": "ipu:elections/r259",
+   "claim_id": "ipu:elections/r259#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/UG/UG-LC01/elections/elections",
    "source_event_id": "ipu:UG-LC01",
@@ -10112,8 +10082,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r265",
-   "claim_id": "ipu:elections/r265#0",
+   "unit_id": "ipu:elections/r262",
+   "claim_id": "ipu:elections/r262#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/GB/GB-LC01/elections/elections",
    "source_event_id": "ipu:GB-LC01",
@@ -10145,8 +10115,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r267",
-   "claim_id": "ipu:elections/r267#0",
+   "unit_id": "ipu:elections/r264",
+   "claim_id": "ipu:elections/r264#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/TZ/TZ-LC01/elections/elections",
    "source_event_id": "ipu:TZ-LC01",
@@ -10178,8 +10148,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r268",
-   "claim_id": "ipu:elections/r268#0",
+   "unit_id": "ipu:elections/r265",
+   "claim_id": "ipu:elections/r265#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/US/US-LC01/elections/elections",
    "source_event_id": "ipu:US-LC01",
@@ -10211,8 +10181,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r269",
-   "claim_id": "ipu:elections/r269#0",
+   "unit_id": "ipu:elections/r266",
+   "claim_id": "ipu:elections/r266#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/US/US-UC01/elections/elections",
    "source_event_id": "ipu:US-UC01",
@@ -10244,8 +10214,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r270",
-   "claim_id": "ipu:elections/r270#0",
+   "unit_id": "ipu:elections/r267",
+   "claim_id": "ipu:elections/r267#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/UY/UY-LC01/elections/elections",
    "source_event_id": "ipu:UY-LC01",
@@ -10277,8 +10247,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r271",
-   "claim_id": "ipu:elections/r271#0",
+   "unit_id": "ipu:elections/r268",
+   "claim_id": "ipu:elections/r268#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/UY/UY-UC01/elections/elections",
    "source_event_id": "ipu:UY-UC01",
@@ -10310,8 +10280,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r272",
-   "claim_id": "ipu:elections/r272#0",
+   "unit_id": "ipu:elections/r269",
+   "claim_id": "ipu:elections/r269#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/UZ/UZ-LC01/elections/elections",
    "source_event_id": "ipu:UZ-LC01",
@@ -10343,8 +10313,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r273",
-   "claim_id": "ipu:elections/r273#0",
+   "unit_id": "ipu:elections/r270",
+   "claim_id": "ipu:elections/r270#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/UZ/UZ-UC01/elections/elections",
    "source_event_id": "ipu:UZ-UC01",
@@ -10376,8 +10346,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r274",
-   "claim_id": "ipu:elections/r274#0",
+   "unit_id": "ipu:elections/r271",
+   "claim_id": "ipu:elections/r271#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/VU/VU-LC01/elections/elections",
    "source_event_id": "ipu:VU-LC01",
@@ -10409,8 +10379,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r275",
-   "claim_id": "ipu:elections/r275#0",
+   "unit_id": "ipu:elections/r272",
+   "claim_id": "ipu:elections/r272#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/VE/VE-LC01/elections/elections",
    "source_event_id": "ipu:VE-LC01",
@@ -10442,8 +10412,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r276",
-   "claim_id": "ipu:elections/r276#0",
+   "unit_id": "ipu:elections/r273",
+   "claim_id": "ipu:elections/r273#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/VN/VN-LC01/elections/elections",
    "source_event_id": "ipu:VN-LC01",
@@ -10475,8 +10445,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r279",
-   "claim_id": "ipu:elections/r279#0",
+   "unit_id": "ipu:elections/r276",
+   "claim_id": "ipu:elections/r276#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/ZM/ZM-LC01/elections/elections",
    "source_event_id": "ipu:ZM-LC01",
@@ -10508,8 +10478,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r280",
-   "claim_id": "ipu:elections/r280#0",
+   "unit_id": "ipu:elections/r277",
+   "claim_id": "ipu:elections/r277#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/ZW/ZW-LC01/elections/elections",
    "source_event_id": "ipu:ZW-LC01",
@@ -10541,8 +10511,8 @@
    "provisional": false
   },
   {
-   "unit_id": "ipu:elections/r281",
-   "claim_id": "ipu:elections/r281#0",
+   "unit_id": "ipu:elections/r278",
+   "claim_id": "ipu:elections/r278#0",
    "source": "ipu",
    "link": "https://data.ipu.org/parliament/ZW/ZW-UC01/elections/elections",
    "source_event_id": "ipu:ZW-UC01",
