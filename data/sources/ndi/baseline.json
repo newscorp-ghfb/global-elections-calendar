@@ -1,7 +1,7 @@
 {
  "source": "ndi",
  "snapshot_id": "9138facaa71fd8f9902127b24179f19a98ab22eea354a21110da9aba2db23bd8",
- "fetched_at": "2026-11-27T00:15:00.560671Z",
+ "fetched_at": "2026-11-28T00:13:51.413918Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,15 +21,15 @@
     "units_seen": 20,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-27T00:15:00.560671Z",
+    "fetched_at": "2026-11-28T00:13:51.413918Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
      "http_status": 200,
      "final_url": "https://www.ndi.org/elections-calendar?page=0",
      "content_type": "text/html; charset=utf-8",
-     "bytes": 176830,
-     "elapsed_ms": 1390,
+     "bytes": 176829,
+     "elapsed_ms": 279,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -47,15 +47,15 @@
     "units_seen": 14,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-27T00:15:00.733346Z",
+    "fetched_at": "2026-11-28T00:13:51.562315Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
      "http_status": 200,
      "final_url": "https://www.ndi.org/elections-calendar?page=1",
      "content_type": "text/html; charset=utf-8",
-     "bytes": 165844,
-     "elapsed_ms": 143,
+     "bytes": 165843,
+     "elapsed_ms": 111,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -1709,6 +1709,12 @@
   {
    "scope": "pages",
    "fetched_at": "2026-11-27T00:15:00.560671Z",
+   "units_seen": 34,
+   "claims": 34
+  },
+  {
+   "scope": "pages",
+   "fetched_at": "2026-11-28T00:13:51.413918Z",
    "units_seen": 34,
    "claims": 34
   }

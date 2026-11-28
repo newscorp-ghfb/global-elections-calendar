@@ -1,9 +1,9 @@
 {
  "schema_version": 1,
- "attempt_id": "20261127T001458Z-45914365381",
- "attempt_at": "2026-11-27T00:14:58.554109Z",
+ "attempt_id": "20261128T001350Z-46085704460",
+ "attempt_at": "2026-11-28T00:13:50.418881Z",
  "trigger": "schedule",
- "code_sha": "cac3cb9327411b9568e496736e79d6270bc4207b",
+ "code_sha": "c968777b15b657ec56d725e207efec64bbea2483",
  "outcome": "published",
  "severity": "error",
  "reasons": [
@@ -116,24 +116,24 @@
    "acknowledged": false
   }
  ],
- "serving_feed_sha256": "20f9f2b0eda3ac3272d8ed8433732104303ec4d7c96cfced41cb10aefe372e61",
- "serving_published_at": "2026-11-27T00:14:58.554109Z",
- "serving_generated_at": "2026-11-27T00:14:58.554109Z",
- "serving_content_id": "c3bf63affcc9247aedc9479f319f8068c3d67949989b066ee0516cf9558dd409",
+ "serving_feed_sha256": "97423a3a5ef524ddcbf979a1cc2485ceab959f442ece3f2c92e09bdcd2f1e9c7",
+ "serving_published_at": "2026-11-28T00:13:50.418881Z",
+ "serving_generated_at": "2026-11-28T00:13:50.418881Z",
+ "serving_content_id": "c2897da6a3d55b564655d37717f0277353d3f8a331ab8573d22e7e7cca0668da",
  "sources": [
   {
    "source": "electionguide",
    "name": "ElectionGuide",
    "severity": "ok",
    "using_fallback": false,
-   "served_fetched_at": "2026-11-27T00:14:59.561417Z"
+   "served_fetched_at": "2026-11-28T00:13:51.528746Z"
   },
   {
    "source": "osce",
    "name": "OSCE/ODIHR",
    "severity": "ok",
    "using_fallback": false,
-   "served_fetched_at": "2026-11-27T00:15:01.226888Z"
+   "served_fetched_at": "2026-11-28T00:13:52.818465Z"
   },
   {
    "source": "wikipedia",
@@ -147,42 +147,42 @@
    "name": "NDI",
    "severity": "warning",
    "using_fallback": false,
-   "served_fetched_at": "2026-11-27T00:15:00.560671Z"
+   "served_fetched_at": "2026-11-28T00:13:51.413918Z"
   },
   {
    "source": "aweb",
    "name": "A-WEB",
    "severity": "warning",
    "using_fallback": false,
-   "served_fetched_at": "2026-11-27T00:15:00.773479Z"
+   "served_fetched_at": "2026-11-28T00:13:52.752634Z"
   },
   {
    "source": "eisa",
    "name": "EISA",
    "severity": "warning",
    "using_fallback": false,
-   "served_fetched_at": "2026-11-27T00:15:04.688829Z"
+   "served_fetched_at": "2026-11-28T00:13:55.693500Z"
   },
   {
    "source": "ipu",
    "name": "IPU",
    "severity": "warning",
    "using_fallback": false,
-   "served_fetched_at": "2026-11-27T00:15:01.297235Z"
+   "served_fetched_at": "2026-11-28T00:13:53.278629Z"
   },
   {
    "source": "carter",
    "name": "Carter Center",
    "severity": "ok",
    "using_fallback": false,
-   "served_fetched_at": "2026-11-27T00:15:01.729595Z"
+   "served_fetched_at": "2026-11-28T00:13:53.716454Z"
   },
   {
    "source": "eeas",
    "name": "EEAS",
    "severity": "ok",
    "using_fallback": false,
-   "served_fetched_at": "2026-11-27T00:15:02.075679Z"
+   "served_fetched_at": "2026-11-28T00:13:53.988654Z"
   }
  ],
  "acknowledged": []

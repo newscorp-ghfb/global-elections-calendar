@@ -1,7 +1,7 @@
 {
  "source": "electionguide",
  "snapshot_id": "7e62d2c6020d41518f53c1010aea54fdc193daeab5708b821932a151fc1a0194",
- "fetched_at": "2026-11-27T00:14:59.561417Z",
+ "fetched_at": "2026-11-28T00:13:51.528746Z",
  "parser_version": "2.0",
  "registry_version": "18ca2c8621679c7c2596bcdc40ad45031d9ed6e33eb507d6319b2e94414bca7e",
  "scope": {
@@ -21,7 +21,7 @@
     "units_seen": 28,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-27T00:14:59.561417Z",
+    "fetched_at": "2026-11-28T00:13:51.528746Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -29,7 +29,7 @@
      "final_url": "https://www.electionguide.org/elections/type/upcoming/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 86517,
-     "elapsed_ms": 391,
+     "elapsed_ms": 411,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -47,7 +47,7 @@
     "units_seen": 200,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-27T00:15:01.666858Z",
+    "fetched_at": "2026-11-28T00:13:53.172532Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -55,7 +55,7 @@
      "final_url": "https://www.electionguide.org/elections/type/past/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 600790,
-     "elapsed_ms": 2105,
+     "elapsed_ms": 1643,
      "attempts": 1,
      "error_type": null,
      "error": null,
@@ -73,7 +73,7 @@
     "units_seen": 100,
     "revid": null,
     "detail": "",
-    "fetched_at": "2026-11-27T00:15:02.665787Z",
+    "fetched_at": "2026-11-28T00:13:53.544075Z",
     "download": {
      "outcome": "ok",
      "stage": "done",
@@ -81,7 +81,7 @@
      "final_url": "https://www.electionguide.org/elections/type/anticipated/",
      "content_type": "text/html; charset=utf-8",
      "bytes": 226824,
-     "elapsed_ms": 998,
+     "elapsed_ms": 370,
      "attempts": 1,
      "error_type": null,
      "error": null,
